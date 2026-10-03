@@ -17,7 +17,9 @@ public sealed class LibraryTests : ApiTest
         "Imperial Guard",
         UnitType.LineInfantry,
         7,
-        40
+        40,
+        null,
+        null
     );
 
     private static async Task<FactionResponse> CreateFactionAsync(
@@ -197,6 +199,81 @@ public sealed class LibraryTests : ApiTest
 
         var saved = await response.Content.ReadAsAsync<UnitResponse>();
         Assert.Equal(8, saved?.FightingFactor);
+    }
+
+    [Fact]
+    public async Task CreateUnit_WithDivisionAndBrigade_KeepsThemTrimmed()
+    {
+        using var manager = await CreateManagerClientAsync();
+        var faction = await CreateFactionAsync(manager);
+
+        var unit = await CreateUnitAsync(
+            manager,
+            faction.Id,
+            Guard with
+            {
+                Division = " Old Guard ",
+                Brigade = " 1st Grenadiers ",
+            }
+        );
+
+        Assert.Equal(("Old Guard", "1st Grenadiers"), (unit.Division, unit.Brigade));
+        var loaded = await manager.GetAsAsync<FactionResponse>($"/api/factions/{faction.Id}");
+        Assert.Equal(unit, Assert.Single(loaded!.Units));
+    }
+
+    [Fact]
+    public async Task CreateUnit_WithoutDivisionOrBrigade_HasNeither()
+    {
+        using var manager = await CreateManagerClientAsync();
+        var faction = await CreateFactionAsync(manager);
+
+        var unit = await CreateUnitAsync(manager, faction.Id);
+
+        Assert.Equal((null, null), (unit.Division, unit.Brigade));
+    }
+
+    [Fact]
+    public async Task UpdateUnit_BlankDivisionAndBrigade_ClearsThem()
+    {
+        using var manager = await CreateManagerClientAsync();
+        var faction = await CreateFactionAsync(manager);
+        var grouped = Guard with { Division = "Old Guard", Brigade = "1st Grenadiers" };
+        var unit = await CreateUnitAsync(manager, faction.Id, grouped);
+
+        using var response = await manager.PutAsJsonAsync(
+            new Uri($"/api/units/{unit.Id}", UriKind.Relative),
+            grouped with
+            {
+                Division = "  ",
+                Brigade = "",
+            },
+            CancellationToken
+        );
+
+        var saved = await response.Content.ReadAsAsync<UnitResponse>();
+        Assert.Equal((null, null), (saved?.Division, saved?.Brigade));
+    }
+
+    [Theory]
+    [InlineData("division")]
+    [InlineData("brigade")]
+    public async Task CreateUnit_GroupTooLong_IsAValidationError(string field)
+    {
+        using var manager = await CreateManagerClientAsync();
+        var faction = await CreateFactionAsync(manager);
+        var body = new Dictionary<string, object>(StringComparer.Ordinal)
+        {
+            ["name"] = "Guard",
+            ["type"] = "Partisans",
+            ["fightingFactor"] = 5,
+            ["points"] = 10,
+            [field] = new string('x', 101),
+        };
+
+        using var response = await PostUnitAsync(manager, faction.Id, body);
+
+        await response.AssertValidationProblemAsync(field);
     }
 
     [Fact]

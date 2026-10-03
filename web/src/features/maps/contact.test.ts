@@ -59,6 +59,8 @@ const unit = (
       type,
       fightingFactor: 5,
       points,
+      division: null,
+      brigade: null,
     } satisfies ArmyUnitResponse,
     army: of,
     hex,

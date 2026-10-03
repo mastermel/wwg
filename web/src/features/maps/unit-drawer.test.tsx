@@ -30,6 +30,8 @@ const unit = (id: string, name: string, type: PlacedUnit["unit"]["type"]): Place
     type,
     fightingFactor: 6,
     points: 30,
+    division: null,
+    brigade: null,
   },
   army,
   hex: { q: 0, r: 0 },

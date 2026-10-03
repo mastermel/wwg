@@ -26,6 +26,8 @@ const library: UnitResponse[] = [
     type: "LineInfantry",
     fightingFactor: 5,
     points: 20,
+    division: null,
+    brigade: null,
   },
   {
     id: "0192f5c1-0000-7000-8000-00000000b002",
@@ -34,6 +36,8 @@ const library: UnitResponse[] = [
     type: "LightInfantry",
     fightingFactor: 6,
     points: 35,
+    division: null,
+    brigade: null,
   },
   {
     id: "0192f5c1-0000-7000-8000-00000000b003",
@@ -42,6 +46,8 @@ const library: UnitResponse[] = [
     type: "LightCavalry",
     fightingFactor: 4,
     points: 15,
+    division: null,
+    brigade: null,
   },
 ];
 
@@ -61,6 +67,8 @@ const unit = (
   type,
   fightingFactor,
   points,
+  division: null,
+  brigade: null,
 });
 
 /** Serves a campaign and its army, with units that change as the test adds and removes them. */
@@ -243,6 +251,8 @@ describe("units", () => {
     const ff = dialog.getByRole("textbox", { name: "Fighting Factor (FF)" });
     await user.clear(ff);
     await user.type(ff, "7");
+    await user.type(dialog.getByRole("combobox", { name: "Division" }), "1st Division");
+    await user.type(dialog.getByRole("combobox", { name: "Brigade" }), "Quiot's Brigade");
     await user.click(dialog.getByRole("button", { name: "Save" }));
 
     await waitFor(() => {
@@ -250,7 +260,14 @@ describe("units", () => {
         {
           method: "PUT",
           path: unit("1", "").id,
-          body: { name: "1st Division", type: "LineInfantry", fightingFactor: 7, points: 20 },
+          body: {
+            name: "1st Division",
+            type: "LineInfantry",
+            fightingFactor: 7,
+            points: 20,
+            division: "1st Division",
+            brigade: "Quiot's Brigade",
+          },
         },
       ]);
     });

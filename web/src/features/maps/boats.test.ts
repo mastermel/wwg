@@ -36,6 +36,8 @@ const placed = (
     type,
     fightingFactor: 1,
     points: 20,
+    division: null,
+    brigade: null,
   },
   army: army("a"),
   hex: { q: 0, r: 0 },

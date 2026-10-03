@@ -21,6 +21,8 @@ internal sealed class UnitConfiguration : IEntityTypeConfiguration<Unit>
     {
         builder.Property(u => u.Name).HasMaxLength(100).UseCollation("NOCASE");
         builder.Property(u => u.Type).HasMaxLength(32);
+        builder.Property(u => u.Division).HasMaxLength(UnitStats.MaxGroupLength);
+        builder.Property(u => u.Brigade).HasMaxLength(UnitStats.MaxGroupLength);
         // A faction with units can't be deleted (the handler says so first).
         builder
             .HasOne(u => u.Faction)

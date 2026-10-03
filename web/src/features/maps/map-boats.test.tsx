@@ -66,6 +66,8 @@ const unit = (id: string, name: string, changes: Partial<ArmyUnitResponse> = {})
     type: "Boat",
     fightingFactor: 1,
     points: 0,
+    division: null,
+    brigade: null,
     ...changes,
   }) satisfies ArmyUnitResponse;
 
@@ -188,6 +190,8 @@ function serve({
           type: "LineInfantry",
           fightingFactor: 6,
           points: guardPoints,
+          division: null,
+          brigade: null,
         }),
         ...boatIds.slice(0, boats).map((id, i) => unit(id, `Boat ${String(i + 1)}`)),
         ...(artillery

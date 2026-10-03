@@ -25,6 +25,13 @@ public enum UnitType
     Commander,
 }
 
+/// <summary>A unit's division and brigade (decision 0024): free text, grouped on as written.</summary>
+internal static class UnitGroups
+{
+    /// <summary>None for empty: the request trims it, so blank comes as empty.</summary>
+    public static string? Normalize(string? value) => string.IsNullOrEmpty(value) ? null : value;
+}
+
 /// <summary>The bounds of a unit's numbers, in the library and in a campaign.</summary>
 internal static class UnitStats
 {
@@ -35,6 +42,9 @@ internal static class UnitStats
     /// <summary>The fewest and most points a unit can be worth.</summary>
     public const int MinPoints = 0,
         MaxPoints = 100;
+
+    /// <summary>The longest division or brigade name (decision 0024).</summary>
+    public const int MaxGroupLength = 100;
 }
 
 /// <summary>
@@ -67,6 +77,12 @@ internal sealed class ArmyUnit : Entity
 
     /// <summary>What the unit is worth, <see cref="UnitStats.MinPoints"/>–<see cref="UnitStats.MaxPoints"/>.</summary>
     public int Points { get; set; }
+
+    /// <summary>The division it's in (decision 0024), free text; null for none.</summary>
+    public string? Division { get; set; }
+
+    /// <summary>The brigade it's in (decision 0024), free text; null for none.</summary>
+    public string? Brigade { get; set; }
 
     /// <summary>
     /// The part of a point of attrition owed but not yet lost (decision 0018), 0 to 1: points stay

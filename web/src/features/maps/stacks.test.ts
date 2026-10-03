@@ -22,6 +22,8 @@ const placed = (id: string, longitude: number, latitude = 0): PlacedUnit => ({
     type: "LineInfantry",
     fightingFactor: 5,
     points: 20,
+    division: null,
+    brigade: null,
   } satisfies ArmyUnitResponse,
   army,
   hex: { q: 0, r: 0 },

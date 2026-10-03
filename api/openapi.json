@@ -2933,7 +2933,7 @@
         "tags": [
           "ArmyUnits"
         ],
-        "summary": "Changes the campaign's copy of a unit: name, type, Fighting Factor and points (Umpire or\nAdmin). The library unit stays as it is.",
+        "summary": "Changes the campaign's copy of a unit: name, type, Fighting Factor, points, division and\nbrigade (Umpire or Admin). The library unit stays as it is.",
         "operationId": "UpdateArmyUnit",
         "parameters": [
           {
@@ -5763,7 +5763,9 @@
           "name",
           "type",
           "fightingFactor",
-          "points"
+          "points",
+          "division",
+          "brigade"
         ],
         "type": "object",
         "properties": {
@@ -5814,6 +5816,20 @@
             "type": "integer",
             "description": "What it's worth, 0–100.",
             "format": "int32"
+          },
+          "division": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The division it's in; null for none."
+          },
+          "brigade": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The brigade it's in; null for none."
           }
         },
         "description": "A unit in an army: the campaign's copy of a library unit."
@@ -8417,7 +8433,9 @@
           "name",
           "type",
           "fightingFactor",
-          "points"
+          "points",
+          "division",
+          "brigade"
         ],
         "type": "object",
         "properties": {
@@ -8444,6 +8462,24 @@
             "type": "integer",
             "description": "What it's worth.",
             "format": "int32"
+          },
+          "division": {
+            "maxLength": 100,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The division it's in (left out or empty: none)."
+          },
+          "brigade": {
+            "maxLength": 100,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The brigade it's in (left out or empty: none)."
           }
         },
         "description": "Adds a unit to a faction in the library, or changes one."
@@ -9353,7 +9389,9 @@
           "name",
           "type",
           "fightingFactor",
-          "points"
+          "points",
+          "division",
+          "brigade"
         ],
         "type": "object",
         "properties": {
@@ -9384,6 +9422,20 @@
             "type": "integer",
             "description": "What it's worth.",
             "format": "int32"
+          },
+          "division": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The division it's in; null for none."
+          },
+          "brigade": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The brigade it's in; null for none."
           }
         },
         "description": "A unit in the library."
@@ -9506,7 +9558,9 @@
           "name",
           "type",
           "fightingFactor",
-          "points"
+          "points",
+          "division",
+          "brigade"
         ],
         "type": "object",
         "properties": {
@@ -9533,6 +9587,24 @@
             "type": "integer",
             "description": "What it's worth, 0–100.",
             "format": "int32"
+          },
+          "division": {
+            "maxLength": 100,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The division it's in (left out or empty: none)."
+          },
+          "brigade": {
+            "maxLength": 100,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The brigade it's in (left out or empty: none)."
           }
         },
         "description": "Changes the campaign's copy of a unit (the library's stays as it is)."

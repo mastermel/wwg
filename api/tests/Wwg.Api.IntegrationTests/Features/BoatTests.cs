@@ -450,7 +450,14 @@ public sealed class BoatTests : ApiTest
             .As(Role.Umpire)
             .PutAsJsonAsync(
                 new Uri($"/api/army-units/{scenario.UnitId}", UriKind.Relative),
-                new UpdateArmyUnitRequest("1st Division", UnitType.LineInfantry, 5, points),
+                new UpdateArmyUnitRequest(
+                    "1st Division",
+                    UnitType.LineInfantry,
+                    5,
+                    points,
+                    null,
+                    null
+                ),
                 Token
             );
 
@@ -601,7 +608,7 @@ public sealed class BoatTests : ApiTest
             .As(Role.Umpire)
             .PutAsJsonAsync(
                 new Uri($"/api/army-units/{scenario.UnitId}", UriKind.Relative),
-                new UpdateArmyUnitRequest("1st Division", UnitType.LineInfantry, 5, 0),
+                new UpdateArmyUnitRequest("1st Division", UnitType.LineInfantry, 5, 0, null, null),
                 Token
             );
         lost.EnsureSuccessStatusCode();

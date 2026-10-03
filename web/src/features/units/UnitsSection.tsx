@@ -159,6 +159,7 @@ export function UnitsSection({ army, manager }: { army: ArmyResponse; manager: b
           title="Edit unit"
           submitLabel="Save"
           defaultValues={editing}
+          siblings={army.units}
           onClose={() => {
             setEditing(null);
           }}

@@ -11,6 +11,8 @@ internal sealed class ArmyUnitConfiguration : IEntityTypeConfiguration<ArmyUnit>
         // Sorted on in the army's unit list.
         builder.Property(u => u.Name).HasMaxLength(100).UseCollation("NOCASE");
         builder.Property(u => u.Type).HasMaxLength(32);
+        builder.Property(u => u.Division).HasMaxLength(UnitStats.MaxGroupLength);
+        builder.Property(u => u.Brigade).HasMaxLength(UnitStats.MaxGroupLength);
 
         // Deleting an army (or its campaign) deletes its units.
         builder

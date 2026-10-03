@@ -1689,6 +1689,8 @@ ArmyFaction (the library factions an army takes units from)
   ArmyId → Army, FactionId → Faction    (unique together)
 ```
 
+- **Step 54** (decision 0024) adds `Division` and `Brigade` (string?, ≤100; null for none) to
+  `Unit` and `ArmyUnit`, copied with the rest when a unit joins an army.
 - `ArmyUnit (CampaignId, UnitId)` is unique: a library unit is in one army per campaign, but can
   be in several campaigns. Orders, turn notes, positions and the visibility rule refer to army
   units (`UnitOrder.UnitId` and `UnitNote.UnitId` point at `ArmyUnits`).
@@ -2065,7 +2067,7 @@ one, as a campaign is made with both)
 |---|---|---|
 | GET / POST | `/api/factions` | The library's factions (with how many units) / create one `{ name, nation }` |
 | GET / PUT / DELETE | `/api/factions/{id}` | A faction with its units / rename / delete (in use: 409) |
-| POST | `/api/factions/{id}/units` | Create a library unit `{ name, type, fightingFactor, points }` |
+| POST | `/api/factions/{id}/units` | Create a library unit `{ name, type, fightingFactor, points, division, brigade }` (the last two from step 54; null or empty: none) |
 | PUT / DELETE | `/api/units/{id}` | Edit / delete a library unit (in a campaign: 409) |
 | PUT | `/api/armies/{id}` | `UpdateArmy` gains `factionIds`: the library factions it takes units from |
 | POST | `/api/armies/{id}/units` | Add library units `{ unitIds }` (from the army's factions; one already in the campaign: 409) |
@@ -2821,8 +2823,9 @@ build on positions.
     - ✅ **54a. The Commander unit type:** the army's general on the map, moving as light cavalry
       (`Movement.ClassOf`, `movement.ts`), not counted towards concentration nor exempt from
       supply by default; a star for its symbol.
-    - **54b. Division and brigade:** optional free text (≤100) on library units and army units,
+    - ✅ **54b. Division and brigade:** optional free text (≤100) on library units and army units,
       in `SaveUnitRequest` / `UpdateArmyUnitRequest` and their responses; copied when a library
-      unit joins an army; set in `UnitFormModal`, which suggests the faction's existing ones.
+      unit joins an army; set in `UnitFormModal`, which suggests the divisions beside it (its
+      faction's or its army's), and the chosen division's brigades.
     - **54c. The faction's order of battle:** the library's faction page groups units by brigade,
       and brigades by division (`order-of-battle.ts`).

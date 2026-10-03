@@ -36,12 +36,14 @@ internal static class LibrarySteps
         string name,
         UnitType type = UnitType.LineInfantry,
         int fightingFactor = 5,
-        int points = 20
+        int points = 20,
+        string? division = null,
+        string? brigade = null
     )
     {
         using var response = await editor.PostAsJsonAsync(
             new Uri($"/api/factions/{factionId}/units", UriKind.Relative),
-            new SaveUnitRequest(name, type, fightingFactor, points),
+            new SaveUnitRequest(name, type, fightingFactor, points, division, brigade),
             CancellationToken
         );
         response.EnsureSuccessStatusCode();

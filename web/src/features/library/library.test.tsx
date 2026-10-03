@@ -1,4 +1,4 @@
-import { screen, within } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { describe, expect, it } from "vitest";
@@ -16,6 +16,8 @@ const guard: UnitResponse = {
   type: "LineInfantry",
   fightingFactor: 7,
   points: 40,
+  division: null,
+  brigade: null,
 };
 
 /** The library, with one faction whose units change as the test adds and deletes them. */
@@ -54,6 +56,19 @@ function serveLibrary(initial: UnitResponse[] = [guard]) {
     }),
   );
   return calls;
+}
+
+/** The options a field's list offers (Mantine's lists stay hidden in jsdom: see web/CLAUDE.md). */
+async function suggestions(field: HTMLElement) {
+  const list = await waitFor(() => {
+    const id = field.getAttribute("aria-controls");
+    const found = id ? document.getElementById(id) : null;
+    if (!found) throw new Error("No list yet.");
+    return found;
+  });
+  return within(list)
+    .getAllByRole("option", { hidden: true })
+    .map((option) => option.textContent);
 }
 
 describe("the library", () => {
@@ -122,6 +137,32 @@ describe("the library", () => {
     expect(await screen.findByText("Added Old Guard.")).toBeInTheDocument();
     expect(await screen.findByRole("cell", { name: /Old Guard/ })).toBeInTheDocument();
     expect(calls).toEqual(["add Old Guard"]);
+  });
+
+  it("suggests the faction's divisions, and the chosen division's brigades", async () => {
+    serveLibrary([
+      { ...guard, division: "Imperial Guard", brigade: "Old Guard" },
+      {
+        ...guard,
+        id: "0192f5c1-0000-7000-8000-0000000u0003",
+        name: "Elbe Hussars",
+        division: "II Corps",
+        brigade: "Light Cavalry Brigade",
+      },
+    ]);
+    const user = userEvent.setup();
+    await renderApp(`/library/${factionId}`, { user: manager });
+
+    await user.click(await screen.findByRole("button", { name: "Add unit" }));
+    const dialog = within(await screen.findByRole("dialog", { name: "Add unit" }));
+    const division = dialog.getByRole("combobox", { name: "Division" });
+    await user.click(division);
+    expect(await suggestions(division)).toEqual(["II Corps", "Imperial Guard"]);
+    await user.type(division, "II Corps");
+    const brigade = dialog.getByRole("combobox", { name: "Brigade" });
+    await user.click(brigade);
+
+    expect(await suggestions(brigade)).toEqual(["Light Cavalry Brigade"]);
   });
 
   it("asks for the type and FF before sending", async () => {

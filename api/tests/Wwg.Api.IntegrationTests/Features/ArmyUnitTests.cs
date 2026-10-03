@@ -27,7 +27,9 @@ public sealed class ArmyUnitTests : ApiTest
         UnitType type = UnitType.LineInfantry,
         int fightingFactor = 5,
         int points = 10,
-        Guid? factionId = null
+        Guid? factionId = null,
+        string? division = null,
+        string? brigade = null
     ) =>
         LibrarySteps.CreateUnitAsync(
             scenario.As(Role.Admin),
@@ -35,7 +37,9 @@ public sealed class ArmyUnitTests : ApiTest
             name,
             type,
             fightingFactor,
-            points
+            points,
+            division,
+            brigade
         );
 
     /// <summary>A second army in the scenario's campaign, taking units from its faction.</summary>
@@ -66,7 +70,9 @@ public sealed class ArmyUnitTests : ApiTest
             "Light Division",
             UnitType.LightInfantry,
             fightingFactor: 6,
-            points: 35
+            points: 35,
+            division: "3rd Division",
+            brigade: "95th Rifles"
         );
 
         using var response = await LibrarySteps.AddAsync(
@@ -89,7 +95,9 @@ public sealed class ArmyUnitTests : ApiTest
                 "Light Division",
                 UnitType.LightInfantry,
                 6,
-                35
+                35,
+                "3rd Division",
+                "95th Rifles"
             ),
             unit
         );
@@ -235,7 +243,7 @@ public sealed class ArmyUnitTests : ApiTest
             .As(Role.Admin)
             .PutAsJsonAsync(
                 new Uri($"/api/units/{army!.Units[0].UnitId}", UriKind.Relative),
-                new SaveUnitRequest("Old Guard", UnitType.LineInfantry, 9, 80),
+                new SaveUnitRequest("Old Guard", UnitType.LineInfantry, 9, 80, null, null),
                 CancellationToken
             );
 
@@ -265,7 +273,14 @@ public sealed class ArmyUnitTests : ApiTest
             .As(Role.Umpire)
             .PutAsJsonAsync(
                 new Uri($"/api/army-units/{scenario.UnitId}", UriKind.Relative),
-                new UpdateArmyUnitRequest(" Horse Guards ", UnitType.HeavyCavalry, 8, 60),
+                new UpdateArmyUnitRequest(
+                    " Horse Guards ",
+                    UnitType.HeavyCavalry,
+                    8,
+                    60,
+                    " Cavalry Reserve ",
+                    " Household Brigade "
+                ),
                 CancellationToken
             );
 
@@ -286,7 +301,9 @@ public sealed class ArmyUnitTests : ApiTest
             "Horse Guards",
             UnitType.HeavyCavalry,
             8,
-            60
+            60,
+            "Cavalry Reserve",
+            "Household Brigade"
         );
         Assert.Equal(expected, await response.Content.ReadAsAsync<ArmyUnitResponse>());
         var army = await scenario
@@ -309,7 +326,7 @@ public sealed class ArmyUnitTests : ApiTest
             .As(Role.Umpire)
             .PutAsJsonAsync(
                 new Uri($"/api/army-units/{scenario.UnitId}", UriKind.Relative),
-                new UpdateArmyUnitRequest("Guard", UnitType.LineInfantry, 0, 101),
+                new UpdateArmyUnitRequest("Guard", UnitType.LineInfantry, 0, 101, null, null),
                 CancellationToken
             );
 

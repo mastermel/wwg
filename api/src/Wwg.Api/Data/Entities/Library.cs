@@ -31,4 +31,10 @@ internal sealed class Unit : Entity
 
     /// <summary>What it's worth, within <see cref="UnitStats"/>.</summary>
     public int Points { get; set; }
+
+    /// <summary>The division it's in (decision 0024), free text; null for none.</summary>
+    public string? Division { get; set; }
+
+    /// <summary>The brigade it's in (decision 0024), free text; null for none.</summary>
+    public string? Brigade { get; set; }
 }

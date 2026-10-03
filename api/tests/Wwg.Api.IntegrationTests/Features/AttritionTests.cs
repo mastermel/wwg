@@ -40,7 +40,9 @@ public sealed class AttritionTests : ApiTest
                     "1st Division",
                     UnitType.LineInfantry,
                     fightingFactor,
-                    points
+                    points,
+                    null,
+                    null
                 ),
                 Token
             );

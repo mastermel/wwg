@@ -19,12 +19,16 @@ public sealed record AddArmyUnitsRequest(
 /// <param name="Type">What kind of troops it is.</param>
 /// <param name="FightingFactor">Its Fighting Factor ("FF"), 1–9.</param>
 /// <param name="Points">What it's worth, 0–100.</param>
+/// <param name="Division">The division it's in (left out or empty: none).</param>
+/// <param name="Brigade">The brigade it's in (left out or empty: none).</param>
 public sealed record UpdateArmyUnitRequest(
     [property: Trimmed, Required, StringLength(100)] string Name,
     [property: JsonRequired, EnumDataType(typeof(UnitType))] UnitType Type,
     [property: JsonRequired, Range(UnitStats.MinFightingFactor, UnitStats.MaxFightingFactor)]
         int FightingFactor,
-    [property: JsonRequired, Range(UnitStats.MinPoints, UnitStats.MaxPoints)] int Points
+    [property: JsonRequired, Range(UnitStats.MinPoints, UnitStats.MaxPoints)] int Points,
+    [property: Trimmed, StringLength(UnitStats.MaxGroupLength)] string? Division,
+    [property: Trimmed, StringLength(UnitStats.MaxGroupLength)] string? Brigade
 );
 
 /// <summary>A unit in an army: the campaign's copy of a library unit.</summary>
@@ -37,6 +41,8 @@ public sealed record UpdateArmyUnitRequest(
 /// <param name="Type">What kind of troops it is.</param>
 /// <param name="FightingFactor">Its Fighting Factor ("FF"), 1–9.</param>
 /// <param name="Points">What it's worth, 0–100.</param>
+/// <param name="Division">The division it's in; null for none.</param>
+/// <param name="Brigade">The brigade it's in; null for none.</param>
 public sealed record ArmyUnitResponse(
     Guid Id,
     Guid ArmyId,
@@ -46,7 +52,9 @@ public sealed record ArmyUnitResponse(
     string Name,
     UnitType Type,
     int FightingFactor,
-    int Points
+    int Points,
+    string? Division,
+    string? Brigade
 );
 
 /// <summary>A change to a unit's points (decision 0018).</summary>

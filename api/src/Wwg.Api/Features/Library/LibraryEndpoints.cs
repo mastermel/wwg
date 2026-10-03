@@ -204,16 +204,29 @@ internal static class LibraryEndpoints
             : TypedResults.NoContent();
     }
 
-    private static void Apply(Unit unit, SaveUnitRequest request) =>
+    private static void Apply(Unit unit, SaveUnitRequest request)
+    {
         (unit.Name, unit.Type, unit.FightingFactor, unit.Points) = (
             request.Name,
             request.Type,
             request.FightingFactor,
             request.Points
         );
+        unit.Division = UnitGroups.Normalize(request.Division);
+        unit.Brigade = UnitGroups.Normalize(request.Brigade);
+    }
 
     private static UnitResponse ToResponse(Unit unit) =>
-        new(unit.Id, unit.FactionId, unit.Name, unit.Type, unit.FightingFactor, unit.Points);
+        new(
+            unit.Id,
+            unit.FactionId,
+            unit.Name,
+            unit.Type,
+            unit.FightingFactor,
+            unit.Points,
+            unit.Division,
+            unit.Brigade
+        );
 
     private static async Task<FactionResponse?> LoadAsync(
         WwgDbContext db,
@@ -247,7 +260,9 @@ internal static class LibraryEndpoints
                 u.Name,
                 u.Type,
                 u.FightingFactor,
-                u.Points
+                u.Points,
+                u.Division,
+                u.Brigade
             ))
             .ToListAsync(cancellationToken);
         return new FactionResponse(faction.Id, faction.Name, faction.Nation, units);

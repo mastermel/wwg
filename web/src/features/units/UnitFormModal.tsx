@@ -1,11 +1,23 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Alert, Button, Group, Modal, NumberInput, Select, Stack, TextInput } from "@mantine/core";
-import { useState } from "react";
-import { Controller, useForm, type DefaultValues } from "react-hook-form";
+import {
+  Alert,
+  Autocomplete,
+  Button,
+  Group,
+  Modal,
+  NumberInput,
+  Select,
+  Stack,
+  TextInput,
+} from "@mantine/core";
+import { useMemo, useState } from "react";
+import { Controller, useForm, useWatch, type DefaultValues } from "react-hook-form";
 import { z } from "zod";
 import { UnitType } from "@/api/generated/model";
 import {
   CreateUnitBody,
+  createUnitBodyBrigadeMax,
+  createUnitBodyDivisionMax,
   createUnitBodyFightingFactorMax,
   createUnitBodyPointsMax,
   createUnitBodyPointsMin,
@@ -32,11 +44,35 @@ const UnitForm = CreateUnitBody.extend({
     })
     .min(createUnitBodyPointsMin)
     .max(createUnitBodyPointsMax),
+  division: z
+    .string()
+    .max(createUnitBodyDivisionMax, `Keep it to ${String(createUnitBodyDivisionMax)} characters.`)
+    .nullable(),
+  brigade: z
+    .string()
+    .max(createUnitBodyBrigadeMax, `Keep it to ${String(createUnitBodyBrigadeMax)} characters.`)
+    .nullable(),
 });
 
 export type UnitValues = z.infer<typeof UnitForm>;
 
-const fields = ["name", "type", "fightingFactor", "points"] as const;
+const fields = ["name", "type", "fightingFactor", "points", "division", "brigade"] as const;
+
+/** A unit's place in its order of battle, for suggestions. */
+interface Grouped {
+  division?: string | null;
+  brigade?: string | null;
+}
+
+/** Each name once, in order ("2nd" before "10th"); Mantine refuses repeated options. */
+function names(values: (string | null | undefined)[]) {
+  const seen = new Map<string, string>();
+  for (const value of values) {
+    const name = value?.trim();
+    if (name && !seen.has(name.toLowerCase())) seen.set(name.toLowerCase(), name);
+  }
+  return [...seen.values()].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+}
 
 /** A NumberInput's value as the form's number: empty becomes undefined, so it's "required". */
 const toNumber = (value: number | string) => (typeof value === "number" ? value : undefined);
@@ -45,18 +81,24 @@ interface UnitFormModalProps {
   title: string;
   submitLabel: string;
   defaultValues?: DefaultValues<UnitValues>;
+  /**
+   * The units beside it (its faction's, or its army's): their divisions and brigades are
+   * suggested, so a slip of the keyboard doesn't start a new one.
+   */
+  siblings?: readonly Grouped[];
   onSubmit: (values: UnitValues) => Promise<void>;
   onClose: () => void;
 }
 
 /**
- * A unit's name, type, Fighting Factor and points (a library unit, or an army's copy of one), in a
- * modal. Mount it only while open.
+ * A unit's name, type, Fighting Factor, points, division and brigade (a library unit, or an army's
+ * copy of one), in a modal. Mount it only while open.
  */
 export function UnitFormModal({
   title,
   submitLabel,
-  defaultValues = { name: "", points: 0 },
+  defaultValues = { name: "", points: 0, division: null, brigade: null },
+  siblings = [],
   onSubmit,
   onClose,
 }: UnitFormModalProps) {
@@ -64,6 +106,13 @@ export function UnitFormModal({
   const [formError, setFormError] = useState<string | null>(null);
   const form = useForm<UnitValues>({ resolver: zodResolver(UnitForm), defaultValues });
   const { errors, isSubmitting } = form.formState;
+  const division = useWatch({ control: form.control, name: "division" })?.trim().toLowerCase();
+  const divisions = useMemo(() => names(siblings.map((u) => u.division)), [siblings]);
+  // The chosen division's brigades; all of them while it has none (or none yet).
+  const brigades = useMemo(() => {
+    const inDivision = siblings.filter((u) => u.division?.trim().toLowerCase() === division);
+    return names((inDivision.some((u) => u.brigade) ? inDivision : siblings).map((u) => u.brigade));
+  }, [siblings, division]);
 
   const submit = form.handleSubmit(async (values) => {
     setFormError(null);
@@ -109,6 +158,38 @@ export function UnitFormModal({
               />
             )}
           />
+          <Group grow align="flex-start">
+            <Controller
+              control={form.control}
+              name="division"
+              render={({ field }) => (
+                <Autocomplete
+                  label="Division"
+                  data={divisions}
+                  value={field.value ?? ""}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                  error={errors.division?.message}
+                  comboboxProps={{ withinPortal: false }}
+                />
+              )}
+            />
+            <Controller
+              control={form.control}
+              name="brigade"
+              render={({ field }) => (
+                <Autocomplete
+                  label="Brigade"
+                  data={brigades}
+                  value={field.value ?? ""}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                  error={errors.brigade?.message}
+                  comboboxProps={{ withinPortal: false }}
+                />
+              )}
+            />
+          </Group>
           <Group grow align="flex-start">
             <Controller
               control={form.control}

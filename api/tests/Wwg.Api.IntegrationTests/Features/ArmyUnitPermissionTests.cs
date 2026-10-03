@@ -74,7 +74,14 @@ public sealed class ArmyUnitPermissionTests : ApiTest
             .As(role)
             .PutAsJsonAsync(
                 UnitUri(scenario),
-                new UpdateArmyUnitRequest("Light Division", UnitType.LightInfantry, 4, 15),
+                new UpdateArmyUnitRequest(
+                    "Light Division",
+                    UnitType.LightInfantry,
+                    4,
+                    15,
+                    null,
+                    null
+                ),
                 CancellationToken
             );
 
@@ -111,7 +118,7 @@ public sealed class ArmyUnitPermissionTests : ApiTest
         {
             "put" => await admin.PutAsJsonAsync(
                 uri,
-                new UpdateArmyUnitRequest("x", UnitType.Partisans, 1, 0),
+                new UpdateArmyUnitRequest("x", UnitType.Partisans, 1, 0, null, null),
                 CancellationToken
             ),
             _ => await admin.DeleteAsync(uri, CancellationToken),
