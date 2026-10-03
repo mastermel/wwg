@@ -58,3 +58,7 @@ Thumbs.db
 # Environment / secrets
 .env
 .env.*
+
+# The club's unit library workbook: kept out of git; scripts/library_csv.py turns it into
+# docs/complete_library.csv, which is committed (docs/library-import.md)
+docs/complete_library.xlsx
