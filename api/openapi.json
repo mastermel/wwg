@@ -2933,7 +2933,7 @@
         "tags": [
           "ArmyUnits"
         ],
-        "summary": "Changes the campaign's copy of a unit: name, type, Fighting Factor, points, division and\nbrigade (Umpire or Admin). The library unit stays as it is.",
+        "summary": "Changes the campaign's copy of a unit: name, type, Fighting Factor, points, and its corps,\ndivision and brigade with their commanders (Umpire or Admin). The library unit stays as it is.",
         "operationId": "UpdateArmyUnit",
         "parameters": [
           {
@@ -5765,7 +5765,12 @@
           "fightingFactor",
           "points",
           "division",
-          "brigade"
+          "brigade",
+          "corps",
+          "corpsCommander",
+          "divisionCommander",
+          "brigadeCommander",
+          "importOrder"
         ],
         "type": "object",
         "properties": {
@@ -5830,6 +5835,42 @@
               "string"
             ],
             "description": "The brigade it's in; null for none."
+          },
+          "corps": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The corps it's in; null for none."
+          },
+          "corpsCommander": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Who commands its corps; null for no one named."
+          },
+          "divisionCommander": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Who commands its division; null for no one named."
+          },
+          "brigadeCommander": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Who commands its brigade; null for no one named."
+          },
+          "importOrder": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "description": "Its library unit's place in the imported file, which orders the army's formations; null when\nit wasn't imported.",
+            "format": "int32"
           }
         },
         "description": "A unit in an army: the campaign's copy of a library unit."
@@ -8435,7 +8476,13 @@
           "fightingFactor",
           "points",
           "division",
-          "brigade"
+          "brigade",
+          "corps",
+          "corpsCommander",
+          "divisionCommander",
+          "brigadeCommander",
+          "notes",
+          "status"
         ],
         "type": "object",
         "properties": {
@@ -8480,6 +8527,62 @@
               "string"
             ],
             "description": "The brigade it's in (left out or empty: none)."
+          },
+          "corps": {
+            "maxLength": 100,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The corps it's in (left out or empty: none)."
+          },
+          "corpsCommander": {
+            "maxLength": 100,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Who commands its corps (left out or empty: no one named)."
+          },
+          "divisionCommander": {
+            "maxLength": 100,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Who commands its division (left out or empty: no one named)."
+          },
+          "brigadeCommander": {
+            "maxLength": 100,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Who commands its brigade (left out or empty: no one named)."
+          },
+          "notes": {
+            "maxLength": 500,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Notes on it (left out or empty: none)."
+          },
+          "status": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "description": "Whether its figures are painted (left out: unknown).",
+                "$ref": "#/components/schemas/UnitStatus"
+              }
+            ]
           }
         },
         "description": "Adds a unit to a faction in the library, or changes one."
@@ -9391,7 +9494,14 @@
           "fightingFactor",
           "points",
           "division",
-          "brigade"
+          "brigade",
+          "corps",
+          "corpsCommander",
+          "divisionCommander",
+          "brigadeCommander",
+          "notes",
+          "status",
+          "importOrder"
         ],
         "type": "object",
         "properties": {
@@ -9436,9 +9546,70 @@
               "string"
             ],
             "description": "The brigade it's in; null for none."
+          },
+          "corps": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The corps it's in; null for none."
+          },
+          "corpsCommander": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Who commands its corps; null for no one named."
+          },
+          "divisionCommander": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Who commands its division; null for no one named."
+          },
+          "brigadeCommander": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Who commands its brigade; null for no one named."
+          },
+          "notes": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Notes on it; null for none."
+          },
+          "status": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "description": "Whether its figures are painted; null when unknown.",
+                "$ref": "#/components/schemas/UnitStatus"
+              }
+            ]
+          },
+          "importOrder": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "description": "Its place in the imported file, which orders the faction's formations; null for a unit entered\nby hand.",
+            "format": "int32"
           }
         },
         "description": "A unit in the library."
+      },
+      "UnitStatus": {
+        "enum": [
+          "Painted",
+          "Substitute",
+          "Unpainted"
+        ]
       },
       "UnitSupplyResponse": {
         "required": [
@@ -9560,7 +9731,11 @@
           "fightingFactor",
           "points",
           "division",
-          "brigade"
+          "brigade",
+          "corps",
+          "corpsCommander",
+          "divisionCommander",
+          "brigadeCommander"
         ],
         "type": "object",
         "properties": {
@@ -9605,6 +9780,42 @@
               "string"
             ],
             "description": "The brigade it's in (left out or empty: none)."
+          },
+          "corps": {
+            "maxLength": 100,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The corps it's in (left out or empty: none)."
+          },
+          "corpsCommander": {
+            "maxLength": 100,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Who commands its corps (left out or empty: no one named)."
+          },
+          "divisionCommander": {
+            "maxLength": 100,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Who commands its division (left out or empty: no one named)."
+          },
+          "brigadeCommander": {
+            "maxLength": 100,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Who commands its brigade (left out or empty: no one named)."
           }
         },
         "description": "Changes the campaign's copy of a unit (the library's stays as it is)."

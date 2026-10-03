@@ -214,6 +214,12 @@ internal static class LibraryEndpoints
         );
         unit.Division = UnitGroups.Normalize(request.Division);
         unit.Brigade = UnitGroups.Normalize(request.Brigade);
+        unit.Corps = UnitGroups.Normalize(request.Corps);
+        unit.CorpsCommander = UnitGroups.Normalize(request.CorpsCommander);
+        unit.DivisionCommander = UnitGroups.Normalize(request.DivisionCommander);
+        unit.BrigadeCommander = UnitGroups.Normalize(request.BrigadeCommander);
+        unit.Notes = UnitGroups.Normalize(request.Notes);
+        unit.Status = request.Status;
     }
 
     private static UnitResponse ToResponse(Unit unit) =>
@@ -225,7 +231,14 @@ internal static class LibraryEndpoints
             unit.FightingFactor,
             unit.Points,
             unit.Division,
-            unit.Brigade
+            unit.Brigade,
+            unit.Corps,
+            unit.CorpsCommander,
+            unit.DivisionCommander,
+            unit.BrigadeCommander,
+            unit.Notes,
+            unit.Status,
+            unit.ImportOrder
         );
 
     private static async Task<FactionResponse?> LoadAsync(
@@ -262,7 +275,14 @@ internal static class LibraryEndpoints
                 u.FightingFactor,
                 u.Points,
                 u.Division,
-                u.Brigade
+                u.Brigade,
+                u.Corps,
+                u.CorpsCommander,
+                u.DivisionCommander,
+                u.BrigadeCommander,
+                u.Notes,
+                u.Status,
+                u.ImportOrder
             ))
             .ToListAsync(cancellationToken);
         return new FactionResponse(faction.Id, faction.Name, faction.Nation, units);

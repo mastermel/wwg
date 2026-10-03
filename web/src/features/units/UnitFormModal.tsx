@@ -13,12 +13,13 @@ import {
 import { useMemo, useState } from "react";
 import { Controller, useForm, useWatch, type DefaultValues } from "react-hook-form";
 import { z } from "zod";
-import { UnitType } from "@/api/generated/model";
+import { UnitStatus, UnitType } from "@/api/generated/model";
 import {
   CreateUnitBody,
   createUnitBodyBrigadeMax,
   createUnitBodyDivisionMax,
   createUnitBodyFightingFactorMax,
+  createUnitBodyNotesMax,
   createUnitBodyPointsMax,
   createUnitBodyPointsMin,
 } from "@/api/generated/zod/library/library.zod";
@@ -28,6 +29,13 @@ import { useOnline } from "@/lib/use-online";
 
 // Orval writes a minimum of 1 inline (.min(1)), with no constant as it has for the others.
 const ffMin = 1;
+
+/** Free text up to `max` characters, or none. */
+const upTo = (max: number) =>
+  z
+    .string()
+    .max(max, `Keep it to ${String(max)} characters.`)
+    .nullable();
 
 // The generated schema, with messages people can act on.
 const UnitForm = CreateUnitBody.extend({
@@ -52,6 +60,14 @@ const UnitForm = CreateUnitBody.extend({
     .string()
     .max(createUnitBodyBrigadeMax, `Keep it to ${String(createUnitBodyBrigadeMax)} characters.`)
     .nullable(),
+  // Corps and commanders are as long as a division's name may be; notes and status are a
+  // library unit's only.
+  corps: upTo(createUnitBodyDivisionMax),
+  corpsCommander: upTo(createUnitBodyDivisionMax),
+  divisionCommander: upTo(createUnitBodyDivisionMax),
+  brigadeCommander: upTo(createUnitBodyDivisionMax),
+  notes: upTo(createUnitBodyNotesMax),
+  status: z.enum(Object.values(UnitStatus)).nullable(),
 });
 
 export type UnitValues = z.infer<typeof UnitForm>;
@@ -73,6 +89,18 @@ function names(values: (string | null | undefined)[]) {
   }
   return [...seen.values()].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
 }
+
+/** What a unit has none of until it's given them; an army's copy never has notes or status. */
+const noDetails = {
+  division: null,
+  brigade: null,
+  corps: null,
+  corpsCommander: null,
+  divisionCommander: null,
+  brigadeCommander: null,
+  notes: null,
+  status: null,
+} satisfies Partial<UnitValues>;
 
 /** A NumberInput's value as the form's number: empty becomes undefined, so it's "required". */
 const toNumber = (value: number | string) => (typeof value === "number" ? value : undefined);
@@ -97,14 +125,17 @@ interface UnitFormModalProps {
 export function UnitFormModal({
   title,
   submitLabel,
-  defaultValues = { name: "", points: 0, division: null, brigade: null },
+  defaultValues = { name: "", points: 0 },
   siblings = [],
   onSubmit,
   onClose,
 }: UnitFormModalProps) {
   const online = useOnline();
   const [formError, setFormError] = useState<string | null>(null);
-  const form = useForm<UnitValues>({ resolver: zodResolver(UnitForm), defaultValues });
+  const form = useForm<UnitValues>({
+    resolver: zodResolver(UnitForm),
+    defaultValues: { ...noDetails, ...defaultValues },
+  });
   const { errors, isSubmitting } = form.formState;
   const division = useWatch({ control: form.control, name: "division" })?.trim().toLowerCase();
   const divisions = useMemo(() => names(siblings.map((u) => u.division)), [siblings]);

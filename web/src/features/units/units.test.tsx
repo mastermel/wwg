@@ -28,6 +28,13 @@ const library: UnitResponse[] = [
     points: 20,
     division: null,
     brigade: null,
+    corps: null,
+    corpsCommander: null,
+    divisionCommander: null,
+    brigadeCommander: null,
+    notes: null,
+    status: null,
+    importOrder: null,
   },
   {
     id: "0192f5c1-0000-7000-8000-00000000b002",
@@ -38,6 +45,13 @@ const library: UnitResponse[] = [
     points: 35,
     division: null,
     brigade: null,
+    corps: null,
+    corpsCommander: null,
+    divisionCommander: null,
+    brigadeCommander: null,
+    notes: null,
+    status: null,
+    importOrder: null,
   },
   {
     id: "0192f5c1-0000-7000-8000-00000000b003",
@@ -48,6 +62,13 @@ const library: UnitResponse[] = [
     points: 15,
     division: null,
     brigade: null,
+    corps: null,
+    corpsCommander: null,
+    divisionCommander: null,
+    brigadeCommander: null,
+    notes: null,
+    status: null,
+    importOrder: null,
   },
 ];
 
@@ -69,6 +90,11 @@ const unit = (
   points,
   division: null,
   brigade: null,
+  corps: null,
+  corpsCommander: null,
+  divisionCommander: null,
+  brigadeCommander: null,
+  importOrder: null,
 });
 
 /** Serves a campaign and its army, with units that change as the test adds and removes them. */
@@ -293,6 +319,10 @@ describe("units", () => {
             points: 20,
             division: "1st Division",
             brigade: "Quiot's Brigade",
+            corps: null,
+            corpsCommander: null,
+            divisionCommander: null,
+            brigadeCommander: null,
           },
         },
       ]);

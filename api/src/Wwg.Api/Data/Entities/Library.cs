@@ -37,4 +37,31 @@ internal sealed class Unit : Entity
 
     /// <summary>The brigade it's in (decision 0024), free text; null for none.</summary>
     public string? Brigade { get; set; }
+
+    /// <summary>The corps it's in (decision 0025), free text; null for none.</summary>
+    public string? Corps { get; set; }
+
+    /// <summary>Who commands its corps (decision 0025); null for no one named.</summary>
+    public string? CorpsCommander { get; set; }
+
+    /// <summary>Who commands its division (decision 0025); null for no one named.</summary>
+    public string? DivisionCommander { get; set; }
+
+    /// <summary>Who commands its brigade (decision 0025); null for no one named.</summary>
+    public string? BrigadeCommander { get; set; }
+
+    /// <summary>Notes on it, such as which unit's figures stand in for it; null for none.</summary>
+    public string? Notes { get; set; }
+
+    /// <summary>Whether its figures are painted (decision 0025); null when unknown.</summary>
+    public UnitStatus? Status { get; set; }
+
+    /// <summary>
+    /// What an import of the club's CSV knows it by (decision 0025), unique in its faction; null for
+    /// a unit entered by hand, which an import never touches.
+    /// </summary>
+    public string? ImportKey { get; set; }
+
+    /// <summary>Its place in the imported file, which orders the faction's formations.</summary>
+    public int? ImportOrder { get; set; }
 }

@@ -37,20 +37,22 @@ entered by hand so far are incomplete, and the club wants to stop relying on the
   headings. Formations keep the file's order (the Guard first, the Cavalry Reserve last) rather
   than sorting by name, which would put "IX Corps" before "V Corps". An imported unit stores its
   place in the file, and so does its army copy. Units without one come after, sorted as before.
-- **The hand-entered units go to an Archive faction:** a migration moves every library unit
-  that exists when it runs into a new faction named "Archive" (no flag). Army units are copies,
-  so campaigns keep them. The old factions stay, empty and still chosen by their armies, and
-  the import fills them by name.
+- **The hand-entered units go to archive factions:** a migration moves every library unit that
+  exists when it runs into an archive faction with its old faction's flag: "Archive (France)",
+  "Archive (Britain)", or "Archive" for none. An army unit marches as its library unit's faction's
+  nation (step 45), so one flagless Archive would change how archived units move in campaigns.
+  Army units are copies, so campaigns keep them. The old factions stay, empty and still chosen by
+  their armies, and the import fills them by name.
 - **A United States flag** joins the nations, for the US faction.
 
 ## Consequences
 
 - New columns on `Units` (corps, three commanders, notes, status, import key, import order) and
   on `ArmyUnits` (corps, three commanders, import order). A unique index on the faction's import
-  keys. A data migration creates the Archive faction.
+  keys. A data migration creates the archive factions.
 - The faction checks that look at an army's units (deselecting a faction) see archived units as
-  the Archive's, so an army can deselect its old faction. Nothing else in a campaign reads the
-  library unit's faction.
+  their archive faction's, so an army can deselect its old faction. The only other thing a
+  campaign reads from the library unit's faction is its nation, which the archive keeps.
 - The script's mapping to unit types is a judgement, checked by hand and fixable in the CSV.
   Artillery is horse artillery when its name says so (Horse, a Cheval, Volante, R.H.A., a British
   Troop), siege artillery when it says Siege, otherwise foot artillery.

@@ -108,6 +108,11 @@ internal static class ArmyUnitEndpoints
                 Points = u.Points,
                 Division = u.Division,
                 Brigade = u.Brigade,
+                Corps = u.Corps,
+                CorpsCommander = u.CorpsCommander,
+                DivisionCommander = u.DivisionCommander,
+                BrigadeCommander = u.BrigadeCommander,
+                ImportOrder = u.ImportOrder,
             })
             .ToList();
         db.ArmyUnits.AddRange(added);
@@ -170,8 +175,8 @@ internal static class ArmyUnitEndpoints
     }
 
     /// <summary>
-    /// Changes the campaign's copy of a unit: name, type, Fighting Factor, points, division and
-    /// brigade (Umpire or Admin). The library unit stays as it is.
+    /// Changes the campaign's copy of a unit: name, type, Fighting Factor, points, and its corps,
+    /// division and brigade with their commanders (Umpire or Admin). The library unit stays as it is.
     /// </summary>
     internal static async Task<Ok<ArmyUnitResponse>> UpdateArmyUnitAsync(
         Guid id,
@@ -205,6 +210,10 @@ internal static class ArmyUnitEndpoints
         unit.Points = request.Points;
         unit.Division = UnitGroups.Normalize(request.Division);
         unit.Brigade = UnitGroups.Normalize(request.Brigade);
+        unit.Corps = UnitGroups.Normalize(request.Corps);
+        unit.CorpsCommander = UnitGroups.Normalize(request.CorpsCommander);
+        unit.DivisionCommander = UnitGroups.Normalize(request.DivisionCommander);
+        unit.BrigadeCommander = UnitGroups.Normalize(request.BrigadeCommander);
         await db.SaveChangesAsync(cancellationToken);
         return TypedResults.Ok(
             await db
@@ -291,6 +300,11 @@ internal static class ArmyUnitProjection
             u.FightingFactor,
             u.Points,
             u.Division,
-            u.Brigade
+            u.Brigade,
+            u.Corps,
+            u.CorpsCommander,
+            u.DivisionCommander,
+            u.BrigadeCommander,
+            u.ImportOrder
         );
 }

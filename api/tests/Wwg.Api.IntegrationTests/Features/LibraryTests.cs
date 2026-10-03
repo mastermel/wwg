@@ -19,6 +19,12 @@ public sealed class LibraryTests : ApiTest
         7,
         40,
         null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
         null
     );
 
@@ -255,10 +261,91 @@ public sealed class LibraryTests : ApiTest
         Assert.Equal((null, null), (saved?.Division, saved?.Brigade));
     }
 
+    [Fact]
+    public async Task CreateUnit_WithTheWorkbooksDetails_KeepsThemTrimmed()
+    {
+        using var manager = await CreateManagerClientAsync();
+        var faction = await CreateFactionAsync(manager);
+
+        var unit = await CreateUnitAsync(
+            manager,
+            faction.Id,
+            Guard with
+            {
+                Corps = " I Corps of Imperial Guard ",
+                CorpsCommander = " Marshall Lefebvre ",
+                DivisionCommander = " Count Dorsenne ",
+                BrigadeCommander = " Count Michel ",
+                Notes = " sub in V ",
+                Status = UnitStatus.Substitute,
+            }
+        );
+
+        Assert.Equal(
+            (
+                "I Corps of Imperial Guard",
+                "Marshall Lefebvre",
+                "Count Dorsenne",
+                "Count Michel",
+                "sub in V",
+                UnitStatus.Substitute
+            ),
+            (
+                unit.Corps,
+                unit.CorpsCommander,
+                unit.DivisionCommander,
+                unit.BrigadeCommander,
+                unit.Notes,
+                unit.Status
+            )
+        );
+        Assert.Null(unit.ImportOrder); // Entered by hand, not imported.
+        var loaded = await manager.GetAsAsync<FactionResponse>($"/api/factions/{faction.Id}");
+        Assert.Equal(unit, Assert.Single(loaded!.Units));
+    }
+
+    [Fact]
+    public async Task UpdateUnit_LeavingOutTheWorkbooksDetails_ClearsThem()
+    {
+        using var manager = await CreateManagerClientAsync();
+        var faction = await CreateFactionAsync(manager);
+        var unit = await CreateUnitAsync(
+            manager,
+            faction.Id,
+            Guard with
+            {
+                Corps = "I Corps",
+                CorpsCommander = "Victor",
+                Notes = "sub in V",
+                Status = UnitStatus.Painted,
+            }
+        );
+
+        using var response = await manager.PutAsJsonAsync(
+            new Uri($"/api/units/{unit.Id}", UriKind.Relative),
+            Guard with
+            {
+                Corps = " ",
+            },
+            CancellationToken
+        );
+
+        var saved = await response.Content.ReadAsAsync<UnitResponse>();
+        Assert.Equal(
+            (null, null, null, null),
+            (saved?.Corps, saved?.CorpsCommander, saved?.Notes, saved?.Status)
+        );
+    }
+
     [Theory]
-    [InlineData("division")]
-    [InlineData("brigade")]
-    public async Task CreateUnit_GroupTooLong_IsAValidationError(string field)
+    [InlineData("division", 101)]
+    [InlineData("brigade", 101)]
+    [InlineData("corps", 101)]
+    [InlineData("corpsCommander", 101)]
+    [InlineData("divisionCommander", 101)]
+    [InlineData("brigadeCommander", 101)]
+    [InlineData("notes", 501)]
+    public async Task CreateUnit_DetailTooLong_IsAValidationError(string field, int length)
     {
         using var manager = await CreateManagerClientAsync();
         var faction = await CreateFactionAsync(manager);
@@ -268,12 +355,31 @@ public sealed class LibraryTests : ApiTest
             ["type"] = "Partisans",
             ["fightingFactor"] = 5,
             ["points"] = 10,
-            [field] = new string('x', 101),
+            [field] = new string('x', length),
         };
 
         using var response = await PostUnitAsync(manager, faction.Id, body);
 
         await response.AssertValidationProblemAsync(field);
+    }
+
+    [Fact]
+    public async Task CreateUnit_UnknownStatus_IsAValidationError()
+    {
+        using var manager = await CreateManagerClientAsync();
+        var faction = await CreateFactionAsync(manager);
+        var body = new Dictionary<string, object>(StringComparer.Ordinal)
+        {
+            ["name"] = "Guard",
+            ["type"] = "Partisans",
+            ["fightingFactor"] = 5,
+            ["points"] = 10,
+            ["status"] = 7,
+        };
+
+        using var response = await PostUnitAsync(manager, faction.Id, body);
+
+        await response.AssertValidationProblemAsync("status");
     }
 
     [Fact]

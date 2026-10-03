@@ -9,16 +9,30 @@ import {
   useDeleteArmyUnit,
   useUpdateArmyUnit,
 } from "@/api/generated/endpoints/army-units/army-units";
-import type { ArmyResponse, ArmyUnitResponse } from "@/api/generated/model";
+import type { ArmyResponse, ArmyUnitResponse, UpdateArmyUnitRequest } from "@/api/generated/model";
 import { ConfirmModal } from "@/components/ConfirmModal";
 import { EmptyState } from "@/components/EmptyState";
 import { Section } from "@/components/Section";
 import { AddUnitsModal } from "@/features/units/AddUnitsModal";
 import { OrderOfBattleTable } from "@/features/units/OrderOfBattleTable";
-import { UnitFormModal } from "@/features/units/UnitFormModal";
+import { UnitFormModal, type UnitValues } from "@/features/units/UnitFormModal";
 import { useConfirmTarget } from "@/lib/use-confirm-target";
 import { useOnline } from "@/lib/use-online";
 import { errorMessage } from "@/lib/errors";
+
+/** The form's values an army's copy keeps: notes and status are the library unit's alone. */
+const armyCopy = (values: UnitValues): UpdateArmyUnitRequest => ({
+  name: values.name,
+  type: values.type,
+  fightingFactor: values.fightingFactor,
+  points: values.points,
+  division: values.division,
+  brigade: values.brigade,
+  corps: values.corps,
+  corpsCommander: values.corpsCommander,
+  divisionCommander: values.divisionCommander,
+  brigadeCommander: values.brigadeCommander,
+});
 
 /**
  * The army's units: the campaign's copies of library units, in their order of battle. The Umpire
@@ -98,7 +112,7 @@ export function UnitsSection({ army, manager }: { army: ArmyResponse; manager: b
             setEditing(null);
           }}
           onSubmit={async (values) => {
-            const unit = await update.mutateAsync({ id: editing.id, data: values });
+            const unit = await update.mutateAsync({ id: editing.id, data: armyCopy(values) });
             notifications.show({ color: "green", message: `Saved ${unit.name}.` });
             await refresh();
           }}

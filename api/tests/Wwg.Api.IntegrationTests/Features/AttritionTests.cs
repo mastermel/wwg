@@ -42,6 +42,10 @@ public sealed class AttritionTests : ApiTest
                     fightingFactor,
                     points,
                     null,
+                    null,
+                    null,
+                    null,
+                    null,
                     null
                 ),
                 Token

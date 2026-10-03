@@ -21,6 +21,10 @@ public sealed record AddArmyUnitsRequest(
 /// <param name="Points">What it's worth, 0–100.</param>
 /// <param name="Division">The division it's in (left out or empty: none).</param>
 /// <param name="Brigade">The brigade it's in (left out or empty: none).</param>
+/// <param name="Corps">The corps it's in (left out or empty: none).</param>
+/// <param name="CorpsCommander">Who commands its corps (left out or empty: no one named).</param>
+/// <param name="DivisionCommander">Who commands its division (left out or empty: no one named).</param>
+/// <param name="BrigadeCommander">Who commands its brigade (left out or empty: no one named).</param>
 public sealed record UpdateArmyUnitRequest(
     [property: Trimmed, Required, StringLength(100)] string Name,
     [property: JsonRequired, EnumDataType(typeof(UnitType))] UnitType Type,
@@ -28,7 +32,11 @@ public sealed record UpdateArmyUnitRequest(
         int FightingFactor,
     [property: JsonRequired, Range(UnitStats.MinPoints, UnitStats.MaxPoints)] int Points,
     [property: Trimmed, StringLength(UnitStats.MaxGroupLength)] string? Division,
-    [property: Trimmed, StringLength(UnitStats.MaxGroupLength)] string? Brigade
+    [property: Trimmed, StringLength(UnitStats.MaxGroupLength)] string? Brigade,
+    [property: Trimmed, StringLength(UnitStats.MaxGroupLength)] string? Corps,
+    [property: Trimmed, StringLength(UnitStats.MaxGroupLength)] string? CorpsCommander,
+    [property: Trimmed, StringLength(UnitStats.MaxGroupLength)] string? DivisionCommander,
+    [property: Trimmed, StringLength(UnitStats.MaxGroupLength)] string? BrigadeCommander
 );
 
 /// <summary>A unit in an army: the campaign's copy of a library unit.</summary>
@@ -43,6 +51,14 @@ public sealed record UpdateArmyUnitRequest(
 /// <param name="Points">What it's worth, 0–100.</param>
 /// <param name="Division">The division it's in; null for none.</param>
 /// <param name="Brigade">The brigade it's in; null for none.</param>
+/// <param name="Corps">The corps it's in; null for none.</param>
+/// <param name="CorpsCommander">Who commands its corps; null for no one named.</param>
+/// <param name="DivisionCommander">Who commands its division; null for no one named.</param>
+/// <param name="BrigadeCommander">Who commands its brigade; null for no one named.</param>
+/// <param name="ImportOrder">
+/// Its library unit's place in the imported file, which orders the army's formations; null when
+/// it wasn't imported.
+/// </param>
 public sealed record ArmyUnitResponse(
     Guid Id,
     Guid ArmyId,
@@ -54,7 +70,12 @@ public sealed record ArmyUnitResponse(
     int FightingFactor,
     int Points,
     string? Division,
-    string? Brigade
+    string? Brigade,
+    string? Corps,
+    string? CorpsCommander,
+    string? DivisionCommander,
+    string? BrigadeCommander,
+    int? ImportOrder
 );
 
 /// <summary>A change to a unit's points (decision 0018).</summary>

@@ -18,6 +18,13 @@ const guard: UnitResponse = {
   points: 40,
   division: null,
   brigade: null,
+  corps: null,
+  corpsCommander: null,
+  divisionCommander: null,
+  brigadeCommander: null,
+  notes: null,
+  status: null,
+  importOrder: null,
 };
 
 /** The library, with one faction whose units change as the test adds and deletes them. */

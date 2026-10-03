@@ -1703,8 +1703,9 @@ ArmyFaction (the library factions an army takes units from)
     set) and `ImportOrder` (int?, its row in the file).
   - `ArmyUnit` gains the corps, the three commanders and `ImportOrder`, copied when a unit
     joins an army. Notes and status stay with the library unit.
-  - A data migration moves every library unit then in the library into a new faction,
-    "Archive" (nation None), when there is one to move. Army units keep pointing at them.
+  - A data migration moves every library unit then in the library into an archive faction
+    with its old faction's nation ("Archive (France)"; "Archive" for None), so army units keep
+    marching as before. Army units keep pointing at them; the old factions stay, empty.
 - `ArmyUnit (CampaignId, UnitId)` is unique: a library unit is in one army per campaign, but can
   be in several campaigns. Orders, turn notes, positions and the visibility rule refer to army
   units (`UnitOrder.UnitId` and `UnitNote.UnitId` point at `ArmyUnits`).
@@ -2855,7 +2856,7 @@ build on positions.
     - **55a. The new fields and the Archive:** corps, the three commanders, notes, status, import
       key and order on `Unit`; corps, commanders and order on `ArmyUnit`, copied when a unit joins
       an army; in `SaveUnitRequest` / `UpdateArmyUnitRequest` and their responses; the migration
-      that moves the library's units into an "Archive" faction.
+      that moves the library's units into archive factions, one per nation.
     - **55b. In the app:** `UnitFormModal` edits the corps, commanders, notes and status (the
       corps suggested from the faction's, as divisions are); the order of battle gains the corps
       band, each group's commander in its heading, and the file's order where units have one.

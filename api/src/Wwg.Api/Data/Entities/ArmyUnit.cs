@@ -25,7 +25,23 @@ public enum UnitType
     Commander,
 }
 
-/// <summary>A unit's division and brigade (decision 0024): free text, grouped on as written.</summary>
+/// <summary>
+/// Whether a library unit's figures are painted (decision 0025), as the club's workbook records it.
+/// Stored by name.
+/// </summary>
+public enum UnitStatus
+{
+    Painted,
+
+    /// <summary>On the table, another unit's figures stand in for it.</summary>
+    Substitute,
+    Unpainted,
+}
+
+/// <summary>
+/// A unit's corps, division and brigade, and their commanders (decisions 0024 and 0025): free
+/// text, grouped on as written.
+/// </summary>
 internal static class UnitGroups
 {
     /// <summary>None for empty: the request trims it, so blank comes as empty.</summary>
@@ -43,8 +59,16 @@ internal static class UnitStats
     public const int MinPoints = 0,
         MaxPoints = 100;
 
-    /// <summary>The longest division or brigade name (decision 0024).</summary>
+    /// <summary>
+    /// The longest corps, division or brigade name, or commander's (decisions 0024 and 0025).
+    /// </summary>
     public const int MaxGroupLength = 100;
+
+    /// <summary>The longest notes on a library unit (decision 0025).</summary>
+    public const int MaxNotesLength = 500;
+
+    /// <summary>The longest import key (decision 0025): a path of names, so four groups' worth.</summary>
+    public const int MaxImportKeyLength = 400;
 }
 
 /// <summary>
@@ -83,6 +107,24 @@ internal sealed class ArmyUnit : Entity
 
     /// <summary>The brigade it's in (decision 0024), free text; null for none.</summary>
     public string? Brigade { get; set; }
+
+    /// <summary>The corps it's in (decision 0025), free text; null for none.</summary>
+    public string? Corps { get; set; }
+
+    /// <summary>Who commands its corps (decision 0025); null for no one named.</summary>
+    public string? CorpsCommander { get; set; }
+
+    /// <summary>Who commands its division (decision 0025); null for no one named.</summary>
+    public string? DivisionCommander { get; set; }
+
+    /// <summary>Who commands its brigade (decision 0025); null for no one named.</summary>
+    public string? BrigadeCommander { get; set; }
+
+    /// <summary>
+    /// Its library unit's place in the imported file (decision 0025), which orders the army's
+    /// formations; null when it wasn't imported.
+    /// </summary>
+    public int? ImportOrder { get; set; }
 
     /// <summary>
     /// The part of a point of attrition owed but not yet lost (decision 0018), 0 to 1: points stay

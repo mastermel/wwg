@@ -23,6 +23,15 @@ internal sealed class UnitConfiguration : IEntityTypeConfiguration<Unit>
         builder.Property(u => u.Type).HasMaxLength(32);
         builder.Property(u => u.Division).HasMaxLength(UnitStats.MaxGroupLength);
         builder.Property(u => u.Brigade).HasMaxLength(UnitStats.MaxGroupLength);
+        builder.Property(u => u.Corps).HasMaxLength(UnitStats.MaxGroupLength);
+        builder.Property(u => u.CorpsCommander).HasMaxLength(UnitStats.MaxGroupLength);
+        builder.Property(u => u.DivisionCommander).HasMaxLength(UnitStats.MaxGroupLength);
+        builder.Property(u => u.BrigadeCommander).HasMaxLength(UnitStats.MaxGroupLength);
+        builder.Property(u => u.Notes).HasMaxLength(UnitStats.MaxNotesLength);
+        builder.Property(u => u.Status).HasMaxLength(32);
+        builder.Property(u => u.ImportKey).HasMaxLength(UnitStats.MaxImportKeyLength);
+        // An import matches a faction's units by key (decision 0025); hand-entered units have none.
+        builder.HasIndex(u => new { u.FactionId, u.ImportKey }).IsUnique();
         // A faction with units can't be deleted (the handler says so first).
         builder
             .HasOne(u => u.Faction)

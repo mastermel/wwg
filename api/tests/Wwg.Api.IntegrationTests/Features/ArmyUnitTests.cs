@@ -97,10 +97,56 @@ public sealed class ArmyUnitTests : ApiTest
                 6,
                 35,
                 "3rd Division",
-                "95th Rifles"
+                "95th Rifles",
+                null,
+                null,
+                null,
+                null,
+                null
             ),
             unit
         );
+    }
+
+    [Fact]
+    public async Task AddUnits_FromTheLibrary_CopiesTheCorpsAndCommanders()
+    {
+        using var scenario = await CreateCampaignScenarioAsync();
+        using var created = await scenario
+            .As(Role.Admin)
+            .PostAsJsonAsync(
+                new Uri($"/api/factions/{scenario.FactionId}/units", UriKind.Relative),
+                new SaveUnitRequest(
+                    "1st Foot Guards",
+                    UnitType.LineInfantry,
+                    8,
+                    44,
+                    "1st Division",
+                    "1st Brigade",
+                    "I Corps",
+                    "L.G. Sir John Moore",
+                    "L.G. Lord Edward Paget",
+                    "M.G. Peregrine Maitland",
+                    "sub in V",
+                    UnitStatus.Painted
+                ),
+                CancellationToken
+            );
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        var libraryUnit = (await created.Content.ReadAsAsync<UnitResponse>())!.Id; // Asserted just above.
+
+        using var response = await LibrarySteps.AddAsync(
+            scenario.As(Role.Umpire),
+            scenario.ArmyId,
+            libraryUnit
+        );
+
+        var unit = Assert.Single((await response.Content.ReadAsAsync<List<ArmyUnitResponse>>())!);
+        Assert.Equal(
+            ("I Corps", "L.G. Sir John Moore", "L.G. Lord Edward Paget", "M.G. Peregrine Maitland"),
+            (unit.Corps, unit.CorpsCommander, unit.DivisionCommander, unit.BrigadeCommander)
+        );
+        Assert.Null(unit.ImportOrder); // Entered by hand, not imported.
     }
 
     [Fact]
@@ -243,7 +289,20 @@ public sealed class ArmyUnitTests : ApiTest
             .As(Role.Admin)
             .PutAsJsonAsync(
                 new Uri($"/api/units/{army!.Units[0].UnitId}", UriKind.Relative),
-                new SaveUnitRequest("Old Guard", UnitType.LineInfantry, 9, 80, null, null),
+                new SaveUnitRequest(
+                    "Old Guard",
+                    UnitType.LineInfantry,
+                    9,
+                    80,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+                ),
                 CancellationToken
             );
 
@@ -279,7 +338,11 @@ public sealed class ArmyUnitTests : ApiTest
                     8,
                     60,
                     " Cavalry Reserve ",
-                    " Household Brigade "
+                    " Household Brigade ",
+                    " Reserve Corps ",
+                    " Uxbridge ",
+                    " Somerset ",
+                    " Ponsonby "
                 ),
                 CancellationToken
             );
@@ -303,7 +366,12 @@ public sealed class ArmyUnitTests : ApiTest
             8,
             60,
             "Cavalry Reserve",
-            "Household Brigade"
+            "Household Brigade",
+            "Reserve Corps",
+            "Uxbridge",
+            "Somerset",
+            "Ponsonby",
+            null
         );
         Assert.Equal(expected, await response.Content.ReadAsAsync<ArmyUnitResponse>());
         var army = await scenario
@@ -326,7 +394,18 @@ public sealed class ArmyUnitTests : ApiTest
             .As(Role.Umpire)
             .PutAsJsonAsync(
                 new Uri($"/api/army-units/{scenario.UnitId}", UriKind.Relative),
-                new UpdateArmyUnitRequest("Guard", UnitType.LineInfantry, 0, 101, null, null),
+                new UpdateArmyUnitRequest(
+                    "Guard",
+                    UnitType.LineInfantry,
+                    0,
+                    101,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+                ),
                 CancellationToken
             );
 

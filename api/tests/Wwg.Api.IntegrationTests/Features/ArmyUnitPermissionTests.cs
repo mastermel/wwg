@@ -80,6 +80,10 @@ public sealed class ArmyUnitPermissionTests : ApiTest
                     4,
                     15,
                     null,
+                    null,
+                    null,
+                    null,
+                    null,
                     null
                 ),
                 CancellationToken
@@ -118,7 +122,18 @@ public sealed class ArmyUnitPermissionTests : ApiTest
         {
             "put" => await admin.PutAsJsonAsync(
                 uri,
-                new UpdateArmyUnitRequest("x", UnitType.Partisans, 1, 0, null, null),
+                new UpdateArmyUnitRequest(
+                    "x",
+                    UnitType.Partisans,
+                    1,
+                    0,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+                ),
                 CancellationToken
             ),
             _ => await admin.DeleteAsync(uri, CancellationToken),

@@ -41,6 +41,16 @@ public sealed record SaveFactionRequest(
 /// <param name="Points">What it's worth.</param>
 /// <param name="Division">The division it's in; null for none.</param>
 /// <param name="Brigade">The brigade it's in; null for none.</param>
+/// <param name="Corps">The corps it's in; null for none.</param>
+/// <param name="CorpsCommander">Who commands its corps; null for no one named.</param>
+/// <param name="DivisionCommander">Who commands its division; null for no one named.</param>
+/// <param name="BrigadeCommander">Who commands its brigade; null for no one named.</param>
+/// <param name="Notes">Notes on it; null for none.</param>
+/// <param name="Status">Whether its figures are painted; null when unknown.</param>
+/// <param name="ImportOrder">
+/// Its place in the imported file, which orders the faction's formations; null for a unit entered
+/// by hand.
+/// </param>
 public sealed record UnitResponse(
     Guid Id,
     Guid FactionId,
@@ -49,7 +59,14 @@ public sealed record UnitResponse(
     int FightingFactor,
     int Points,
     string? Division,
-    string? Brigade
+    string? Brigade,
+    string? Corps,
+    string? CorpsCommander,
+    string? DivisionCommander,
+    string? BrigadeCommander,
+    string? Notes,
+    UnitStatus? Status,
+    int? ImportOrder
 );
 
 /// <summary>Adds a unit to a faction in the library, or changes one.</summary>
@@ -59,6 +76,12 @@ public sealed record UnitResponse(
 /// <param name="Points">What it's worth.</param>
 /// <param name="Division">The division it's in (left out or empty: none).</param>
 /// <param name="Brigade">The brigade it's in (left out or empty: none).</param>
+/// <param name="Corps">The corps it's in (left out or empty: none).</param>
+/// <param name="CorpsCommander">Who commands its corps (left out or empty: no one named).</param>
+/// <param name="DivisionCommander">Who commands its division (left out or empty: no one named).</param>
+/// <param name="BrigadeCommander">Who commands its brigade (left out or empty: no one named).</param>
+/// <param name="Notes">Notes on it (left out or empty: none).</param>
+/// <param name="Status">Whether its figures are painted (left out: unknown).</param>
 public sealed record SaveUnitRequest(
     [property: Trimmed, Required, StringLength(100)] string Name,
     [property: JsonRequired, EnumDataType(typeof(UnitType))] UnitType Type,
@@ -66,5 +89,11 @@ public sealed record SaveUnitRequest(
         int FightingFactor,
     [property: JsonRequired, Range(UnitStats.MinPoints, UnitStats.MaxPoints)] int Points,
     [property: Trimmed, StringLength(UnitStats.MaxGroupLength)] string? Division,
-    [property: Trimmed, StringLength(UnitStats.MaxGroupLength)] string? Brigade
+    [property: Trimmed, StringLength(UnitStats.MaxGroupLength)] string? Brigade,
+    [property: Trimmed, StringLength(UnitStats.MaxGroupLength)] string? Corps,
+    [property: Trimmed, StringLength(UnitStats.MaxGroupLength)] string? CorpsCommander,
+    [property: Trimmed, StringLength(UnitStats.MaxGroupLength)] string? DivisionCommander,
+    [property: Trimmed, StringLength(UnitStats.MaxGroupLength)] string? BrigadeCommander,
+    [property: Trimmed, StringLength(UnitStats.MaxNotesLength)] string? Notes,
+    [property: EnumDataType(typeof(UnitStatus))] UnitStatus? Status
 );

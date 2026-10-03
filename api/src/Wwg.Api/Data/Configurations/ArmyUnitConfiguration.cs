@@ -13,6 +13,10 @@ internal sealed class ArmyUnitConfiguration : IEntityTypeConfiguration<ArmyUnit>
         builder.Property(u => u.Type).HasMaxLength(32);
         builder.Property(u => u.Division).HasMaxLength(UnitStats.MaxGroupLength);
         builder.Property(u => u.Brigade).HasMaxLength(UnitStats.MaxGroupLength);
+        builder.Property(u => u.Corps).HasMaxLength(UnitStats.MaxGroupLength);
+        builder.Property(u => u.CorpsCommander).HasMaxLength(UnitStats.MaxGroupLength);
+        builder.Property(u => u.DivisionCommander).HasMaxLength(UnitStats.MaxGroupLength);
+        builder.Property(u => u.BrigadeCommander).HasMaxLength(UnitStats.MaxGroupLength);
 
         // Deleting an army (or its campaign) deletes its units.
         builder
