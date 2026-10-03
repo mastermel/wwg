@@ -1,7 +1,7 @@
 import { Anchor, Button, Group, Paper, Table, Text } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
-import { IconBooks, IconPlus } from "@tabler/icons-react";
+import { IconBooks, IconFileImport, IconPlus } from "@tabler/icons-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import {
@@ -15,6 +15,7 @@ import { QueryState } from "@/components/QueryState";
 import { NationFlag } from "@/features/armies/identity/NationFlag";
 import { useSession } from "@/features/auth/session-context";
 import { FactionFormModal } from "@/features/library/FactionFormModal";
+import { ImportLibraryModal } from "@/features/library/ImportLibraryModal";
 import { canEditLibrary } from "@/features/library/library-access";
 import { useOnline } from "@/lib/use-online";
 
@@ -30,6 +31,7 @@ export function LibraryPage() {
   const queryClient = useQueryClient();
   const create = useCreateFaction();
   const [creating, createModal] = useDisclosure(false);
+  const [importing, importModal] = useDisclosure(false);
   const editor = canEditLibrary(user);
 
   return (
@@ -38,13 +40,23 @@ export function LibraryPage() {
       summary="The club's factions and their units, which every campaign's armies are made from."
       actions={
         editor && (
-          <Button
-            leftSection={<IconPlus size={16} aria-hidden />}
-            onClick={createModal.open}
-            disabled={!online}
-          >
-            New faction
-          </Button>
+          <Group gap="xs">
+            <Button
+              variant="default"
+              leftSection={<IconFileImport size={16} aria-hidden />}
+              onClick={importModal.open}
+              disabled={!online}
+            >
+              Import
+            </Button>
+            <Button
+              leftSection={<IconPlus size={16} aria-hidden />}
+              onClick={createModal.open}
+              disabled={!online}
+            >
+              New faction
+            </Button>
+          </Group>
         )
       }
     >
@@ -54,7 +66,7 @@ export function LibraryPage() {
             {list.length === 0 ? (
               <EmptyState icon={IconBooks} title="No factions yet">
                 {editor
-                  ? "Add one with New faction, then its units."
+                  ? "Add one with New faction, then its units, or Import the club's CSV."
                   : "A Manager hasn't added any yet."}
               </EmptyState>
             ) : (
@@ -95,6 +107,7 @@ export function LibraryPage() {
           </Paper>
         )}
       </QueryState>
+      {importing && <ImportLibraryModal onClose={importModal.close} />}
       {creating && (
         <FactionFormModal
           title="New faction"

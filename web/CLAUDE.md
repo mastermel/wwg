@@ -104,6 +104,9 @@ The pre-commit hook runs `eslint --fix` and Prettier on staged files.
   units, and an army's, show as their order of battle (step 54): `order-of-battle.ts`
   (`features/units`) groups them (a pure function; corps, division, brigade, in the imported
   file's order where units have one, step 55), `OrderOfBattleTable` draws them for both.
+  Managers and Admins import the club's CSV from the library page (`ImportLibraryModal`,
+  decision 0025): the file's text is previewed, then imported. Its file field is a native
+  `<input type="file">` in an `Input.Wrapper`, so tests upload to it by its label.
 - A campaign's calendar (step 45) is `features/campaigns/calendar.ts`: `turnWhen(turn)` labels a
   turn ("17 June 1815, Afternoon"); the rule book's marching nations mirror the API's
   `TurnParts`. The march itself is `movement.ts`'s `budgetFor`, as the API's.

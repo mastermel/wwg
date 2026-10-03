@@ -20,6 +20,9 @@ python3 -m venv /tmp/wwg-venv && /tmp/wwg-venv/bin/pip install openpyxl
 It rewrites the CSV, compares its totals with the workbook's own **Totals** tab, and lists the
 rows it skipped or found odd. Re-run it whenever the workbook changes, and check that output.
 
+Then, as a Manager or Admin, import the CSV on the app's **Library** page (**Import**): it
+previews what will change before anything does (decision 0025).
+
 ## The workbook
 
 | Tabs | What they hold |

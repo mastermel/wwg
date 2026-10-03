@@ -2867,5 +2867,6 @@ build on positions.
     - ✅ **55e. The import API:** preview and import (`LibraryImport`): the file's columns checked
       by name, every row validated as the unit form is, faction matched by name or created, units
       matched by import key; integration tests with small CSVs, and the club's whole file.
-    - **55f. The import page:** the library's **Import** (Managers, Admins): choose the file,
-      read the preview (factions, counts, missing units, errors), then import; an e2e test.
+    - ✅ **55f. The import page:** the library's **Import** (Managers, Admins): choose the file,
+      read the preview (factions, counts, missing units, errors), then import
+      (`ImportLibraryModal`); an e2e test.

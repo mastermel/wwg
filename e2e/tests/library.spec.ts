@@ -1,7 +1,13 @@
 import { admin } from "./support/accounts.ts";
 import { scan } from "./support/axe.ts";
 import { createCampaign } from "./support/campaigns.ts";
-import { addFromLibrary, browserOf, chooseFaction, libraryFaction } from "./support/library.ts";
+import {
+  addFromLibrary,
+  browserOf,
+  chooseFaction,
+  libraryFaction,
+  uniqueName,
+} from "./support/library.ts";
 import { desktopOnly, expect, test } from "./support/fixtures.ts";
 
 test("an Admin makes a Manager, who builds the library that everyone sees", async ({
@@ -107,4 +113,70 @@ test("an Umpire takes a library unit into two campaigns, but only once into each
     await picker.getByRole("button", { name: "Cancel" }).click();
     await expect(page.getByRole("dialog")).toHaveCount(0);
   }
+});
+
+test("an Admin imports the club's library CSV, then imports it again unchanged", async ({
+  signIn,
+  isMobile,
+}) => {
+  test.skip(isMobile, desktopOnly);
+  // Every run shares the library: a nation (so a faction) of this test's own.
+  const nation = uniqueName("Hanoverians");
+  const row = (unit: string, brigade: string, type: string) =>
+    [
+      `${nation} | I Corps | 1st Division | ${brigade} | ${unit}`,
+      nation,
+      "Hanover",
+      "I Corps",
+      "L.G. Sir John Moore",
+      "1st Division",
+      "L.G. Lord Edward Paget",
+      brigade,
+      "M.G. Peregrine Maitland",
+      unit,
+      "",
+      type,
+      "6",
+      "34",
+      "Painted",
+    ].join(",");
+  const csv = [
+    "key,nation,flag,corps,corps_commander,division,division_commander,brigade,brigade_commander,unit,notes,type,ff,points,status",
+    row("Field Battalion Bremen", "1st Brigade", "LineInfantry"),
+    row("Field Jager Company", "1st Brigade", "LightInfantry"),
+  ].join("\n");
+  const file = { name: "complete_library.csv", mimeType: "text/csv", buffer: Buffer.from(csv) };
+  const page = await signIn(admin.email, admin.password);
+  await page.goto("/library");
+
+  await page.getByRole("button", { name: "Import" }).click();
+  let dialog = page.getByRole("dialog", { name: "Import the library" });
+  await dialog.getByLabel("CSV file").setInputFiles(file);
+  await expect(dialog.getByText("2 units in 1 faction.")).toBeVisible();
+  await expect(dialog.getByRole("row").filter({ hasText: nation })).toContainText("New faction");
+  await dialog.getByRole("button", { name: "Import" }).click();
+  await expect(page.getByText("Imported the library: 2 units added, 0 changed.")).toBeVisible();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+
+  // The new faction's order of battle: its corps and division, each with its commander.
+  await page.getByRole("link", { name: nation }).click();
+  const units = page.getByRole("region", { name: "Units" });
+  await expect(units.getByRole("row")).toHaveText([
+    /^Name/,
+    /^I CorpsL\.G\. Sir John Moore2 units · 68 points/,
+    /^1st DivisionL\.G\. Lord Edward Paget2 units/,
+    /^1st BrigadeM\.G\. Peregrine Maitland2 units/,
+    /^Field Battalion Bremen/,
+    /^Field Jager Company/,
+  ]);
+  expect(await scan(page, "library faction with corps")).toEqual([]);
+
+  // The same file again changes nothing.
+  await page.goto("/library");
+  await page.getByRole("button", { name: "Import" }).click();
+  dialog = page.getByRole("dialog", { name: "Import the library" });
+  await dialog.getByLabel("CSV file").setInputFiles(file);
+  await expect(dialog.getByRole("row").filter({ hasText: nation })).toHaveText(
+    new RegExp(`^${nation}002$`),
+  );
 });
