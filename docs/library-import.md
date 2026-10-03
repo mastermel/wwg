@@ -144,13 +144,16 @@ X, XI and XIII Corps each have a "17th Cavalry Division".
 
 | Column | Content |
 | --- | --- |
-| `nation` | The tab name (`British`, `Italy`, `US`…) |
+| `key` | What the app's import knows the unit by (decision 0025): `nation \| corps \| division \| brigade \| unit`, plus `\| #2`, `\| #3`… for a unit that repeats there (3 do) |
+| `nation` | The tab name (`British`, `Italy`, `US`…), which names the unit's faction in the app |
+| `flag` | The faction's flag in the app (its `Nation`): Britain, France, Italy, Warsaw (Polish), Austria, Prussia, Russia, Sweden, UnitedStates |
 | `corps`, `division`, `brigade` | The unit's formation (see above) |
 | `corps_commander`, `division_commander`, `brigade_commander` | Each formation's commander, as typed |
 | `unit` | Name without trailing notes |
 | `notes` | Trailing bracketed notes, `; `-separated |
 | `arm` | Infantry, Cavalry or Artillery |
 | `class` | Heavy, Medium or Light (from `type_code`). Blank for artillery. |
+| `type` | The app's unit type (`UnitType`, see below) |
 | `type_code` | The raw type letter: h, m, l, r, s or blank |
 | `ff` | Fighting factor |
 | `count`, `count_unit` | Battalions, Squadrons, Guns or Companies |
@@ -158,6 +161,20 @@ X, XI and XIII Corps each have a "17th Cavalry Division".
 | `status`, `status_code` | Painted / Substitute / Unpainted, and the raw letter |
 | `original_name` | The name exactly as typed |
 | `source_row` | The row on the nation's tab, for tracing a unit back |
+
+### The app's unit type
+
+The `type` column maps each unit to the app's `UnitType` (decision 0025). It's a judgement call,
+so check it by hand, and fix it in the CSV if it's wrong:
+
+| Arm | Class or name | Type |
+| --- | --- | --- |
+| Infantry | Heavy or Medium | LineInfantry |
+| Infantry | Light (including rifles and skirmishers) | LightInfantry |
+| Cavalry | Heavy / Medium / Light | HeavyCavalry / MediumCavalry / LightCavalry |
+| Artillery | "Siege" in the name | SiegeArtillery |
+| Artillery | "Horse", "Cheval", "Volante", "R.H.A."/"RHA" in the name, or a British "Troop" | HorseArtillery |
+| Artillery | anything else (including Austrian and Russian "Light" batteries) | FootArtillery |
 
 ## Checks against the workbook
 
@@ -180,7 +197,3 @@ Rows the script skips:
 
 - Status `x` (French 16th Chasseurs a Cheval) and the blank status of the two British siege
   artillery units have no known meaning yet.
-- The app's unit types (`UnitType`) are finer than the workbook's. Mapping to them is still to
-  be decided: line vs. light infantry from `class`, foot vs. horse vs. siege artillery from
-  names (`Horse`, `a Cheval`, `Volante`, `R.H.A.`, `Siege`).
-- There is no corps in the app's library units yet; only division and brigade (step 54).

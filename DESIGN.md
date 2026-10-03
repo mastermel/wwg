@@ -2861,7 +2861,7 @@ build on positions.
       corps suggested from the faction's, as divisions are, and a known group's commander filled
       in); the order of battle gains the corps band, each group's commander in its heading, a
       unit's notes under its name, and the file's order where units have one (`order-of-battle.ts`).
-    - **55c. The CSV for the app:** `scripts/library_csv.py` adds each unit's `key`, `type`
+    - ✅ **55c. The CSV for the app:** `scripts/library_csv.py` adds each unit's `key`, `type`
       (`UnitType`), its faction's `flag` (`Nation`) and status by name; the CSV regenerated.
     - **55d. The United States flag:** `Nation.UnitedStates` and its flag (15 stars and stripes).
     - **55e. The import API:** preview and import (`LibraryImport`): the file's columns checked

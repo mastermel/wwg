@@ -55,6 +55,19 @@ TOTALS_NAMES = {
     "US": "US Army",
 }
 
+# Each tab's flag in the app (its Nation; decision 0025).
+FLAGS = {
+    "British": "Britain",
+    "French": "France",
+    "Italy": "Italy",
+    "Polish": "Warsaw",
+    "Austrian": "Austria",
+    "Prussian": "Prussia",
+    "Russian": "Russia",
+    "Swedish": "Sweden",
+    "US": "UnitedStates",
+}
+
 STATUSES = {"p": "Painted", "s": "Substitute", "u": "Unpainted"}
 CLASSES = {"h": "Heavy", "m": "Medium", "l": "Light", "r": "Light", "s": "Light"}
 COUNT_UNITS = {
@@ -70,8 +83,13 @@ SUMMARY = re.compile(r"Statistics|Totals|^Total |Representing|Men Represented", 
 # A trailing "(note)", allowing the stray extra ")" the workbook has in places.
 TRAILING_NOTE = re.compile(r"\s*\(([^()]*)\)\)*\s*$")
 
+# Horse artillery says so in its name; a British "Troop" is the Royal Horse Artillery's.
+HORSE_ARTILLERY = re.compile(r"\bHorse\b|Cheval|Volante|R\.\s?H\.\s?A\.|\bRHA\b", re.I)
+
 COLUMNS = [
+    "key",
     "nation",
+    "flag",
     "corps",
     "corps_commander",
     "division",
@@ -82,6 +100,7 @@ COLUMNS = [
     "notes",
     "arm",
     "class",
+    "type",
     "type_code",
     "ff",
     "count",
@@ -313,12 +332,45 @@ def workbook_totals(sheet):
     return totals
 
 
+def unit_type(unit):
+    """The app's UnitType for a unit (decision 0025): a judgement, checked by hand."""
+    if unit["arm"] == "Infantry":
+        return "LightInfantry" if unit["class"] == "Light" else "LineInfantry"
+    if unit["arm"] == "Cavalry":
+        if not unit["class"]:
+            raise ValueError(f"No class for cavalry {unit['original_name']!r}")
+        return f"{unit['class']}Cavalry"
+    if re.search(r"Siege", unit["unit"], re.I):
+        return "SiegeArtillery"
+    if HORSE_ARTILLERY.search(unit["unit"]) or (
+        unit["nation"] == "British" and re.search(r"\bTroop\b", unit["unit"])
+    ):
+        return "HorseArtillery"
+    return "FootArtillery"
+
+
+def add_keys(units):
+    """What the app's import knows each unit by: its place and name, numbered where repeated."""
+    seen = defaultdict(int)
+    for u in units:
+        path = " | ".join(
+            u[k] for k in ("nation", "corps", "division", "brigade", "unit")
+        )
+        seen[path] += 1
+        # The number is a segment of its own: some names end in "#1" already.
+        u["key"] = path if seen[path] == 1 else f"{path} | #{seen[path]}"
+
+
 def main():
     formulas = openpyxl.load_workbook(WORKBOOK)
     values = openpyxl.load_workbook(WORKBOOK, data_only=True)
     warnings, units = [], []
     for nation in LAYOUTS:
         units += read_nation(nation, formulas[nation], values[nation], warnings)
+    for u in units:
+        u["flag"] = FLAGS[u["nation"]]
+        u["type"] = unit_type(u)
+    add_keys(units)
 
     with OUTPUT.open("w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, COLUMNS)

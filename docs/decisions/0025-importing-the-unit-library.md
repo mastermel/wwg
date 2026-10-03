@@ -20,8 +20,9 @@ entered by hand so far are incomplete, and the club wants to stop relying on the
 - **The CSV is the app's import format, not the workbook's:** the script writes the app's own
   values (each unit's `UnitType`, its faction's flag, its status), so the importer doesn't read
   the workbook's letter codes.
-- **A unit is recognised by its import key:** the script writes `nation/corps/division/brigade/
-  name`, plus `#2`, `#3`… when a name repeats, because names aren't unique (two identical
+- **A unit is recognised by its import key:** the script writes `nation | corps | division |
+  brigade | name`, plus `| #2`, `| #3`… when a name repeats there (names hold `/` and `#`, never
+  `|`), because names aren't unique (two identical
   "R.A. Batt." share one brigade). An imported unit keeps its key, so renaming it in the app
   doesn't break the match. A unit the workbook moves to another brigade arrives as a new unit.
 - **The file decides for the units it lists:** a re-import overwrites what the app has for each
