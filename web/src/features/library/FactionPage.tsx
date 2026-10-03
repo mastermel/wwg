@@ -27,7 +27,7 @@ import { nationLabel } from "@/features/armies/identity/nations";
 import { useSession } from "@/features/auth/session-context";
 import { FactionFormModal } from "@/features/library/FactionFormModal";
 import { canEditLibrary, unitCount } from "@/features/library/library-access";
-import { OrderOfBattleTable } from "@/features/library/OrderOfBattleTable";
+import { OrderOfBattleTable } from "@/features/units/OrderOfBattleTable";
 import { UnitFormModal } from "@/features/units/UnitFormModal";
 import { errorMessage } from "@/lib/errors";
 import { useConfirmTarget } from "@/lib/use-confirm-target";

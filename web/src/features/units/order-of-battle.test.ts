@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { UnitType } from "@/api/generated/model";
-import { orderOfBattle, unitsIn } from "@/features/library/order-of-battle";
+import { orderOfBattle, unitsIn } from "@/features/units/order-of-battle";
 
 const unit = (
   name: string,

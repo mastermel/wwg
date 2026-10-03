@@ -185,6 +185,32 @@ describe("units", () => {
     expect(section.queryByRole("button")).not.toBeInTheDocument();
   });
 
+  it("shows the army's units in their order of battle, with its totals", async () => {
+    serveArmy("Player", [
+      { ...unit("1", "1st Ligne"), division: "1st Division", brigade: "Quiot" },
+      { ...unit("2", "Hussars", "LightCavalry", 4, 15), division: "1st Division" },
+      { ...unit("3", "Ney", "Commander", 6, 5), division: "1st Division" },
+      unit("4", "Napoleon", "Commander", 9, 10),
+    ]);
+    const { container } = await renderApp(`/campaigns/${campaignId}/armies/${armyId}`);
+    const section = await unitsSection();
+
+    const firstCells = section.getAllByRole("row").map((row) => row.firstElementChild?.textContent);
+    expect(firstCells).toEqual([
+      "Name",
+      "Not in a division1 unit · 10 points",
+      "NapoleonCommander",
+      "1st Division3 units · 40 points",
+      "NeyCommander",
+      "HussarsLight Cavalry",
+      "Quiot1 unit · 20 points",
+      "1st LigneLine Infantry",
+      "4 units",
+    ]);
+    expect(rows().at(-1)).toEqual(["", "", "50"]);
+    await expectNoAxeViolations(container);
+  });
+
   it("lets the Umpire add units from the army's factions, not those already in", async () => {
     const requests = serveArmy("Umpire", [unit("1", "1st Division")]);
     const user = userEvent.setup();
@@ -272,7 +298,12 @@ describe("units", () => {
       ]);
     });
     await waitFor(() => {
-      expect(rows()[1]).toEqual(["1st DivisionLine Infantry", "Line Infantry", "7", "20", ""]);
+      // Now under its brigade, under its division.
+      expect(rows().slice(1, 4)).toEqual([
+        [],
+        [],
+        ["1st DivisionLine Infantry", "Line Infantry", "7", "20", ""],
+      ]);
     });
     expect(await screen.findByText("Saved 1st Division.")).toBeInTheDocument();
   });

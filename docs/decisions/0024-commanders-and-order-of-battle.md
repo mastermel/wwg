@@ -19,8 +19,8 @@ divisions, and a faction of any size is hard to read without them.
 - **Every unit has an optional Division and Brigade:** free text (≤100 characters each), set
   where its name and type are, in the library and on the army's copy. Adding a library unit to an
   army copies them, as it copies the rest (decision 0015).
-- **The library's faction page shows its order of battle:** units grouped under their brigade, and
-  brigades under their division. A group's own units (a division's commander, say) come before its
+- **The library's faction page, and an army's units, show their order of battle:** units grouped
+  under their brigade, and brigades under their division. A group's own units (a division's commander, say) come before its
   brigades, and a group's commanders before its other units; a faction with no divisions or
   brigades shows its plain list as before.
 
