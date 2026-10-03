@@ -1,0 +1,4 @@
+/* A division's heading row: a band across the table, like the army's totals row. */
+.division {
+  background-color: var(--mantine-color-default-hover);
+}

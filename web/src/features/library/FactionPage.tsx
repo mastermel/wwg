@@ -1,4 +1,4 @@
-import { ActionIcon, Button, Group, Stack, Table, Text, VisuallyHidden } from "@mantine/core";
+import { Button, Group, Stack, Text } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import { IconEdit, IconPlus, IconShield, IconTrash } from "@tabler/icons-react";
@@ -27,8 +27,8 @@ import { nationLabel } from "@/features/armies/identity/nations";
 import { useSession } from "@/features/auth/session-context";
 import { FactionFormModal } from "@/features/library/FactionFormModal";
 import { canEditLibrary, unitCount } from "@/features/library/library-access";
+import { OrderOfBattleTable } from "@/features/library/OrderOfBattleTable";
 import { UnitFormModal } from "@/features/units/UnitFormModal";
-import { unitTypeLabels } from "@/features/units/unit-types";
 import { errorMessage } from "@/lib/errors";
 import { useConfirmTarget } from "@/lib/use-confirm-target";
 import { useOnline } from "@/lib/use-online";
@@ -115,7 +115,11 @@ function FactionView({ faction, editor }: { faction: FactionResponse; editor: bo
     <Stack gap="xl">
       <Section
         title="Units"
-        description={editor ? "Name, type, Fighting Factor (FF) and points." : undefined}
+        description={
+          editor
+            ? "Name, type, Fighting Factor (FF) and points, by division and brigade."
+            : undefined
+        }
         flush
         actions={
           editor && (
@@ -146,66 +150,13 @@ function FactionView({ faction, editor }: { faction: FactionResponse; editor: bo
             {editor ? "Add one with Add unit." : "A Manager hasn't added any yet."}
           </EmptyState>
         ) : (
-          <Table horizontalSpacing="lg" highlightOnHover>
-            <Table.Thead>
-              <Table.Tr>
-                <Table.Th>Name</Table.Th>
-                {/* Phones show the type under the name instead, rather than scroll sideways. */}
-                <Table.Th visibleFrom="sm">Type</Table.Th>
-                <Table.Th ta="right">
-                  <abbr title="Fighting Factor">FF</abbr>
-                </Table.Th>
-                <Table.Th ta="right">Points</Table.Th>
-                {editor && (
-                  <Table.Th>
-                    <VisuallyHidden>Actions</VisuallyHidden>
-                  </Table.Th>
-                )}
-              </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
-              {faction.units.map((unit) => (
-                <Table.Tr key={unit.id}>
-                  <Table.Td>
-                    {unit.name}
-                    <Text size="xs" c="dimmed" hiddenFrom="sm">
-                      {unitTypeLabels[unit.type]}
-                    </Text>
-                  </Table.Td>
-                  <Table.Td visibleFrom="sm">{unitTypeLabels[unit.type]}</Table.Td>
-                  <Table.Td ta="right">{unit.fightingFactor}</Table.Td>
-                  <Table.Td ta="right">{unit.points}</Table.Td>
-                  {editor && (
-                    <Table.Td>
-                      <Group gap={4} justify="flex-end" wrap="nowrap">
-                        <ActionIcon
-                          variant="subtle"
-                          aria-label={`Edit ${unit.name}`}
-                          onClick={() => {
-                            setEditing(unit);
-                          }}
-                          disabled={!online}
-                        >
-                          <IconEdit size={16} aria-hidden />
-                        </ActionIcon>
-                        <ActionIcon
-                          variant="subtle"
-                          color="red"
-                          aria-label={`Delete ${unit.name}`}
-                          onClick={() => {
-                            deleting.open(unit);
-                          }}
-                          disabled={!online}
-                        >
-                          <IconTrash size={16} aria-hidden />
-                        </ActionIcon>
-                      </Group>
-                    </Table.Td>
-                  )}
-                </Table.Tr>
-              ))}
-            </Table.Tbody>
-          </Table>
+          <OrderOfBattleTable
+            units={faction.units}
+            editor={editor}
+            online={online}
+            onEdit={setEditing}
+            onDelete={deleting.open}
+          />
         )}
       </Section>
       {editor && (

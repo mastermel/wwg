@@ -139,6 +139,42 @@ describe("the library", () => {
     expect(calls).toEqual(["add Old Guard"]);
   });
 
+  it("shows the faction's order of battle: brigades under divisions, units under brigades", async () => {
+    const at = (n: number, changes: Partial<UnitResponse>): UnitResponse => ({
+      ...guard,
+      id: `0192f5c1-0000-7000-8000-0000000u010${String(n)}`,
+      ...changes,
+    });
+    serveLibrary([
+      at(1, { name: "1st Grenadiers", division: "Imperial Guard", brigade: "Old Guard" }),
+      at(2, { name: "Guard Battery", type: "FootArtillery", division: "Imperial Guard" }),
+      at(3, { name: "Mortier", type: "Commander", division: "Imperial Guard", points: 5 }),
+      at(4, { name: "Napoleon", type: "Commander", points: 10 }),
+      at(5, { name: "2nd Ligne", division: "1st Division", brigade: "Quiot" }),
+    ]);
+    const { container } = await renderApp(`/library/${factionId}`, { user: manager });
+
+    const section = within(await screen.findByRole("region", { name: "Units" }));
+    await section.findByRole("cell", { name: /Napoleon/ });
+    const rows = section
+      .getAllByRole("row")
+      .slice(1)
+      .map((row) => row.firstElementChild?.textContent);
+    expect(rows).toEqual([
+      "Not in a division1 unit · 10 points",
+      "NapoleonCommander",
+      "1st Division1 unit · 40 points",
+      "Quiot1 unit · 40 points",
+      "2nd LigneLine Infantry",
+      "Imperial Guard3 units · 85 points",
+      "MortierCommander",
+      "Guard BatteryFoot Artillery",
+      "Old Guard1 unit · 40 points",
+      "1st GrenadiersLine Infantry",
+    ]);
+    await expectNoAxeViolations(container);
+  });
+
   it("suggests the faction's divisions, and the chosen division's brigades", async () => {
     serveLibrary([
       { ...guard, division: "Imperial Guard", brigade: "Old Guard" },

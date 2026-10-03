@@ -1329,7 +1329,9 @@ visibility); the data is in §5.1. Built in Phase 8 (§7).
   editor, its own page: a hex's ground, forest and settlement (with its value and starting
   holder), its six sides, **Infer terrain**, and rolling a hex's actual terrain.
 - `/library` (step 41; everyone signed in, in the navigation): the club's factions and their
-  units; Managers and Admins create, edit and delete them there, and only there. In a campaign,
+  units; Managers and Admins create, edit and delete them there, and only there. A faction's
+  units show as its order of battle (step 54): each division a band, its brigades under it with
+  their units, unit and point totals on each; units in no division first. In a campaign,
   **Edit army** selects the army's factions, and **Add units** lists only their units.
 - The campaign page gains a **Factions** section (the Umpire creates, renames
   and deletes them; from step 41, **Sides**; from step 46a, the campaign's two sides, renamed only); the army page's **Edit army** covers name, faction (side), colour (with
@@ -2827,5 +2829,7 @@ build on positions.
       in `SaveUnitRequest` / `UpdateArmyUnitRequest` and their responses; copied when a library
       unit joins an army; set in `UnitFormModal`, which suggests the divisions beside it (its
       faction's or its army's), and the chosen division's brigades.
-    - **54c. The faction's order of battle:** the library's faction page groups units by brigade,
-      and brigades by division (`order-of-battle.ts`).
+    - ✅ **54c. The faction's order of battle:** the library's faction page groups units by
+      brigade, and brigades by division, names matched whatever their case and sorted as people
+      count; a group's own units before its brigades, commanders first (`order-of-battle.ts`,
+      `OrderOfBattleTable`).

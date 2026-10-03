@@ -49,9 +49,18 @@ test("an Admin makes a Manager, who builds the library that everyone sees", asyn
   await unitForm.getByRole("option", { name: "Line Infantry" }).click();
   await unitForm.getByRole("textbox", { name: "Fighting Factor (FF)" }).fill("7");
   await unitForm.getByRole("textbox", { name: "Points" }).fill("40");
+  await unitForm.getByRole("combobox", { name: "Division" }).fill("Guard Infantry");
+  await unitForm.getByRole("combobox", { name: "Brigade" }).fill("Old Guard");
   await unitForm.getByRole("button", { name: "Add unit" }).click();
-  await expect(page.getByRole("region", { name: "Units" })).toContainText("Imperial Guard");
   await expect(page.getByRole("dialog")).toHaveCount(0);
+  // Its order of battle: the unit under its brigade, under its division.
+  const units = page.getByRole("region", { name: "Units" });
+  await expect(units.getByRole("row")).toHaveText([
+    /^Name/,
+    /^Guard Infantry1 unit · 40 points/,
+    /^Old Guard1 unit · 40 points/,
+    /^Imperial Guard/,
+  ]);
   expect(await scan(page, "library faction (Manager)")).toEqual([]);
 
   // Anyone signed in sees it, and can't change it.

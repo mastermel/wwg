@@ -100,7 +100,9 @@ The pre-commit hook runs `eslint --fix` and Prettier on staged files.
   shown only to `canEditLibrary(user)` (Managers and Admins). `UnitFormModal` (`features/units`)
   is shared by library units and the army's copies of them. An army takes units only from its
   factions (the army form's **Factions**), through `AddUnitsModal`; both fetch the library afresh
-  each time they open (`refetchOnMount: "always"`), as a Manager may have changed it.
+  each time they open (`refetchOnMount: "always"`), as a Manager may have changed it. A faction's
+  units are its order of battle (step 54): `order-of-battle.ts` groups them (a pure function),
+  `OrderOfBattleTable` draws them.
 - A campaign's calendar (step 45) is `features/campaigns/calendar.ts`: `turnWhen(turn)` labels a
   turn ("17 June 1815, Afternoon"); the rule book's marching nations mirror the API's
   `TurnParts`. The march itself is `movement.ts`'s `budgetFor`, as the API's.
