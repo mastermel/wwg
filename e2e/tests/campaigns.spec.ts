@@ -99,7 +99,7 @@ test("the Umpire sets the concentration limits, and which unit types count", asy
   await page.getByRole("link", { name: "Edit", exact: true }).click();
 
   const concentration = page.getByRole("region", { name: "Concentration" });
-  await expect(concentration).toContainText("Supply Train, Siege Artillery, Boat.");
+  await expect(concentration).toContainText("Supply Train, Siege Artillery, Boat, Commander.");
   await concentration.getByRole("textbox", { name: /Cavalry limit/ }).fill("120");
   // Supply trains count as infantry here; then they're no longer free.
   await chooseFromList(
@@ -108,7 +108,7 @@ test("the Umpire sets the concentration limits, and which unit types count", asy
   );
   await page.keyboard.press("Escape");
   await expect(concentration).toContainText(
-    "Free (counted towards neither): Siege Artillery, Boat.",
+    "Free (counted towards neither): Siege Artillery, Boat, Commander.",
   );
   await concentration.getByRole("button", { name: "Save concentration" }).click();
   await expect(page.getByText("Saved the concentration settings.")).toBeVisible();
@@ -118,7 +118,7 @@ test("the Umpire sets the concentration limits, and which unit types count", asy
   await page.reload();
   await expect(concentration.getByRole("textbox", { name: /Cavalry limit/ })).toHaveValue("120");
   await expect(concentration).toContainText(
-    "Free (counted towards neither): Siege Artillery, Boat.",
+    "Free (counted towards neither): Siege Artillery, Boat, Commander.",
   );
 });
 

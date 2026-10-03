@@ -15,6 +15,7 @@
     {"name": "infantry can't cross mountains", "type": "FootArtillery", "cell": {"terrain": "Mountain", "forest": false}, "cost": null, "closedBecause": "infantry can't cross mountains"},
     {"name": "light infantry into mountains", "type": "LightInfantry", "cell": {"terrain": "Mountain", "forest": false}, "cost": 2},
     {"name": "light cavalry into mountains", "type": "Scouts", "cell": {"terrain": "Mountain", "forest": false}, "cost": 1},
+    {"name": "a commander rides as light cavalry", "type": "Commander", "cell": {"terrain": "HighHill", "forest": false}, "cost": 0.5},
     {"name": "a forest moves as low hills", "type": "LineInfantry", "cell": {"terrain": "Flat", "forest": true}, "cost": 1},
     {"name": "a forest on high hills moves as high hills", "type": "LineInfantry", "cell": {"terrain": "HighHill", "forest": true}, "cost": 2},
     {"name": "infantry on a good road", "type": "LineInfantry", "edge": {"road": "Good", "river": false, "bridge": false, "waterway": "None"}, "cost": 0.3333333333333333},

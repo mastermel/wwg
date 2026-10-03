@@ -59,7 +59,9 @@ describe("the campaign's concentration settings", () => {
     expect(await found.findByRole("textbox", { name: /Infantry limit/ })).toHaveValue("200");
     expect(found.getByRole("textbox", { name: /Cavalry limit/ })).toHaveValue("160");
     expect(
-      found.getByText("Free (counted towards neither): Supply Train, Siege Artillery, Boat."),
+      found.getByText(
+        "Free (counted towards neither): Supply Train, Siege Artillery, Boat, Commander.",
+      ),
     ).toBeInTheDocument();
     await expectNoAxeViolations(container);
   });

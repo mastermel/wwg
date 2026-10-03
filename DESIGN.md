@@ -1531,7 +1531,7 @@ Unit
                   FootArtillery | Engineers | LightInfantry | Partisans |
                   LightCavalry | Scouts | MediumCavalry | HeavyCavalry |
                   HorseArtillery | SupplyTrain | SiegeArtillery |
-                  Boat (step 44d)
+                  Boat (step 44d) | Commander (step 54)
                   (before: HeavyInfantry, now LineInfantry; Skirmishers,
                   now LightInfantry)
   FightingFactor  int 1–9 ("FF" in the app)
@@ -1664,7 +1664,7 @@ page 57; decision 0016)                  HexDetailId → HexDetail
   |---|---|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
   | Infantry | Line infantry, Foot artillery, Engineers | 3 | 2 | 2 | 1 | ½ | – | – | – | – |
   | Light | Light infantry, Partisans | 5 | 4 | 3 | 2 | 1 | ½ | – | – | – |
-  | Light cavalry | Light cavalry, Scouts | 6 | 5 | 4 | 3 | 2 | 1 | – | – | – |
+  | Light cavalry | Light cavalry, Scouts, Commander (step 54) | 6 | 5 | 4 | 3 | 2 | 1 | – | – | – |
   | Cavalry | Medium cavalry, Heavy cavalry, Horse artillery | 5 | 4 | 3 | 2 | 1 | – | – | – | – |
   | Slow | Supply train, Siege artillery | 3 | 2 | 1 | ½ | – | – | – | – | – |
   | Boat (step 44d) | Boat | – | – | – | – | – | – | 4 | 2 | 3 |
@@ -2817,3 +2817,12 @@ build on positions.
     boats came with step 51.)
     - Decision 0018 leaves attrition for sieges to "steps 48 and 51"; with the steps as they
       are now, that means this step.
+54. **Commanders and the order of battle** (decision 0024), in parts:
+    - ✅ **54a. The Commander unit type:** the army's general on the map, moving as light cavalry
+      (`Movement.ClassOf`, `movement.ts`), not counted towards concentration nor exempt from
+      supply by default; a star for its symbol.
+    - **54b. Division and brigade:** optional free text (≤100) on library units and army units,
+      in `SaveUnitRequest` / `UpdateArmyUnitRequest` and their responses; copied when a library
+      unit joins an army; set in `UnitFormModal`, which suggests the faction's existing ones.
+    - **54c. The faction's order of battle:** the library's faction page groups units by brigade,
+      and brigades by division (`order-of-battle.ts`).

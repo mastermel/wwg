@@ -4,7 +4,8 @@ namespace Wwg.Api.Data.Entities;
 /// What kind of troops a unit is (stored as its name), grouped by the rule book's movement
 /// classes (decision 0014): infantry and foot artillery; light infantry and partisans; light
 /// cavalry and scouts; medium and heavy cavalry and horse artillery; supply and siege artillery;
-/// and boats, which keep to waterways and lakes (decision 0016).
+/// and boats, which keep to waterways and lakes (decision 0016). A commander (decision 0024) is
+/// the army's general on the map, and rides as light cavalry.
 /// </summary>
 public enum UnitType
 {
@@ -21,6 +22,7 @@ public enum UnitType
     SupplyTrain,
     SiegeArtillery,
     Boat,
+    Commander,
 }
 
 /// <summary>The bounds of a unit's numbers, in the library and in a campaign.</summary>

@@ -29,7 +29,8 @@ internal static class Movement
             UnitType.LineInfantry or UnitType.FootArtillery or UnitType.Engineers =>
                 MovementClass.Infantry,
             UnitType.LightInfantry or UnitType.Partisans => MovementClass.Light,
-            UnitType.LightCavalry or UnitType.Scouts => MovementClass.LightCavalry,
+            UnitType.LightCavalry or UnitType.Scouts or UnitType.Commander =>
+                MovementClass.LightCavalry,
             UnitType.MediumCavalry or UnitType.HeavyCavalry or UnitType.HorseArtillery =>
                 MovementClass.Cavalry,
             UnitType.SupplyTrain or UnitType.SiegeArtillery => MovementClass.Slow,

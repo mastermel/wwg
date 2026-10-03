@@ -23,6 +23,7 @@ const classes: Record<UnitType, MovementClass> = {
   Partisans: "Light",
   LightCavalry: "LightCavalry",
   Scouts: "LightCavalry",
+  Commander: "LightCavalry",
   MediumCavalry: "Cavalry",
   HeavyCavalry: "Cavalry",
   HorseArtillery: "Cavalry",
@@ -57,7 +58,7 @@ export const waterGrounds: readonly Ground[] = ["Downstream", "Upstream", "Lake"
 export const classLabels: Record<MovementClass, string> = {
   Infantry: "Infantry and foot artillery",
   Light: "Light infantry and partisans",
-  LightCavalry: "Light cavalry and scouts",
+  LightCavalry: "Light cavalry, scouts and commanders",
   Cavalry: "Cavalry and horse artillery",
   Slow: "Supply trains and siege artillery",
   Boat: "Boats",

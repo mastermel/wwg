@@ -9,7 +9,7 @@ public enum MovementClass
     /// <summary>Light infantry, partisans.</summary>
     Light,
 
-    /// <summary>Light cavalry, scouts.</summary>
+    /// <summary>Light cavalry, scouts, commanders.</summary>
     LightCavalry,
 
     /// <summary>Medium and heavy cavalry, horse artillery.</summary>
