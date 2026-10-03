@@ -65,3 +65,4 @@ A reversal gets a new entry.
 | [0022](0022-boats-carry-units.md) | Units embark on boats, which go with them; boats are built in river towns | 2026-10-01 |
 | [0023](0023-email-notifications.md) | Email notifications: whenever there's something to do, each one a user can turn off | 2026-10-02 |
 | [0024](0024-commanders-and-order-of-battle.md) | Commanders on the map, and each unit's division and brigade | 2026-10-03 |
+| [0025](0025-importing-the-unit-library.md) | Importing the unit library from the club's CSV, and archiving hand-entered units | 2026-10-03 |

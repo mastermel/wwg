@@ -1332,7 +1332,9 @@ visibility); the data is in §5.1. Built in Phase 8 (§7).
   units; Managers and Admins create, edit and delete them there, and only there. A faction's
   units show as its order of battle (step 54): each division a band, its brigades under it with
   their units, unit and point totals on each; units in no division first (an army's units too,
-  on its page). In a campaign,
+  on its page). From step 55, corps above the divisions, each group's commander in its
+  heading, and formations in the order of the imported file (decision 0025); Managers and
+  Admins **Import** the club's CSV there, from a preview of what it will change. In a campaign,
   **Edit army** selects the army's factions, and **Add units** lists only their units.
 - The campaign page gains a **Factions** section (the Umpire creates, renames
   and deletes them; from step 41, **Sides**; from step 46a, the campaign's two sides, renamed only); the army page's **Edit army** covers name, faction (side), colour (with
@@ -1586,7 +1588,7 @@ UnitOrder                      ArmyTurnEvent (the turn's history)
   8 checked moves as straight lines; from Phase 11 moves are counted in hexes.)
 - Colours and nations are keys, not values (`ArmyColor`: Red, Blue, Green,
   Orange, Purple, Sky, Gold, Magenta; `Nation`: None and 21 states of the
-  period), enums in the contract that the API validates. The palette (from
+  period, 22 with the United States from step 55), enums in the contract that the API validates. The palette (from
   Okabe–Ito, distinct for colour-blind users, tuned per scheme to 3.2:1 against
   the app's panels and canvas; `army-colors.ts`) and the flags (simplified SVGs,
   `NationFlag.tsx`) live in the front-end. A new army gets the first colour no
@@ -1694,6 +1696,15 @@ ArmyFaction (the library factions an army takes units from)
 
 - **Step 54** (decision 0024) adds `Division` and `Brigade` (string?, ≤100; null for none) to
   `Unit` and `ArmyUnit`, copied with the rest when a unit joins an army.
+- **Step 55** (decision 0025) imports the club's CSV into the library:
+  - `Unit` gains `Corps`, `CorpsCommander`, `DivisionCommander` and `BrigadeCommander`
+    (string?, ≤100), `Notes` (string?, ≤500), `Status` (`UnitStatus`?: Painted, Substitute,
+    Unpainted; null for unknown), `ImportKey` (string?, ≤400; unique within the faction when
+    set) and `ImportOrder` (int?, its row in the file).
+  - `ArmyUnit` gains the corps, the three commanders and `ImportOrder`, copied when a unit
+    joins an army. Notes and status stay with the library unit.
+  - A data migration moves every library unit then in the library into a new faction,
+    "Archive" (nation None), when there is one to move. Army units keep pointing at them.
 - `ArmyUnit (CampaignId, UnitId)` is unique: a library unit is in one army per campaign, but can
   be in several campaigns. Orders, turn notes, positions and the visibility rule refer to army
   units (`UnitOrder.UnitId` and `UnitNote.UnitId` point at `ArmyUnits`).
@@ -1906,7 +1917,8 @@ New rows:
 | Step 41: select an army's factions; add library units to an army, edit or remove an army unit | ✅ | ✅ | 403 | 403 | 404 |
 
 The library (step 41) isn't a campaign's: viewing it is for everyone signed in, and creating,
-editing and deleting factions and units is for **Managers** and Admins (403 for others). Admins
+editing and deleting factions and units, and importing them (step 55), is for **Managers** and
+Admins (403 for others). Admins
 make users Managers (`PUT /api/admin/users/{id}/manager`).
 | View the map settings (bounds, layers, language, hex size) | ✅ | ✅ | ✅ | ✅ | 404 |
 | Edit the map settings; search for places | ✅ | ✅ | 403 | 403 | 404 |
@@ -2077,6 +2089,8 @@ one, as a campaign is made with both)
 | PUT | `/api/admin/users/{id}/manager` | Make a user a Manager, or not `{ manager }` (Admins) |
 | PUT / DELETE | `/api/army-units/{id}` | Edit the campaign's copy / remove it from the army (setup only) |
 | PUT / DELETE | `/api/army-units/{id}/placement` | Replaces `/api/units/{id}/placement` |
+| POST | `/api/library/import/preview` | Step 55 (Managers, Admins): read an uploaded CSV (multipart, one file) and say what importing it would do: per faction, matched or new, and its units to create, update and leave as they are; keyed units missing from the file; rows with errors (none imported while any has one). Changes nothing |
+| POST | `/api/library/import` | Step 55: import the same file in one transaction (rows with errors: 400 with the preview's errors) |
 
 **Steps 44–52: the rules on the grid** (decisions 0017 to 0023; access in §5.2)
 
@@ -2836,3 +2850,20 @@ build on positions.
       `OrderOfBattleTable`).
     - ✅ **54d. The army's order of battle:** the army page's **Units** grouped the same way, with
       its totals row (the same `OrderOfBattleTable`, in `features/units`).
+55. **Importing the unit library** (decision 0025; the CSV and how it's made:
+    `docs/library-import.md`), in parts:
+    - **55a. The new fields and the Archive:** corps, the three commanders, notes, status, import
+      key and order on `Unit`; corps, commanders and order on `ArmyUnit`, copied when a unit joins
+      an army; in `SaveUnitRequest` / `UpdateArmyUnitRequest` and their responses; the migration
+      that moves the library's units into an "Archive" faction.
+    - **55b. In the app:** `UnitFormModal` edits the corps, commanders, notes and status (the
+      corps suggested from the faction's, as divisions are); the order of battle gains the corps
+      band, each group's commander in its heading, and the file's order where units have one.
+    - **55c. The CSV for the app:** `scripts/library_csv.py` adds each unit's `key`, `type`
+      (`UnitType`), its faction's `flag` (`Nation`) and status by name; the CSV regenerated.
+    - **55d. The United States flag:** `Nation.UnitedStates` and its flag (15 stars and stripes).
+    - **55e. The import API:** preview and import (`LibraryImport`): the file's columns checked
+      by name, every row validated as the unit form is, faction matched by name or created, units
+      matched by import key; integration tests with a small CSV.
+    - **55f. The import page:** the library's **Import** (Managers, Admins): choose the file,
+      read the preview (factions, counts, missing units, errors), then import; an e2e test.
