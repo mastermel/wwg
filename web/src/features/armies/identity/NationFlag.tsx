@@ -127,6 +127,24 @@ const flags: Record<Exclude<Nation, "None">, () => ReactNode> = {
       />
     </>
   ),
+  // The 1812 flag: 15 stripes, and 15 stars (dots, at this size) in the canton.
+  UnitedStates: () => (
+    <>
+      {horizontal(Array.from({ length: 15 }, (_, i) => (i % 2 === 0 ? "#b22234" : "#ffffff")))}
+      <rect width={13} height={(H * 8) / 15} fill="#3c3b6e" />
+      {[0, 1, 2].flatMap((row) =>
+        [0, 1, 2, 3, 4].map((col) => (
+          <circle
+            key={`${String(row)}-${String(col)}`}
+            cx={1.7 + col * 2.4}
+            cy={1.8 + row * 3.4}
+            r={0.65}
+            fill="#ffffff"
+          />
+        )),
+      )}
+    </>
+  ),
 };
 
 interface NationFlagProps {

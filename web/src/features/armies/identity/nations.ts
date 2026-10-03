@@ -24,6 +24,7 @@ const labels: Record<Nation, string> = {
   Brunswick: "Brunswick",
   Hanover: "Hanover",
   Ottoman: "Ottoman Empire",
+  UnitedStates: "United States",
 };
 
 export const nationLabel = (nation: Nation) => labels[nation];

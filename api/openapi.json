@@ -7879,7 +7879,8 @@
           "Naples",
           "Brunswick",
           "Hanover",
-          "Ottoman"
+          "Ottoman",
+          "UnitedStates"
         ],
         "description": "The nation or state of the Napoleonic wars an army fights for. The front-end draws its flag (a\nsimplified one) as the army's icon; None is a plain flag in the army's colour. Stored by name."
       },

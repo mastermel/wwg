@@ -28,4 +28,7 @@ public enum Nation
     Brunswick,
     Hanover,
     Ottoman,
+
+    /// <summary>The United States, for the War of 1812 (decision 0025).</summary>
+    UnitedStates,
 }

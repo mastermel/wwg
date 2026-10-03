@@ -2863,7 +2863,7 @@ build on positions.
       unit's notes under its name, and the file's order where units have one (`order-of-battle.ts`).
     - ✅ **55c. The CSV for the app:** `scripts/library_csv.py` adds each unit's `key`, `type`
       (`UnitType`), its faction's `flag` (`Nation`) and status by name; the CSV regenerated.
-    - **55d. The United States flag:** `Nation.UnitedStates` and its flag (15 stars and stripes).
+    - ✅ **55d. The United States flag:** `Nation.UnitedStates` and its flag (15 stars and stripes).
     - **55e. The import API:** preview and import (`LibraryImport`): the file's columns checked
       by name, every row validated as the unit form is, faction matched by name or created, units
       matched by import key; integration tests with a small CSV.
