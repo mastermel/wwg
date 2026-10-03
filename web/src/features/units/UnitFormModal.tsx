@@ -8,6 +8,7 @@ import {
   NumberInput,
   Select,
   Stack,
+  Textarea,
   TextInput,
 } from "@mantine/core";
 import { useMemo, useState } from "react";
@@ -72,12 +73,56 @@ const UnitForm = CreateUnitBody.extend({
 
 export type UnitValues = z.infer<typeof UnitForm>;
 
-const fields = ["name", "type", "fightingFactor", "points", "division", "brigade"] as const;
+const fields = [
+  "name",
+  "type",
+  "fightingFactor",
+  "points",
+  "corps",
+  "corpsCommander",
+  "division",
+  "divisionCommander",
+  "brigade",
+  "brigadeCommander",
+  "notes",
+  "status",
+] as const;
 
 /** A unit's place in its order of battle, for suggestions. */
 interface Grouped {
+  corps?: string | null;
+  corpsCommander?: string | null;
   division?: string | null;
+  divisionCommander?: string | null;
   brigade?: string | null;
+  brigadeCommander?: string | null;
+}
+
+/** The order of battle's levels, each with its commander (decisions 0024 and 0025). */
+const levels = [
+  { group: "corps", label: "Corps", commander: "corpsCommander" },
+  { group: "division", label: "Division", commander: "divisionCommander" },
+  { group: "brigade", label: "Brigade", commander: "brigadeCommander" },
+] as const;
+
+const statusOptions = [
+  { value: UnitStatus.Painted, label: "Painted" },
+  { value: UnitStatus.Substitute, label: "Substitute (another unit's figures)" },
+  { value: UnitStatus.Unpainted, label: "Unpainted" },
+];
+
+const same = (a: string | null | undefined, b: string | null | undefined) =>
+  !!a?.trim() && a.trim().toLowerCase() === b?.trim().toLowerCase();
+
+/** Units in the named group, or all of them while none is (or the group has no subgroups). */
+function within(
+  siblings: readonly Grouped[],
+  level: "corps" | "division",
+  name?: string | null,
+  sub?: "division" | "brigade",
+) {
+  const inGroup = siblings.filter((u) => same(u[level], name));
+  return sub && inGroup.some((u) => u[sub]) ? inGroup : siblings;
 }
 
 /** Each name once, in order ("2nd" before "10th"); Mantine refuses repeated options. */
@@ -110,23 +155,28 @@ interface UnitFormModalProps {
   submitLabel: string;
   defaultValues?: DefaultValues<UnitValues>;
   /**
-   * The units beside it (its faction's, or its army's): their divisions and brigades are
-   * suggested, so a slip of the keyboard doesn't start a new one.
+   * The units beside it (its faction's, or its army's): their corps, divisions and brigades are
+   * suggested, so a slip of the keyboard doesn't start a new one, and choosing one fills in its
+   * commander.
    */
   siblings?: readonly Grouped[];
+  /** Shows the notes and status, which only a library unit has (decision 0025). */
+  libraryDetails?: boolean;
   onSubmit: (values: UnitValues) => Promise<void>;
   onClose: () => void;
 }
 
 /**
- * A unit's name, type, Fighting Factor, points, division and brigade (a library unit, or an army's
- * copy of one), in a modal. Mount it only while open.
+ * A unit's name, type, Fighting Factor, points, and its corps, division and brigade with their
+ * commanders (a library unit, with its notes and status, or an army's copy of one), in a modal.
+ * Mount it only while open.
  */
 export function UnitFormModal({
   title,
   submitLabel,
   defaultValues = { name: "", points: 0 },
   siblings = [],
+  libraryDetails = false,
   onSubmit,
   onClose,
 }: UnitFormModalProps) {
@@ -137,13 +187,25 @@ export function UnitFormModal({
     defaultValues: { ...noDetails, ...defaultValues },
   });
   const { errors, isSubmitting } = form.formState;
-  const division = useWatch({ control: form.control, name: "division" })?.trim().toLowerCase();
-  const divisions = useMemo(() => names(siblings.map((u) => u.division)), [siblings]);
-  // The chosen division's brigades; all of them while it has none (or none yet).
-  const brigades = useMemo(() => {
-    const inDivision = siblings.filter((u) => u.division?.trim().toLowerCase() === division);
-    return names((inDivision.some((u) => u.brigade) ? inDivision : siblings).map((u) => u.brigade));
-  }, [siblings, division]);
+  const corps = useWatch({ control: form.control, name: "corps" });
+  const division = useWatch({ control: form.control, name: "division" });
+  // Each level's names: the chosen corps' divisions, and the chosen division's brigades (all of
+  // them while it has none, or none is chosen yet).
+  const suggestions = useMemo(
+    () => ({
+      corps: names(siblings.map((u) => u.corps)),
+      division: names(within(siblings, "corps", corps, "division").map((u) => u.division)),
+      brigade: names(within(siblings, "division", division, "brigade").map((u) => u.brigade)),
+    }),
+    [siblings, corps, division],
+  );
+
+  /** Fills in a group's commander from the units already in it, unless one's been entered. */
+  const fillCommander = (level: (typeof levels)[number], name: string) => {
+    if (form.getValues(level.commander)?.trim()) return;
+    const known = siblings.find((u) => same(u[level.group], name) && u[level.commander]?.trim());
+    if (known) form.setValue(level.commander, known[level.commander] ?? null);
+  };
 
   const submit = form.handleSubmit(async (values) => {
     setFormError(null);
@@ -156,7 +218,7 @@ export function UnitFormModal({
   });
 
   return (
-    <Modal opened onClose={onClose} title={title} centered>
+    <Modal opened onClose={onClose} title={title} centered size="lg">
       <form onSubmit={(event) => void submit(event)} noValidate>
         <Stack>
           {formError && (
@@ -189,38 +251,44 @@ export function UnitFormModal({
               />
             )}
           />
-          <Group grow align="flex-start">
-            <Controller
-              control={form.control}
-              name="division"
-              render={({ field }) => (
-                <Autocomplete
-                  label="Division"
-                  data={divisions}
-                  value={field.value ?? ""}
-                  onChange={field.onChange}
-                  onBlur={field.onBlur}
-                  error={errors.division?.message}
-                  comboboxProps={{ withinPortal: false }}
-                />
-              )}
-            />
-            <Controller
-              control={form.control}
-              name="brigade"
-              render={({ field }) => (
-                <Autocomplete
-                  label="Brigade"
-                  data={brigades}
-                  value={field.value ?? ""}
-                  onChange={field.onChange}
-                  onBlur={field.onBlur}
-                  error={errors.brigade?.message}
-                  comboboxProps={{ withinPortal: false }}
-                />
-              )}
-            />
-          </Group>
+          {levels.map((level) => (
+            <Group key={level.group} grow align="flex-start">
+              <Controller
+                control={form.control}
+                name={level.group}
+                render={({ field }) => (
+                  <Autocomplete
+                    label={level.label}
+                    data={suggestions[level.group]}
+                    value={field.value ?? ""}
+                    onChange={field.onChange}
+                    onOptionSubmit={(name) => {
+                      fillCommander(level, name);
+                    }}
+                    onBlur={() => {
+                      fillCommander(level, field.value ?? "");
+                      field.onBlur();
+                    }}
+                    error={errors[level.group]?.message}
+                    comboboxProps={{ withinPortal: false }}
+                  />
+                )}
+              />
+              <Controller
+                control={form.control}
+                name={level.commander}
+                render={({ field }) => (
+                  <TextInput
+                    label={`${level.label} commander`}
+                    value={field.value ?? ""}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    error={errors[level.commander]?.message}
+                  />
+                )}
+              />
+            </Group>
+          ))}
           <Group grow align="flex-start">
             <Controller
               control={form.control}
@@ -269,6 +337,42 @@ export function UnitFormModal({
               )}
             />
           </Group>
+          {libraryDetails && (
+            <>
+              <Controller
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <Select
+                    label="Figures"
+                    placeholder="Not known"
+                    data={statusOptions}
+                    value={field.value ?? null}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    clearable
+                    error={errors.status?.message}
+                    comboboxProps={{ withinPortal: false }}
+                  />
+                )}
+              />
+              <Controller
+                control={form.control}
+                name="notes"
+                render={({ field }) => (
+                  <Textarea
+                    label="Notes"
+                    autosize
+                    minRows={2}
+                    value={field.value ?? ""}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    error={errors.notes?.message}
+                  />
+                )}
+              />
+            </>
+          )}
           <Group justify="flex-end">
             <Button variant="default" onClick={onClose}>
               Cancel

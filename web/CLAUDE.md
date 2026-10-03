@@ -102,7 +102,8 @@ The pre-commit hook runs `eslint --fix` and Prettier on staged files.
   factions (the army form's **Factions**), through `AddUnitsModal`; both fetch the library afresh
   each time they open (`refetchOnMount: "always"`), as a Manager may have changed it. A faction's
   units, and an army's, show as their order of battle (step 54): `order-of-battle.ts`
-  (`features/units`) groups them (a pure function), `OrderOfBattleTable` draws them for both.
+  (`features/units`) groups them (a pure function; corps, division, brigade, in the imported
+  file's order where units have one, step 55), `OrderOfBattleTable` draws them for both.
 - A campaign's calendar (step 45) is `features/campaigns/calendar.ts`: `turnWhen(turn)` labels a
   turn ("17 June 1815, Afternoon"); the rule book's marching nations mirror the API's
   `TurnParts`. The march itself is `movement.ts`'s `budgetFor`, as the API's.

@@ -182,6 +182,83 @@ describe("the library", () => {
     await expectNoAxeViolations(container);
   });
 
+  it("shows corps above their divisions, in the imported file's order, with commanders", async () => {
+    const at = (n: number, changes: Partial<UnitResponse>): UnitResponse => ({
+      ...guard,
+      id: `0192f5c1-0000-7000-8000-0000000u020${String(n)}`,
+      ...changes,
+    });
+    serveLibrary([
+      at(1, {
+        name: "Saxon Guard",
+        corps: "IX Corps",
+        corpsCommander: "Reynier",
+        division: "34th Division",
+        divisionCommander: "von Zezschwitz",
+        notes: "sub in V",
+        importOrder: 2,
+      }),
+      at(2, {
+        name: "Grenadiers",
+        corps: "V Corps",
+        corpsCommander: "Lannes",
+        division: "16th Division",
+        importOrder: 1,
+      }),
+    ]);
+    const { container } = await renderApp(`/library/${factionId}`, { user: manager });
+
+    const section = within(await screen.findByRole("region", { name: "Units" }));
+    await section.findByRole("cell", { name: /Saxon Guard/ });
+    const rows = section
+      .getAllByRole("row")
+      .slice(1)
+      .map((row) => row.firstElementChild?.textContent);
+    // The file has V Corps first, though "IX" sorts before "V".
+    expect(rows).toEqual([
+      "V CorpsLannes1 unit · 40 points",
+      "16th Division1 unit · 40 points",
+      "GrenadiersLine Infantry",
+      "IX CorpsReynier1 unit · 40 points",
+      "34th Divisionvon Zezschwitz1 unit · 40 points",
+      "Saxon GuardLine Infantrysub in V",
+    ]);
+    await expectNoAxeViolations(container);
+  });
+
+  it("fills in a known corps' commander, and keeps a unit's figures and notes", async () => {
+    serveLibrary([{ ...guard, corps: "I Corps", corpsCommander: "Victor" }]);
+    const user = userEvent.setup();
+    await renderApp(`/library/${factionId}`, { user: manager });
+
+    await user.click(await screen.findByRole("button", { name: "Add unit" }));
+    let dialog = within(await screen.findByRole("dialog", { name: "Add unit" }));
+    await user.type(dialog.getByRole("textbox", { name: "Name" }), "Old Guard");
+    await user.click(dialog.getByRole("combobox", { name: "Type" }));
+    await user.click(await screen.findByRole("option", { name: "Line Infantry", hidden: true }));
+    await user.type(dialog.getByRole("textbox", { name: "Fighting Factor (FF)" }), "8");
+    await user.type(dialog.getByRole("combobox", { name: "Corps" }), "i corps");
+    await user.tab();
+    expect(dialog.getByRole("textbox", { name: "Corps commander" })).toHaveValue("Victor");
+    await user.click(dialog.getByRole("combobox", { name: "Figures" }));
+    await user.click(
+      await screen.findByRole("option", {
+        name: "Substitute (another unit's figures)",
+        hidden: true,
+      }),
+    );
+    await user.type(dialog.getByRole("textbox", { name: "Notes" }), "sub: 45th Regt.");
+    await user.click(dialog.getByRole("button", { name: "Add unit" }));
+    expect(await screen.findByText("Added Old Guard.")).toBeInTheDocument();
+
+    await user.click(await screen.findByRole("button", { name: "Edit Old Guard" }));
+    dialog = within(await screen.findByRole("dialog", { name: "Edit unit" }));
+    expect(dialog.getByRole("combobox", { name: "Figures" })).toHaveValue(
+      "Substitute (another unit's figures)",
+    );
+    expect(dialog.getByRole("textbox", { name: "Notes" })).toHaveValue("sub: 45th Regt.");
+  });
+
   it("suggests the faction's divisions, and the chosen division's brigades", async () => {
     serveLibrary([
       { ...guard, division: "Imperial Guard", brigade: "Old Guard" },

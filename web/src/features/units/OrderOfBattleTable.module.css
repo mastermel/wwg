@@ -1,3 +1,9 @@
+/* A corps' heading row (decision 0025): a band like a division's, set apart above it. */
+.corps {
+  background-color: var(--mantine-color-default-hover);
+  border-top: 2px solid var(--mantine-color-default-border);
+}
+
 /* A division's heading row: a band across the table, like the army's totals row. */
 .division {
   background-color: var(--mantine-color-default-hover);

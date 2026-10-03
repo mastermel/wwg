@@ -196,6 +196,7 @@ function FactionView({ faction, editor }: { faction: FactionResponse; editor: bo
           title="Add unit"
           submitLabel="Add unit"
           siblings={faction.units}
+          libraryDetails
           onClose={addModal.close}
           onSubmit={async (values) => {
             const unit = await createUnit.mutateAsync({ id: faction.id, data: values });
@@ -210,6 +211,7 @@ function FactionView({ faction, editor }: { faction: FactionResponse; editor: bo
           submitLabel="Save"
           defaultValues={editing}
           siblings={faction.units}
+          libraryDetails
           onClose={() => {
             setEditing(null);
           }}

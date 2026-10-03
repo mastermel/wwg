@@ -102,4 +102,62 @@ describe("the order of battle", () => {
       "C",
     ]);
   });
+
+  it("puts divisions under their corps, after the units in none", () => {
+    const oob = orderOfBattle([
+      { ...unit("Grenadiers", "Division of Grenadiers", "1st Brigade"), corps: "Old Guard" },
+      { ...unit("Guard Battery", null, "1st Brigade"), corps: "Old Guard" },
+      unit("Engineers", "Reserve"),
+    ]);
+
+    expect(oob.grouped).toBe(true);
+    expect(oob.divisions.map((d) => d.name)).toEqual(["Reserve"]);
+    expect(oob.corps).toHaveLength(1);
+    const [corps] = oob.corps;
+    expect(corps.name).toBe("Old Guard");
+    expect(corps.brigades.map((b) => [b.name, ...names(b.units)])).toEqual([
+      ["1st Brigade", "Guard Battery"],
+    ]);
+    expect(corps.divisions.map((d) => d.name)).toEqual(["Division of Grenadiers"]);
+    expect(names(unitsIn(corps))).toEqual(["Guard Battery", "Grenadiers"]);
+  });
+
+  it("names each group's commander from its units", () => {
+    const oob = orderOfBattle([
+      {
+        ...unit("1st Foot Guards", "1st Division", "1st Brigade"),
+        corps: "I Corps",
+        corpsCommander: " Moore ",
+        divisionCommander: "Paget",
+        brigadeCommander: null,
+      },
+      {
+        ...unit("2nd Foot Guards", "1st Division", "1st Brigade"),
+        corps: "I Corps",
+        brigadeCommander: "Maitland",
+      },
+    ]);
+
+    expect(oob.corps[0]?.commander).toBe("Moore");
+    expect(oob.corps[0]?.divisions[0]?.commander).toBe("Paget");
+    expect(oob.corps[0]?.divisions[0]?.brigades[0]?.commander).toBe("Maitland");
+  });
+
+  it("keeps the imported file's order, then sorts the rest by name", () => {
+    const oob = orderOfBattle([
+      { ...unit("Cuirassiers"), corps: "Cavalry Reserve", importOrder: 9 },
+      { ...unit("Line"), corps: "IX Corps", importOrder: 5 },
+      { ...unit("Grenadiers"), corps: "V Corps", importOrder: 7 },
+      { ...unit("Chasseurs"), corps: "V Corps", importOrder: 6 },
+      { ...unit("Militia"), corps: "A Corps" },
+    ]);
+
+    expect(oob.corps.map((c) => c.name)).toEqual([
+      "IX Corps",
+      "V Corps",
+      "Cavalry Reserve",
+      "A Corps",
+    ]);
+    expect(names(oob.corps[1]?.units ?? [])).toEqual(["Chasseurs", "Grenadiers"]);
+  });
 });

@@ -7,6 +7,7 @@ import {
   orderOfBattle,
   unitsIn,
   type Brigade,
+  type Division,
   type Placed,
 } from "@/features/units/order-of-battle";
 import { unitTypeLabels } from "@/features/units/unit-types";
@@ -17,6 +18,8 @@ interface Row extends Placed {
   name: string;
   fightingFactor: number;
   points: number;
+  /** A library unit's notes (decision 0025); an army's copy has none. */
+  notes?: string | null;
 }
 
 interface OrderOfBattleTableProps<T extends Row> {
@@ -41,9 +44,10 @@ const indent = (depth: number) =>
 const points = (units: readonly Row[]) => units.reduce((sum, unit) => sum + unit.points, 0);
 
 /**
- * Units in their order of battle (decision 0024), a library faction's or an army's: each division
- * a band, its brigades under it, each with its units; units in no division come first. With no
- * divisions or brigades at all, a plain list.
+ * Units in their order of battle (decisions 0024 and 0025), a library faction's or an army's: each
+ * corps a band, its divisions under it (bands too), their brigades under them, each with its units
+ * and each heading naming its commander; units in no corps or division come first. With no
+ * corps, divisions or brigades at all, a plain list.
  */
 export function OrderOfBattleTable<T extends Row>({
   units,
@@ -64,6 +68,11 @@ export function OrderOfBattleTable<T extends Row>({
         <Text size="xs" c="dimmed" hiddenFrom="sm">
           {unitTypeLabels[unit.type]}
         </Text>
+        {unit.notes && (
+          <Text size="xs" c="dimmed">
+            {unit.notes}
+          </Text>
+        )}
       </Table.Td>
       <Table.Td visibleFrom="sm">{unitTypeLabels[unit.type]}</Table.Td>
       <Table.Td ta="right">{unit.fightingFactor}</Table.Td>
@@ -99,8 +108,9 @@ export function OrderOfBattleTable<T extends Row>({
   );
 
   const headingRow = (
-    kind: "division" | "brigade",
+    kind: "corps" | "division" | "brigade",
     name: string,
+    commander: string | null,
     grouped: readonly Row[],
     depth: number,
   ) => (
@@ -108,11 +118,16 @@ export function OrderOfBattleTable<T extends Row>({
       <Table.Th
         scope="rowgroup"
         colSpan={columns}
-        fw={kind === "division" ? 700 : 600}
+        fw={kind === "brigade" ? 600 : 700}
         style={indent(depth)}
       >
         <Group gap="xs" wrap="wrap">
           <span>{name}</span>
+          {commander && (
+            <Text span size="sm" fw={400}>
+              {commander}
+            </Text>
+          )}
           <Text span size="xs" c="dimmed" fw={400}>
             {unitCount(grouped.length)} · {points(grouped)} points
           </Text>
@@ -123,14 +138,23 @@ export function OrderOfBattleTable<T extends Row>({
 
   const brigadeRows = (brigade: Brigade<T>, depth: number) => (
     <Fragment key={brigade.name}>
-      {headingRow("brigade", brigade.name, brigade.units, depth)}
+      {headingRow("brigade", brigade.name, brigade.commander, brigade.units, depth)}
       {brigade.units.map((unit) => unitRow(unit, depth + 1))}
     </Fragment>
   );
 
-  // Units in no division sit under a heading of their own once there are divisions to tell
-  // them from.
-  const looseDepth = oob.divisions.length > 0 ? 1 : 0;
+  /** A division's heading, its own units, then its brigades, from `depth` down. */
+  const divisionRows = (division: Division<T>, depth: number) => (
+    <Fragment key={division.name}>
+      {headingRow("division", division.name, division.commander, unitsIn(division), depth)}
+      {division.units.map((unit) => unitRow(unit, depth + 1))}
+      {division.brigades.map((brigade) => brigadeRows(brigade, depth + 1))}
+    </Fragment>
+  );
+
+  // Units in no division sit under a heading of their own once there are divisions or corps to
+  // tell them from.
+  const looseDepth = oob.divisions.length > 0 || oob.corps.length > 0 ? 1 : 0;
   const loose = [...oob.units, ...oob.brigades.flatMap((brigade) => brigade.units)];
 
   return (
@@ -153,16 +177,20 @@ export function OrderOfBattleTable<T extends Row>({
       </Table.Thead>
       {loose.length > 0 && (
         <Table.Tbody>
-          {looseDepth > 0 && headingRow("division", "Not in a division", loose, 0)}
+          {looseDepth > 0 && headingRow("division", "Not in a division", null, loose, 0)}
           {oob.units.map((unit) => unitRow(unit, looseDepth))}
           {oob.brigades.map((brigade) => brigadeRows(brigade, looseDepth))}
         </Table.Tbody>
       )}
       {oob.divisions.map((division) => (
-        <Table.Tbody key={division.name}>
-          {headingRow("division", division.name, unitsIn(division), 0)}
-          {division.units.map((unit) => unitRow(unit, 1))}
-          {division.brigades.map((brigade) => brigadeRows(brigade, 1))}
+        <Table.Tbody key={division.name}>{divisionRows(division, 0)}</Table.Tbody>
+      ))}
+      {oob.corps.map((corps) => (
+        <Table.Tbody key={`corps ${corps.name}`}>
+          {headingRow("corps", corps.name, corps.commander, unitsIn(corps), 0)}
+          {corps.units.map((unit) => unitRow(unit, 1))}
+          {corps.brigades.map((brigade) => brigadeRows(brigade, 1))}
+          {corps.divisions.map((division) => divisionRows(division, 1))}
         </Table.Tbody>
       ))}
       {totals && (

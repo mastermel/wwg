@@ -300,6 +300,8 @@ describe("units", () => {
     const dialog = within(await screen.findByRole("dialog"));
     expect(dialog.getByRole("textbox", { name: "Name" })).toHaveValue("1st Division");
     expect(dialog.getByRole("combobox", { name: "Type" })).toHaveValue("Line Infantry");
+    // Notes and figures are the library unit's alone.
+    expect(dialog.queryByRole("textbox", { name: "Notes" })).not.toBeInTheDocument();
     const ff = dialog.getByRole("textbox", { name: "Fighting Factor (FF)" });
     await user.clear(ff);
     await user.type(ff, "7");

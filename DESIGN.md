@@ -2853,13 +2853,14 @@ build on positions.
       its totals row (the same `OrderOfBattleTable`, in `features/units`).
 55. **Importing the unit library** (decision 0025; the CSV and how it's made:
     `docs/library-import.md`), in parts:
-    - **55a. The new fields and the Archive:** corps, the three commanders, notes, status, import
+    - ✅ **55a. The new fields and the Archive:** corps, the three commanders, notes, status, import
       key and order on `Unit`; corps, commanders and order on `ArmyUnit`, copied when a unit joins
       an army; in `SaveUnitRequest` / `UpdateArmyUnitRequest` and their responses; the migration
       that moves the library's units into archive factions, one per nation.
-    - **55b. In the app:** `UnitFormModal` edits the corps, commanders, notes and status (the
-      corps suggested from the faction's, as divisions are); the order of battle gains the corps
-      band, each group's commander in its heading, and the file's order where units have one.
+    - ✅ **55b. In the app:** `UnitFormModal` edits the corps, commanders, notes and status (the
+      corps suggested from the faction's, as divisions are, and a known group's commander filled
+      in); the order of battle gains the corps band, each group's commander in its heading, a
+      unit's notes under its name, and the file's order where units have one (`order-of-battle.ts`).
     - **55c. The CSV for the app:** `scripts/library_csv.py` adds each unit's `key`, `type`
       (`UnitType`), its faction's `flag` (`Nation`) and status by name; the CSV regenerated.
     - **55d. The United States flag:** `Nation.UnitedStates` and its flag (15 stars and stripes).
