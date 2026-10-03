@@ -29,5 +29,11 @@
       Link="testdata/movement.json"
       CopyToOutputDirectory="PreserveNewest"
     />
+    <!-- The club's unit library (decision 0025), imported whole by a test. -->
+    <None
+      Include="../../../docs/complete_library.csv"
+      Link="testdata/complete_library.csv"
+      CopyToOutputDirectory="PreserveNewest"
+    />
   </ItemGroup>
 </Project>

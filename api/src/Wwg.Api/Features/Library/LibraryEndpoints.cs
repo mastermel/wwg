@@ -52,6 +52,18 @@ internal static class LibraryEndpoints
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict);
 
+        // Importing the club's CSV (decision 0025): the file's text, read in the browser.
+        var import = app.MapGroup("/api/library/import").WithTags("Library");
+        import
+            .MapPost("/preview", LibraryImport.PreviewLibraryImportAsync)
+            .WithName("PreviewLibraryImport")
+            .RequireLibraryEditor();
+        import
+            .MapPost("", LibraryImport.ImportLibraryAsync)
+            .WithName("ImportLibrary")
+            .RequireLibraryEditor()
+            .ProducesProblem(StatusCodes.Status409Conflict);
+
         return app;
     }
 

@@ -5292,6 +5292,98 @@
           }
         ]
       }
+    },
+    "/api/library/import/preview": {
+      "post": {
+        "tags": [
+          "Library"
+        ],
+        "summary": "Says what importing the file would do: its factions and their units to create, update or\nleave, imported units it no longer has, and rows it can't take (Manager or Admin). Changes\nnothing.",
+        "operationId": "PreviewLibraryImport",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportLibraryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LibraryImportResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      }
+    },
+    "/api/library/import": {
+      "post": {
+        "tags": [
+          "Library"
+        ],
+        "summary": "Imports the file into the library (Manager or Admin): creates its new factions, and creates\nand updates their units, in one transaction. 400, importing nothing, while any row is wrong.",
+        "operationId": "ImportLibrary",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportLibraryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LibraryImportResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LibraryImportResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      }
     }
   },
   "components": {
@@ -7457,6 +7549,123 @@
           }
         }
       },
+      "ImportFactionSummary": {
+        "required": [
+          "id",
+          "name",
+          "nation",
+          "created",
+          "updated",
+          "unchanged"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The library faction its units go to; null for one the import creates.",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "description": "Its name: the library faction's, or the file's for a new one."
+          },
+          "nation": {
+            "description": "Its flag: the library faction's, or the file's for a new one.",
+            "$ref": "#/components/schemas/Nation"
+          },
+          "created": {
+            "type": "integer",
+            "description": "Units the import adds.",
+            "format": "int32"
+          },
+          "updated": {
+            "type": "integer",
+            "description": "Units it changes.",
+            "format": "int32"
+          },
+          "unchanged": {
+            "type": "integer",
+            "description": "Units already as the file has them.",
+            "format": "int32"
+          }
+        },
+        "description": "A faction in the file, and what happens to its units."
+      },
+      "ImportLibraryRequest": {
+        "required": [
+          "csv"
+        ],
+        "type": "object",
+        "properties": {
+          "csv": {
+            "maxLength": 2000000,
+            "minLength": 1,
+            "type": "string",
+            "description": "The file's text: a header row naming the columns (`docs/library-import.md`), then a unit per\nrow."
+          }
+        },
+        "description": "The club's unit library as CSV, to preview or import (decision 0025)."
+      },
+      "ImportMissingUnit": {
+        "required": [
+          "id",
+          "factionId",
+          "name",
+          "key"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The library unit's ID.",
+            "format": "uuid"
+          },
+          "factionId": {
+            "type": "string",
+            "description": "Its faction.",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "description": "Its name."
+          },
+          "key": {
+            "type": "string",
+            "description": "The import key it was last imported by."
+          }
+        },
+        "description": "An imported unit the file no longer has."
+      },
+      "ImportRowError": {
+        "required": [
+          "row",
+          "column",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "row": {
+            "type": "integer",
+            "description": "The row, counting the header as row 1; 0 for the file as a whole.",
+            "format": "int32"
+          },
+          "column": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The column at fault; null for the whole row or file."
+          },
+          "message": {
+            "type": "string",
+            "description": "What's wrong, in words."
+          }
+        },
+        "description": "Why a row (or the file) can't be imported."
+      },
       "InferredHexCell": {
         "required": [
           "q",
@@ -7589,6 +7798,50 @@
           }
         },
         "description": "What a join link shows before joining. Public: anyone with the code can see it."
+      },
+      "LibraryImportResponse": {
+        "required": [
+          "unitCount",
+          "factions",
+          "missing",
+          "errors",
+          "errorCount"
+        ],
+        "type": "object",
+        "properties": {
+          "unitCount": {
+            "type": "integer",
+            "description": "How many units the file has.",
+            "format": "int32"
+          },
+          "factions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ImportFactionSummary"
+            },
+            "description": "Its factions, in the file's order, with what happens to their units."
+          },
+          "missing": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ImportMissingUnit"
+            },
+            "description": "Imported units of those factions that the file no longer has: the import keeps them."
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ImportRowError"
+            },
+            "description": "Rows the import can't take, the first 50; while there are any, nothing is imported."
+          },
+          "errorCount": {
+            "type": "integer",
+            "description": "How many errors there are in all.",
+            "format": "int32"
+          }
+        },
+        "description": "What importing a file does, or would do (decision 0025)."
       },
       "LoginRequest": {
         "required": [

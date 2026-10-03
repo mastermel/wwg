@@ -2090,7 +2090,7 @@ one, as a campaign is made with both)
 | PUT | `/api/admin/users/{id}/manager` | Make a user a Manager, or not `{ manager }` (Admins) |
 | PUT / DELETE | `/api/army-units/{id}` | Edit the campaign's copy / remove it from the army (setup only) |
 | PUT / DELETE | `/api/army-units/{id}/placement` | Replaces `/api/units/{id}/placement` |
-| POST | `/api/library/import/preview` | Step 55 (Managers, Admins): read an uploaded CSV (multipart, one file) and say what importing it would do: per faction, matched or new, and its units to create, update and leave as they are; keyed units missing from the file; rows with errors (none imported while any has one). Changes nothing |
+| POST | `/api/library/import/preview` | Step 55 (Managers, Admins): read a CSV `{ csv }` (the file's text, read in the browser; ≤2,000,000 characters) and say what importing it would do: per faction, matched or new, and its units to create, update and leave as they are; keyed units missing from the file; rows with errors (none imported while any has one). Changes nothing |
 | POST | `/api/library/import` | Step 55: import the same file in one transaction (rows with errors: 400 with the preview's errors) |
 
 **Steps 44–52: the rules on the grid** (decisions 0017 to 0023; access in §5.2)
@@ -2864,8 +2864,8 @@ build on positions.
     - ✅ **55c. The CSV for the app:** `scripts/library_csv.py` adds each unit's `key`, `type`
       (`UnitType`), its faction's `flag` (`Nation`) and status by name; the CSV regenerated.
     - ✅ **55d. The United States flag:** `Nation.UnitedStates` and its flag (15 stars and stripes).
-    - **55e. The import API:** preview and import (`LibraryImport`): the file's columns checked
+    - ✅ **55e. The import API:** preview and import (`LibraryImport`): the file's columns checked
       by name, every row validated as the unit form is, faction matched by name or created, units
-      matched by import key; integration tests with a small CSV.
+      matched by import key; integration tests with small CSVs, and the club's whole file.
     - **55f. The import page:** the library's **Import** (Managers, Admins): choose the file,
       read the preview (factions, counts, missing units, errors), then import; an e2e test.

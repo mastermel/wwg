@@ -122,6 +122,11 @@ true, because the build launches the app to write the document.
   rest (`Marches`), and units afloat take no towns (`UnitPlace.Afloat`, `Holdings`). A boat a
   unit built (`BoatBuilding`) is an army unit without a library unit: `ArmyUnit.UnitId` and its
   `Unit` are null there, so queries reaching the library through a unit allow for it.
+- The library import (decision 0025) is `Features/Library/LibraryImport.cs`: it reads the CSV's
+  text (its own RFC 4180 reader), checks each row as the unit form is checked, and plans
+  against the library (factions by name, units by `ImportKey`); the preview returns the plan, the
+  import saves it in one `SaveChanges`. Tests import `docs/complete_library.csv` whole (copied
+  into the test output as `testdata/complete_library.csv`).
 - Emails: build an `EmailMessage` (HTML and text, with user values HTML-encoded) and queue it with
   `IEmailQueue`; never send inline. Tests read them from `Emails` (`FakeEmailService`).
   A campaign email has an `EmailKind`, which its recipient can turn off (decision 0023): load
