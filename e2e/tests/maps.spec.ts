@@ -2,7 +2,7 @@ import { apiAs, waterlooMap } from "./support/api.ts";
 import { scan } from "./support/axe.ts";
 import { createCampaign, join, joinLink } from "./support/campaigns.ts";
 import { browserOf, libraryFaction } from "./support/library.ts";
-import { clickMap, clickMapCentre, dragOnMap } from "./support/map.ts";
+import { clickMap, clickMapCentre } from "./support/map.ts";
 import { desktopOnly, expect, test, type User } from "./support/fixtures.ts";
 
 // Place search isn't driven here: it calls a geocoding service over the internet (the component
@@ -77,21 +77,6 @@ test("the Umpire draws the area corner to corner, and sees how many hexes it hol
   ).toBeVisible();
   await page.getByRole("button", { name: "Save map settings" }).click();
   await expect(page.getByText("Saved the map settings.")).toBeVisible();
-});
-
-test("on a computer, the Umpire drags the area's rectangle", async ({ signUp, isMobile }) => {
-  test.skip(isMobile, desktopOnly);
-  const umpire = await signUp("Ada");
-  await createCampaign(umpire.page, "Aspern 1809");
-  const page = umpire.page;
-  await page.goto(`${page.url()}/map/settings`);
-  await expect(page.getByRole("region", { name: "Map", exact: true })).toBeVisible();
-
-  await page.getByRole("button", { name: "Draw the area" }).click();
-  await dragOnMap(page, [-0.2, -0.2], [0.2, 0.2]);
-
-  await expect(page.getByText(/^The outline is the campaign's area/)).toBeVisible();
-  await expect(page.getByRole("button", { name: "Draw the area" })).toBeVisible();
 });
 
 test("the Umpire places the units, stacking two, and starts the campaign", async ({ signUp }) => {

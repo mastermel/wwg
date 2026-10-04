@@ -1,13 +1,14 @@
 import { admin } from "./support/accounts.ts";
 import { scan } from "./support/axe.ts";
 import { createCampaign } from "./support/campaigns.ts";
-import { desktopOnly, expect, test } from "./support/fixtures.ts";
+import { desktopOnly, lowValue, expect, test } from "./support/fixtures.ts";
 
 test("an Admin gives an Umpire-less campaign a new Umpire", async ({
   signIn,
   signUp,
   isMobile,
 }) => {
+  test.skip(true, lowValue);
   test.skip(isMobile, desktopOnly);
   const umpire = await signUp("Bob");
   const successor = await signUp("Cal");

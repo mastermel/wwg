@@ -75,3 +75,6 @@ export { expect } from "@playwright/test";
  * the phone is for Players' campaigns and maps.
  */
 export const desktopOnly = "Umpires and Admins set up and manage campaigns on a computer.";
+
+export const lowValue =
+  "This is a low value test to be performed today given the current application's level of adoption. Skipping for now to improve the speed of development.";

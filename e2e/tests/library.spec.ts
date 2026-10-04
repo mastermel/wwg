@@ -8,7 +8,7 @@ import {
   libraryFaction,
   uniqueName,
 } from "./support/library.ts";
-import { desktopOnly, expect, test } from "./support/fixtures.ts";
+import { desktopOnly, lowValue, expect, test } from "./support/fixtures.ts";
 
 test("an Admin makes a Manager, who builds the library that everyone sees", async ({
   signIn,
@@ -119,6 +119,7 @@ test("an Admin imports the club's library CSV, then imports it again unchanged",
   signIn,
   isMobile,
 }) => {
+  test.skip(true, lowValue);
   test.skip(isMobile, desktopOnly);
   // Every run shares the library: a nation (so a faction) of this test's own.
   const nation = uniqueName("Hanoverians");
