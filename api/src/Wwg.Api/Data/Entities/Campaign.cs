@@ -99,12 +99,14 @@ internal static class SupplyRules
     public const int DefaultReach = 1,
         MaxReach = 3;
 
-    /// <summary>Partisans, light infantry, scouts and light cavalry (§G.5).</summary>
+    /// <summary>
+    /// Partisans, light infantry and light cavalry (§G.5). The rules' scouts are exempt too, whatever
+    /// the campaign chooses (decision 0028).
+    /// </summary>
     public static readonly IReadOnlyList<UnitType> ExemptTypes =
     [
         UnitType.Partisans,
         UnitType.LightInfantry,
-        UnitType.Scouts,
         UnitType.LightCavalry,
     ];
 
@@ -138,7 +140,6 @@ internal static class Concentration
         UnitType.LightCavalry,
         UnitType.MediumCavalry,
         UnitType.HeavyCavalry,
-        UnitType.Scouts,
         UnitType.HorseArtillery,
     ];
 }

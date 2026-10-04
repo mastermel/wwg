@@ -69,7 +69,7 @@ internal static class Attrition
         var owing = new Dictionary<Guid, Owing>();
         foreach (var (id, unit) in supply.Units)
         {
-            // Without an order it rests: no forced march.
+            // Without an order it rests: no forced march. (Nor does a scout march, decision 0028.)
             var march = open.TryGetValue(id, out var order)
                 ? before[id].After(order.Moved, order.ForceMarch)
                 : MarchState.Rested;
@@ -86,7 +86,7 @@ internal static class Attrition
         var ids = owing.Keys.ToList();
         var units = await db
             .ArmyUnits.AsNoTracking()
-            // A unit with no points left has none to lose.
+            // A unit with no points left has none to lose; a scout has none at all.
             .Where(u => ids.Contains(u.Id) && u.Points > 0)
             .OrderBy(u => u.Army.Name)
             .ThenBy(u => u.Name)

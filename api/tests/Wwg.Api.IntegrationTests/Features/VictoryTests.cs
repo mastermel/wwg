@@ -252,6 +252,42 @@ public sealed class VictoryTests : ApiTest
         );
     }
 
+    /// <summary>A scout of the scenario's army, placed at <paramref name="at"/> before the start.</summary>
+    private static async Task ScoutAsync(CampaignScenario scenario, Hex at)
+    {
+        var scout = await LibrarySteps.AddScoutAsync(scenario);
+        using var placed = await TurnSteps.PlaceAsync(scenario, scout, at);
+        placed.EnsureSuccessStatusCode();
+    }
+
+    [Fact]
+    public async Task StartNextTurn_AScoutAloneInTheHex_TakesNothing()
+    {
+        var (scenario, _) = await ReadyAsync(new Hex(3, -1));
+        using var _s = scenario;
+        using var settled = await SettleAsync(scenario, new Hex(2, -1), Town("Ligny"));
+        await ScoutAsync(scenario, new Hex(2, -1));
+        await StartAsync(scenario);
+
+        await NextTurnAsync(scenario);
+
+        Assert.Empty((await ScoreAsync(scenario)).Changes);
+    }
+
+    [Fact]
+    public async Task StartNextTurn_AnEnemyScoutInTheHex_DoesntStopItBeingTaken()
+    {
+        var (scenario, enemy) = await ReadyAsync(new Hex(2, -1));
+        using var _s = scenario;
+        using var settled = await SettleAsync(scenario, new Hex(2, -1), Town("Ligny"));
+        await ScoutAsync(scenario, new Hex(2, -1));
+        await StartAsync(scenario);
+
+        await NextTurnAsync(scenario);
+
+        Assert.Equal(enemy, Assert.Single((await ScoreAsync(scenario)).Settlements).ArmyId);
+    }
+
     [Fact]
     public async Task StartNextTurn_BothSidesInTheHex_LeavesItWithItsHolder()
     {

@@ -123,8 +123,13 @@ internal static class SupplyLines
         Dictionary<Guid, Dictionary<Hex, Guid>> reached
     )
     {
-        // Boats aren't troops (decision 0022), and a unit at 0 points has nothing left to lose.
-        if (map.ExemptTypes.Contains(unit.Type) || unit.Type == UnitType.Boat || unit.Points == 0)
+        // Boats aren't troops (decision 0022), scouts don't fight whatever the campaign's exempt
+        // types (decision 0028), and a unit at 0 points has nothing left to lose.
+        if (
+            map.ExemptTypes.Contains(unit.Type)
+            || unit.Type is UnitType.Boat or UnitType.Scouts
+            || unit.Points == 0
+        )
         {
             return new(SupplyState.Exempt, null);
         }

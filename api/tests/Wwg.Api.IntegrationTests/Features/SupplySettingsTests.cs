@@ -48,7 +48,7 @@ public sealed class SupplySettingsTests : ApiTest
 
         Assert.Equal(1, settings.Reach);
         Assert.Equal(
-            [UnitType.Partisans, UnitType.LightInfantry, UnitType.Scouts, UnitType.LightCavalry],
+            [UnitType.Partisans, UnitType.LightInfantry, UnitType.LightCavalry],
             settings.ExemptTypes
         );
         Assert.Equal([Nation.France], settings.OffTheLandNations);
@@ -61,13 +61,13 @@ public sealed class SupplySettingsTests : ApiTest
 
         using var response = await UpdateAsync(
             scenario,
-            new(3, [UnitType.Scouts], [Nation.France, Nation.Spain])
+            new(3, [UnitType.Engineers], [Nation.France, Nation.Spain])
         );
         response.EnsureSuccessStatusCode();
         var settings = await SettingsAsync(scenario);
 
         Assert.Equal(3, settings.Reach);
-        Assert.Equal([UnitType.Scouts], settings.ExemptTypes);
+        Assert.Equal([UnitType.Engineers], settings.ExemptTypes);
         Assert.Equal([Nation.France, Nation.Spain], settings.OffTheLandNations);
     }
 

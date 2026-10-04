@@ -86,6 +86,7 @@ internal static class Marches
     /// <summary>
     /// The march states of the campaign's units (or one army's) as of the open turn's start: their
     /// orders in every turn closed since setup. Also the open turn's orders, for what they'd cost.
+    /// Scouts have none: they never force march (decision 0028).
     /// </summary>
     public static async Task<(
         Dictionary<Guid, MarchState> Before,
@@ -105,7 +106,11 @@ internal static class Marches
             .ToListAsync(cancellationToken);
         var unitIds = await db
             .ArmyUnits.AsNoTracking()
-            .Where(u => u.CampaignId == campaignId && (armyId == null || u.ArmyId == armyId))
+            .Where(u =>
+                u.CampaignId == campaignId
+                && (armyId == null || u.ArmyId == armyId)
+                && u.Type != UnitType.Scouts
+            )
             .Select(u => u.Id)
             .ToListAsync(cancellationToken);
         var orders = (
@@ -114,6 +119,7 @@ internal static class Marches
                 .Where(o =>
                     o.ArmyUnit.CampaignId == campaignId
                     && (armyId == null || o.ArmyUnit.ArmyId == armyId)
+                    && o.ArmyUnit.Type != UnitType.Scouts
                     && o.ArmyTurn.CampaignTurn.Number > 0
                 )
                 .Select(o => new

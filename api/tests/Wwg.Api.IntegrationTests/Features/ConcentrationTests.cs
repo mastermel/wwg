@@ -89,7 +89,7 @@ public sealed class ConcentrationTests : ApiTest
 
         using var response = await UpdateAsync(
             scenario,
-            new([UnitType.Scouts], [UnitType.Scouts], 200, 160)
+            new([UnitType.LightCavalry], [UnitType.LightCavalry], 200, 160)
         );
 
         await response.AssertValidationProblemAsync("cavalryTypes");

@@ -896,6 +896,11 @@ internal static class OrderEndpoints
                 "kind",
                 "Boats don't build boats."
             ),
+            // Scouts only watch (decision 0028).
+            { Kind: OrderKind.BuildBoat, Type: UnitType.Scouts } => (
+                "kind",
+                "Scouts don't build boats."
+            ),
             { ForceMarch: true, Aboard: not null } => (
                 "forceMarch",
                 "No forced marches on boats: being carried is rest."
@@ -909,8 +914,9 @@ internal static class OrderEndpoints
         };
 
     /// <summary>
-    /// Why the unit can't force march this turn, or null if it can: only by day (by night, moving
-    /// counts towards a forced march anyway), and only a class that moves over flat ground.
+    /// Why the unit can't force march this turn, or null if it can: never a scout (decision 0028);
+    /// only by day (by night, moving counts towards a forced march anyway), and only a class that
+    /// moves over flat ground.
     /// </summary>
     private static async Task<string?> ForceMarchProblemAsync(
         WwgDbContext db,
@@ -918,6 +924,11 @@ internal static class OrderEndpoints
         CancellationToken cancellationToken
     )
     {
+        if (unit.Type == UnitType.Scouts)
+        {
+            return "Scouts don't force march.";
+        }
+
         var calendar = await CalendarEndpoints.LoadAsync(db, unit.CampaignId, cancellationToken);
         var part = TurnParts.Of(calendar.FirstTurnPart, calendar.StartDate, unit.Turn)?.Part;
         if (part == TurnPart.Night)

@@ -64,7 +64,11 @@ internal static class Holdings
         var held = await db
             .Holdings.Where(h => h.CampaignId == campaignId)
             .ToDictionaryAsync(h => new Hex(h.Q, h.R), cancellationToken);
-        foreach (var hex in next.Where(p => settlements.ContainsKey(p.At)).GroupBy(p => p.At))
+        // Scouts neither take a town nor stop the enemy taking one (decision 0028).
+        foreach (
+            var hex in next.Where(p => settlements.ContainsKey(p.At) && p.Type != UnitType.Scouts)
+                .GroupBy(p => p.At)
+        )
         {
             if (hex.Select(p => p.SideId).Distinct().Count() != 1)
             {
