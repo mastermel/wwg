@@ -58,7 +58,7 @@ test("a commander embarks a unit on its army's boats, and lands it across the ri
   await page.goto(`${campaignUrl}/map`);
   await page.getByRole("button", { name: /^4 units: .*Imperial Guard/ }).click();
   await page.getByRole("button", { name: /^Imperial Guard, Line Infantry/ }).click();
-  const drawer = page.getByRole("dialog", { name: "Imperial Guard" });
+  const drawer = page.getByRole("dialog").getByRole("region", { name: "Imperial Guard" });
   await expect(drawer).toContainText("It needs 3 boats; 3 free here.");
   expect(await scan(page, "unit drawer, boats")).toEqual([]);
   await drawer.getByRole("button", { name: "Embark" }).click();

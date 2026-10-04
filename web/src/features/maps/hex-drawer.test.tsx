@@ -7,7 +7,7 @@ import type { ArmySummary } from "@/api/generated/model";
 import { AppProviders } from "@/app/AppProviders";
 import { createQueryClient } from "@/app/query-client";
 import type { PlacedUnit } from "@/features/maps/stacks";
-import { UnitDrawer } from "@/features/maps/UnitDrawer";
+import { HexDrawer } from "@/features/maps/HexDrawer";
 import { server } from "@/test/server";
 
 const army: ArmySummary = {
@@ -49,17 +49,26 @@ const stack = [
   unit("r", "Reserve Artillery", "FootArtillery"),
 ];
 
+const info = {
+  title: "Hex (0, 0), Wavre",
+  summary: "Low hills",
+  lines: ["Low hills.", "Wavre: Walled town."],
+};
+
 interface HarnessProps {
   units: PlacedUnit[];
+  sightings?: string[];
   marches?: boolean;
   screening?: { canChange: boolean };
 }
 
-function Harness({ units, marches = false, screening }: HarnessProps) {
+function Harness({ units, sightings = [], marches = false, screening }: HarnessProps) {
   const [selected, setSelected] = useState<PlacedUnit | null>(null);
   return (
-    <UnitDrawer
+    <HexDrawer
+      hex={{ hex: { q: 0, r: 0 }, info }}
       units={units}
+      sightings={sightings}
       selected={selected}
       onSelect={setSelected}
       onClose={() => undefined}
@@ -70,34 +79,72 @@ function Harness({ units, marches = false, screening }: HarnessProps) {
   );
 }
 
-const renderDrawer = (units: PlacedUnit[], marches = false, screening?: { canChange: boolean }) =>
+const renderDrawer = (
+  units: PlacedUnit[],
+  marches = false,
+  screening?: { canChange: boolean },
+  sightings?: string[],
+) =>
   render(
     <AppProviders queryClient={createQueryClient()}>
-      <Harness units={units} marches={marches} screening={screening} />
+      <Harness units={units} sightings={sightings} marches={marches} screening={screening} />
     </AppProviders>,
   );
 
 const hussars = [unit("h", "Hussars", "LightCavalry")];
 
-describe("the unit drawer", () => {
-  it("lists a stack's units, then shows the one chosen, with what can be done", async () => {
+describe("the hex drawer", () => {
+  it("shows the hex's units, then what was sighted there, then its terrain", async () => {
+    renderDrawer(stack.slice(0, 1), false, undefined, ["Prussian I Corps: a small force."]);
+    const dialog = within(await screen.findByRole("dialog", { name: "Hex (0, 0), Wavre" }));
+
+    expect(dialog.getAllByRole("heading", { level: 3 }).map((h) => h.textContent)).toEqual([
+      "Imperial Guard",
+      "Sightings",
+      "Terrain",
+    ]);
+    expect(
+      within(dialog.getByRole("region", { name: "Sightings" })).getByText(
+        "Prussian I Corps: a small force.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      within(dialog.getByRole("region", { name: "Terrain" })).getByText("Wavre: Walled town."),
+    ).toBeInTheDocument();
+  });
+
+  it("shows only the terrain of an empty hex", async () => {
+    renderDrawer([]);
+    const dialog = within(await screen.findByRole("dialog", { name: "Hex (0, 0), Wavre" }));
+
+    expect(dialog.getAllByRole("heading", { level: 3 }).map((h) => h.textContent)).toEqual([
+      "Terrain",
+    ]);
+  });
+
+  it("lists a stack's units, shows the one chosen with what can be done, and goes back", async () => {
     renderDrawer(stack);
-    const dialog = within(await screen.findByRole("dialog", { name: "2 units here" }));
+    const units = within(await screen.findByRole("region", { name: "2 units" }));
 
     await userEvent.click(
-      dialog.getByRole("button", { name: "Reserve Artillery, Foot Artillery, Armée du Nord" }),
+      units.getByRole("button", { name: "Reserve Artillery, Foot Artillery, Armée du Nord" }),
     );
 
-    expect(await screen.findByRole("dialog", { name: "Reserve Artillery" })).toBeInTheDocument();
+    expect(await screen.findByRole("region", { name: "Reserve Artillery" })).toBeInTheDocument();
     expect(screen.getByText("Foot Artillery")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Order Reserve Artillery" })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "All 2 units here" }));
+
+    expect(await screen.findByRole("region", { name: "2 units" })).toBeInTheDocument();
   });
 
   it("shows a single unit straight away", async () => {
     renderDrawer(stack.slice(0, 1));
 
-    expect(await screen.findByRole("dialog", { name: "Imperial Guard" })).toBeInTheDocument();
+    expect(await screen.findByRole("region", { name: "Imperial Guard" })).toBeInTheDocument();
     expect(screen.getByText("Armée du Nord")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /units here/ })).not.toBeInTheDocument();
   });
 
   it("shows its points history, and its forced marches to whoever follows its moves", async () => {
@@ -154,7 +201,7 @@ describe("the unit drawer", () => {
   it("keeps a unit's forced marches from whoever doesn't follow its moves", async () => {
     renderDrawer(stack.slice(0, 1));
 
-    expect(await screen.findByRole("dialog", { name: "Imperial Guard" })).toBeInTheDocument();
+    expect(await screen.findByRole("region", { name: "Imperial Guard" })).toBeInTheDocument();
     expect(screen.queryByText("Marches")).not.toBeInTheDocument();
   });
 
@@ -194,7 +241,7 @@ describe("the unit drawer", () => {
   it("keeps a unit's screening from whoever doesn't command it", async () => {
     renderDrawer(hussars);
 
-    expect(await screen.findByRole("dialog", { name: "Hussars" })).toBeInTheDocument();
+    expect(await screen.findByRole("region", { name: "Hussars" })).toBeInTheDocument();
     expect(screen.queryByRole("switch", { name: /Screening/ })).not.toBeInTheDocument();
   });
 });

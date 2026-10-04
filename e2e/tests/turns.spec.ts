@@ -20,7 +20,8 @@ test("a commander moves one unit, holds another and submits the turn", async ({ 
   // Move: choose the unit on the map, then Move, then a point inside its range, then Confirm.
   await page.getByRole("button", { name: "Imperial Guard, Line Infantry, Armée du Nord" }).click();
   await page
-    .getByRole("dialog", { name: "Imperial Guard" })
+    .getByRole("dialog")
+    .getByRole("region", { name: "Imperial Guard" })
     .getByRole("button", { name: "Move" })
     .click();
   await expect(page.getByText(/Tap a shaded hex/)).toBeInViewport();
@@ -37,7 +38,8 @@ test("a commander moves one unit, holds another and submits the turn", async ({ 
   // Hold: from the turn panel's list, the other way in.
   await panel.getByRole("button", { name: "Reserve Artillery" }).click();
   await page
-    .getByRole("dialog", { name: "Reserve Artillery" })
+    .getByRole("dialog")
+    .getByRole("region", { name: "Reserve Artillery" })
     .getByRole("button", { name: "Hold" })
     .click();
   await expect(page.getByText("Reserve Artillery will hold.")).toBeVisible();
@@ -198,7 +200,7 @@ test("the Umpire confirms a forced march's attrition, and it's in the unit's his
   await commander.page
     .getByRole("button", { name: "Imperial Guard, Line Infantry, Armée du Nord" })
     .click();
-  const drawer = commander.page.getByRole("dialog", { name: "Imperial Guard" });
+  const drawer = commander.page.getByRole("dialog").getByRole("region", { name: "Imperial Guard" });
   await expect(drawer.getByRole("list", { name: "Points history" })).toContainText(
     "Turn 4: −2, to 28. Forced march.",
   );
@@ -288,7 +290,8 @@ test("the Umpire moves a unit past its limit, holds another, and submits for the
   await page.goto(`${campaignUrl}/map`);
   await page.getByRole("button", { name: "Imperial Guard, Line Infantry, Armée du Nord" }).click();
   await page
-    .getByRole("dialog", { name: "Imperial Guard" })
+    .getByRole("dialog")
+    .getByRole("region", { name: "Imperial Guard" })
     .getByRole("button", { name: "Move" })
     .click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
@@ -302,7 +305,8 @@ test("the Umpire moves a unit past its limit, holds another, and submits for the
     .getByRole("button", { name: "Reserve Artillery, Foot Artillery, Armée du Nord" })
     .click();
   await page
-    .getByRole("dialog", { name: "Reserve Artillery" })
+    .getByRole("dialog")
+    .getByRole("region", { name: "Reserve Artillery" })
     .getByRole("button", { name: "Hold" })
     .click();
   await expect(page.getByText("Reserve Artillery will hold.")).toBeVisible();
@@ -344,7 +348,8 @@ test("a commander moves into high hills, which take two turns", async ({ signUp 
   const panel = page.getByRole("region", { name: "Turn 1" });
   await page.getByRole("button", { name: "Imperial Guard, Line Infantry, Armée du Nord" }).click();
   await page
-    .getByRole("dialog", { name: "Imperial Guard" })
+    .getByRole("dialog")
+    .getByRole("region", { name: "Imperial Guard" })
     .getByRole("button", { name: "Move" })
     .click();
   await expect(page.getByRole("dialog")).toHaveCount(0);

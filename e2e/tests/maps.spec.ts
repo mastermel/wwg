@@ -153,9 +153,9 @@ test("the Umpire places the units, stacking two, and starts the campaign", async
     .getByRole("dialog")
     .getByRole("button", { name: /^Reserve Artillery/ })
     .click();
-  await expect(page.getByRole("dialog", { name: "Reserve Artillery" })).toContainText(
-    "Foot Artillery",
-  );
+  await expect(
+    page.getByRole("dialog").getByRole("region", { name: "Reserve Artillery" }),
+  ).toContainText("Foot Artillery");
   await page.keyboard.press("Escape");
 
   await page.getByRole("button", { name: "Start campaign" }).click();
@@ -282,7 +282,7 @@ test("a click or tap on a hex shows everything known of it", async ({ signUp }) 
   const card = page.getByRole("dialog", { name: "Hex (0, 0), Wavre" });
   await expect(card).toContainText("Wavre: Walled town.");
   await expect(card).toContainText("Good road to the north.");
-  expect(await scan(page, "map, a hex's card")).toEqual([]);
+  expect(await scan(page, "map, a hex's drawer")).toEqual([]);
 });
 
 test("on a computer, the map fills the screen and comes back", async ({ signUp, isMobile }) => {

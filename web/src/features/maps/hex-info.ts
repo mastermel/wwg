@@ -20,7 +20,7 @@ import {
   type TerrainIndex,
 } from "@/features/maps/terrain";
 
-/** What the viewer knows of a hex, for the map's hex card: a title and a line per fact. */
+/** What the viewer knows of a hex, for the hex's drawer and label: a title and a line per fact. */
 export interface HexInfo {
   title: string;
   /** Its ground and forest, in a few words: the hover label, when nothing's in it. */
@@ -36,9 +36,9 @@ const list = (items: readonly string[]) =>
 const toward = (found: readonly Side[]) => list(found.map((s) => sideLabels[s].toLowerCase()));
 
 /**
- * Everything the viewer knows of a hex (the Map page's hex card): its ground and forest, its town,
- * city or fortress, the roads, rivers, bridges and waterways on its six sides, the actual terrain
- * if the viewer has been shown it (decision 0016), and the depots in it they may see.
+ * Everything the viewer knows of a hex's terrain (its drawer's Terrain): its ground and forest, its
+ * town, city or fortress, the roads, rivers, bridges and waterways on its six sides, the actual
+ * terrain if the viewer has been shown it (decision 0016), and the depots in it they may see.
  */
 export function describeHex(
   hex: Hex,

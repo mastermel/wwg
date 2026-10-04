@@ -483,6 +483,52 @@ describe("a commander's turn", () => {
     ).toBeInTheDocument();
   });
 
+  it("opens a tapped hex's drawer: its units, what was seen there, then its terrain", async () => {
+    serveCommander(draft());
+    server.use(
+      http.get(`*/api/campaigns/${campaignId}/sightings`, () =>
+        HttpResponse.json([
+          {
+            id: "0192f5c1-0000-7000-8000-00000000e101",
+            observingArmyId: armyId,
+            turn: 1,
+            q: 0,
+            r: 0,
+            latitude: 50.675,
+            longitude: 4.45,
+            whereabouts: "Hex (0, 0)",
+            armyIds: null,
+            unitTypes: ["LightCavalry"],
+            strength: "Hidden",
+            size: null,
+            points: null,
+            byUmpire: false,
+            sharedByArmyId: null,
+          },
+        ]),
+      ),
+    );
+    // In the Guard's hex, (0, 0), in the middle of the area.
+    click.at = { longitude: 4.45, latitude: 50.675 };
+    const user = userEvent.setup();
+    await openMap();
+    await screen.findByRole("list", { name: "Sightings" });
+
+    await user.click(screen.getByRole("button", { name: "Click the map" }));
+
+    const drawer = within(await screen.findByRole("dialog", { name: "Hex (0, 0)" }));
+    await drawer.findByRole("region", { name: "Imperial Guard" });
+    expect(drawer.getAllByRole("heading", { level: 3 }).map((h) => h.textContent)).toEqual([
+      "Imperial Guard",
+      "Sightings",
+      "Terrain",
+    ]);
+    expect(drawer.getByRole("region", { name: "Sightings" })).toHaveTextContent(
+      "Enemy troops: 1 light cavalry.",
+    );
+    expect(drawer.getByRole("button", { name: "Hold" })).toBeInTheDocument();
+  });
+
   it("keeps reports from allies, shows one on the map, and sends one by courier", async () => {
     const requests = serveCommander(draft());
     const allyId = "0192f5c1-0000-7000-8000-00000000a002";

@@ -133,7 +133,7 @@ import { MapLayersControl } from "@/features/maps/MapLayersControl";
 import { TerrainLayer } from "@/features/maps/TerrainLayer";
 import { TurnPanel } from "@/features/maps/TurnPanel";
 import { unitsIn, type PlacedUnit } from "@/features/maps/stacks";
-import { UnitDrawer } from "@/features/maps/UnitDrawer";
+import { HexDrawer } from "@/features/maps/HexDrawer";
 import { UnitMarkers } from "@/features/maps/UnitMarkers";
 import { useOpenTurns, useOrders } from "@/features/maps/use-orders";
 import { useReview } from "@/features/maps/use-review";
@@ -281,8 +281,6 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
   useEffect(() => {
     if (placing || moving) mapArea.current?.scrollIntoView({ block: "start" });
   }, [placing, moving]);
-  const [chosen, setChosen] = useState<PlacedUnit[]>([]);
-  const [selected, setSelected] = useState<PlacedUnit | null>(null);
 
   const everyUnit = useMemo(
     () =>
@@ -488,46 +486,54 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
         : [],
     [manager, setup, past, onMap, openTurns, depots.data, armies.data],
   );
-  // A hex's card (what the viewer knows of it): pinned by a click or tap on the map, and on a
-  // screen with a mouse, a label for the hex it's over. Only while not placing or moving.
+  // What's in a hex (step 57): a click or tap on it (or on a unit's marker) opens its drawer, and
+  // on a screen with a mouse, a label says what's in the hex it's over. Only while not placing or
+  // moving.
   const hexDetails = useListHexDetails(campaignId, live);
   const canHover = useMediaQuery("(hover: hover) and (pointer: fine)");
-  const [pinned, setPinned] = useState<Hex | null>(null);
+  // The hex whose drawer is open, with a marker's stack if chosen by one (zoomed out, a stack can
+  // take in the hexes around), and the unit shown of several; by id, so they follow the positions.
+  const [chosen, setChosen] = useState<{ hex: Hex; stack?: readonly string[] } | null>(null);
+  const [selected, setSelected] = useState<string | null>(null);
   const [hovered, setHovered] = useState<Hex | null>(null);
   const idle = !placingUnit && !placingDepot && !moving;
-  const shownHex = idle ? (pinned ?? hovered) : null;
-  const hexInfo = useMemo(
-    () =>
-      shownHex
-        ? describeHex(
-            shownHex,
-            costs.terrain,
-            hexDetails.data ?? [],
-            depots.data ?? [],
-            armies.data ?? [],
-            scoreboard.data?.settlements,
-            victorySettings.data?.mode,
-          )
-        : null,
-    [
-      shownHex,
-      costs.terrain,
-      hexDetails.data,
-      depots.data,
-      armies.data,
-      scoreboard.data,
-      victorySettings.data,
-    ],
+  const describeAt = useMemo(() => {
+    const known = armies.data ?? [];
+    return (hex: Hex) => ({
+      info: describeHex(
+        hex,
+        costs.terrain,
+        hexDetails.data ?? [],
+        depots.data ?? [],
+        known,
+        scoreboard.data?.settlements,
+        victorySettings.data?.mode,
+      ),
+      sightings: sightingsIn(hex, drawnSightings, known),
+    });
+  }, [
+    costs.terrain,
+    hexDetails.data,
+    depots.data,
+    armies.data,
+    scoreboard.data,
+    victorySettings.data,
+    drawnSightings,
+  ]);
+  const hoveredHex = idle ? hovered : null;
+  const hoverCard = useMemo(
+    () => (hoveredHex ? describeAt(hoveredHex) : null),
+    [hoveredHex, describeAt],
   );
-  // Its units, and what was sighted there, come first in its hover label.
-  const sightedHere = useMemo(
-    () => (shownHex ? sightingsIn(shownHex, drawnSightings, armies.data ?? []) : []),
-    [shownHex, drawnSightings, armies.data],
-  );
-  const hover = useMemo(
+  const chosenCard = useMemo(() => (chosen ? describeAt(chosen.hex) : null), [chosen, describeAt]);
+  const chosenUnits = useMemo(
     () =>
-      shownHex && hexInfo ? hoverLines(hexInfo, unitsIn(shownHex, shownOnMap), sightedHere) : [],
-    [shownHex, hexInfo, shownOnMap, sightedHere],
+      !chosen
+        ? []
+        : chosen.stack
+          ? shownOnMap.filter((p) => chosen.stack?.includes(p.unit.id))
+          : unitsIn(chosen.hex, shownOnMap),
+    [chosen, shownOnMap],
   );
   const hoverAt = (point: Point | null) => {
     const hex = point && idle ? grid.hexAt(point) : null;
@@ -691,8 +697,12 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
     if (saved) setPlacingDepot(null);
   };
 
+  const openHex = (hex: Hex, stack?: readonly PlacedUnit[], unit?: PlacedUnit) => {
+    setChosen({ hex, stack: stack?.map((p) => p.unit.id) });
+    setSelected(unit?.unit.id ?? null);
+  };
   const closeDrawer = () => {
-    setChosen([]);
+    setChosen(null);
     setSelected(null);
   };
   // In the unit's drawer: boarding its army's free boats, landing from them, or building one.
@@ -930,7 +940,7 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
                   ? chooseTarget
                   : (point) => {
                       const hex = grid.hexAt(point);
-                      setPinned(grid.contains(hex) ? hex : null);
+                      if (grid.contains(hex)) openHex(hex);
                     }
           }
         >
@@ -961,7 +971,7 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
                   : undefined
             }
           />
-          <SelectedHexLayer grid={grid} hex={idle ? pinned : null} />
+          <SelectedHexLayer grid={grid} hex={idle ? (chosen?.hex ?? null) : null} />
           <DepotMarkers depots={depots.data ?? []} armies={armies.data ?? []} />
           {showGame("towns") && (
             <HoldingFlags
@@ -974,17 +984,17 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
             report={reports.data?.find((r) => r.id === shownReport)}
             armies={armies.data ?? []}
           />
-          {shownHex && hexInfo && (
+          {hoveredHex && hoverCard && (
             <HexInfoPopup
-              at={grid.centre(shownHex)}
-              info={hexInfo}
-              hover={hover}
+              at={grid.centre(hoveredHex)}
+              title={hoverCard.info.title}
+              lines={hoverLines(
+                hoverCard.info,
+                unitsIn(hoveredHex, shownOnMap),
+                hoverCard.sightings,
+              )}
               // Above the sighting's eye, which is above the hex's centre.
-              offset={sightedHere.length > 0 ? 34 : 12}
-              pinned={pinned !== null}
-              onClose={() => {
-                setPinned(null);
-              }}
+              offset={hoverCard.sightings.length > 0 ? 34 : 12}
             />
           )}
           <UnitMarkers
@@ -1007,8 +1017,13 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
                 chooseTarget({ longitude: stack.longitude, latitude: stack.latitude });
                 return;
               }
-              setChosen(stack.units);
-              setSelected(null);
+              // The hex of the stack's first unit, where the marker is; the stack itself only when
+              // it takes in the hexes around.
+              const hex = stack.units[0]?.hex ?? grid.hexAt(stack);
+              openHex(
+                hex,
+                stack.units.some((p) => hexKey(p.hex) !== hexKey(hex)) ? stack.units : undefined,
+              );
             }}
           />
         </CampaignMap>
@@ -1065,8 +1080,7 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
           .map((u) => ({ ...u, placed: onMap.find((p) => p.unit.id === u.unit.id) }))}
         orders={orders}
         onChoose={(placed) => {
-          setChosen([placed]);
-          setSelected(null);
+          openHex(placed.hex, undefined, placed);
         }}
       />
     ) : (
@@ -1210,10 +1224,14 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
       >
         It was captured, destroyed or given up: its army&apos;s units no longer draw supply from it.
       </ConfirmModal>
-      <UnitDrawer
-        units={chosen}
-        selected={selected}
-        onSelect={setSelected}
+      <HexDrawer
+        hex={chosen && chosenCard ? { hex: chosen.hex, info: chosenCard.info } : null}
+        units={chosenUnits}
+        sightings={chosenCard?.sightings ?? []}
+        selected={chosenUnits.find((p) => p.unit.id === selected) ?? null}
+        onSelect={(unit) => {
+          setSelected(unit?.unit.id ?? null);
+        }}
         onClose={closeDrawer}
         showsMarches={(unit) => manager || myArmies.some((a) => a.id === unit.army.id)}
         screeningOf={(unit) =>

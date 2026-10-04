@@ -130,9 +130,11 @@ The pre-commit hook runs `eslint --fix` and Prettier on staged files.
   each unit's supply is the API's (`useGetSupply`), worded by `supply.ts` (`describeSupply`) and
   warned of by `SupplyWarnings`; living off the land is the drawer's switch, kept on every new
   order (`livingOffTheLand` in `MapPage`). The settings are `SupplySection` on the edit page.
-- The Map page's hex card is `hex-info.ts` (`describeHex`, a pure function) in `HexInfoPopup`, a
-  MapLibre popup in the app's colours; hover is `CampaignMap`'s `onHover` (mouse only), and its
-  label leads with the hex's units, else its sightings (`hoverLines`, step 57). The
+- What's in a hex (step 57, decision 0027): a click or tap on a hex or a unit's marker opens
+  `HexDrawer` (its units, one in full with its orders, then its sightings, then its terrain from
+  `hex-info.ts`'s `describeHex`, a pure function), its units by id from the positions; hover is
+  `CampaignMap`'s `onHover` (mouse only), shown by `HexInfoPopup` (a MapLibre popup in the app's
+  colours): the hex's units, else its sightings, else its ground (`hoverLines`). The
   legend is `MapLegend`. The theme choice is `ThemeMenuItems` (Mantine keeps it in localStorage;
   `public/color-scheme.js` reads it before the first paint): a Menu item stays a `menuitem`, so
   the chosen one is marked with `aria-current`.
