@@ -152,6 +152,9 @@ The pre-commit hook runs `eslint --fix` and Prettier on staged files.
   drawn or listed (`tiedBoats`), and a unit on them moves as a "Boat". The drawer's Embark, Land
   and Build a boat are `OrderActions`' `boats` (`boatOptions` in `MapPage`); the capacity is
   `BoatSection` on the edit page.
+- Screening (step 56, decision 0026): the unit drawer's switch and the turns it screened are
+  `UnitScreening` (worded by `screening.ts`), for the unit's commander and the Umpire only
+  (`screeningOf` in `MapPage`); the Umpire sees what screens hide in `SightingsFields`.
 - Queries that must not be saved for offline use (live status, admin data such as the user list)
   pass `meta: { persist: false }`.
 - Accessibility (WCAG 2.1 AA) is enforced in part by `jsx-a11y`; also give every page a title and

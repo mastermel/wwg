@@ -49,7 +49,13 @@ const stack = [
   unit("r", "Reserve Artillery", "FootArtillery"),
 ];
 
-function Harness({ units, marches = false }: { units: PlacedUnit[]; marches?: boolean }) {
+interface HarnessProps {
+  units: PlacedUnit[];
+  marches?: boolean;
+  screening?: { canChange: boolean };
+}
+
+function Harness({ units, marches = false, screening }: HarnessProps) {
   const [selected, setSelected] = useState<PlacedUnit | null>(null);
   return (
     <UnitDrawer
@@ -59,16 +65,19 @@ function Harness({ units, marches = false }: { units: PlacedUnit[]; marches?: bo
       onClose={() => undefined}
       actions={(chosen) => <button type="button">Order {chosen.unit.name}</button>}
       showsMarches={() => marches}
+      screeningOf={() => screening}
     />
   );
 }
 
-const renderDrawer = (units: PlacedUnit[], marches = false) =>
+const renderDrawer = (units: PlacedUnit[], marches = false, screening?: { canChange: boolean }) =>
   render(
     <AppProviders queryClient={createQueryClient()}>
-      <Harness units={units} marches={marches} />
+      <Harness units={units} marches={marches} screening={screening} />
     </AppProviders>,
   );
+
+const hussars = [unit("h", "Hussars", "LightCavalry")];
 
 describe("the unit drawer", () => {
   it("lists a stack's units, then shows the one chosen, with what can be done", async () => {
@@ -147,5 +156,45 @@ describe("the unit drawer", () => {
 
     expect(await screen.findByRole("dialog", { name: "Imperial Guard" })).toBeInTheDocument();
     expect(screen.queryByText("Marches")).not.toBeInTheDocument();
+  });
+
+  it("turns a unit's screening on, for whoever commands it, with the turns it screened", async () => {
+    let saved: unknown;
+    server.use(
+      http.get("*/api/army-units/h/screening", () =>
+        HttpResponse.json({ canScreen: true, screening: false, turns: [1, 2, 3, 5] }),
+      ),
+      http.put("*/api/army-units/h/screening", async ({ request }) => {
+        saved = await request.json();
+        return HttpResponse.json({ canScreen: true, screening: true, turns: [1, 2, 3, 5] });
+      }),
+    );
+    renderDrawer(hussars, false, { canChange: true });
+
+    expect(await screen.findByText("Screened: Turns 1–3 and 5.")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("switch", { name: /Screening/ }));
+
+    expect(await screen.findByText("Hussars is screening.")).toBeInTheDocument();
+    expect(saved).toEqual({ screening: true });
+    expect(screen.getByRole("switch", { name: /Screening/ })).toBeChecked();
+  });
+
+  it("shows screening without changing it on a past turn's map", async () => {
+    server.use(
+      http.get("*/api/army-units/h/screening", () =>
+        HttpResponse.json({ canScreen: true, screening: true, turns: [] }),
+      ),
+    );
+    renderDrawer(hussars, false, { canChange: false });
+
+    expect(await screen.findByRole("switch", { name: /Screening/ })).toBeDisabled();
+    expect(screen.getByText("Hasn't screened at the end of a turn yet.")).toBeInTheDocument();
+  });
+
+  it("keeps a unit's screening from whoever doesn't command it", async () => {
+    renderDrawer(hussars);
+
+    expect(await screen.findByRole("dialog", { name: "Hussars" })).toBeInTheDocument();
+    expect(screen.queryByRole("switch", { name: /Screening/ })).not.toBeInTheDocument();
   });
 });

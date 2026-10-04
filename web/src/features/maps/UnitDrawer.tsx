@@ -10,6 +10,7 @@ import { shareOfTheWay } from "@/features/maps/movement";
 import { useListMarches } from "@/api/generated/endpoints/turns/turns";
 import { describeMarch } from "@/features/maps/marches";
 import { UnitPointsHistory } from "@/features/maps/UnitPointsHistory";
+import { UnitScreening } from "@/features/maps/UnitScreening";
 
 interface UnitDrawerProps {
   /** The units chosen on the map: one, or a stack to choose from. Closed when empty. */
@@ -24,6 +25,11 @@ interface UnitDrawerProps {
   showsMarches?: (unit: PlacedUnit) => boolean;
   /** The unit's supply in words (step 48), for those who see it. */
   supplyOf?: (unit: PlacedUnit) => string | undefined;
+  /**
+   * The unit's screening (decision 0026), for its commander and the Umpire: whether they may
+   * change it now; undefined for anyone else.
+   */
+  screeningOf?: (unit: PlacedUnit) => { canChange: boolean } | undefined;
 }
 
 /**
@@ -38,10 +44,12 @@ export function UnitDrawer({
   actions,
   showsMarches,
   supplyOf,
+  screeningOf,
 }: UnitDrawerProps) {
   const supply = (unit: PlacedUnit) => supplyOf?.(unit);
   const phone = useMediaQuery("(max-width: 48em)");
   const shown = selected ?? (units.length === 1 ? units[0] : undefined);
+  const screening = shown && screeningOf?.(shown);
 
   return (
     <Drawer
@@ -94,6 +102,13 @@ export function UnitDrawer({
               )}
             </Table.Tbody>
           </Table>
+          {screening && (
+            <UnitScreening
+              unitId={shown.unit.id}
+              name={shown.unit.name}
+              canChange={screening.canChange}
+            />
+          )}
           <UnitPointsHistory unitId={shown.unit.id} />
           {actions?.(shown)}
         </Stack>

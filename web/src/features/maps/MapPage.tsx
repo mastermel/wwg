@@ -1203,6 +1203,11 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
         onSelect={setSelected}
         onClose={closeDrawer}
         showsMarches={(unit) => manager || myArmies.some((a) => a.id === unit.army.id)}
+        screeningOf={(unit) =>
+          manager || myArmies.some((a) => a.id === unit.army.id)
+            ? { canChange: past === null }
+            : undefined
+        }
         supplyOf={(unit) => {
           const found = supply.data?.units.find((s) => s.unitId === unit.unit.id);
           return found && past === null ? describeSupply(found, depots.data ?? []) : undefined;
