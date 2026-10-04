@@ -10,6 +10,7 @@ import {
   type Division,
   type Placed,
 } from "@/features/units/order-of-battle";
+import { UnitStat } from "@/features/units/UnitStat";
 import { unitTypeLabels } from "@/features/units/unit-types";
 
 /** What a row shows: a library unit, or an army's copy of one. */
@@ -75,8 +76,12 @@ export function OrderOfBattleTable<T extends Row>({
         )}
       </Table.Td>
       <Table.Td visibleFrom="sm">{unitTypeLabels[unit.type]}</Table.Td>
-      <Table.Td ta="right">{unit.fightingFactor}</Table.Td>
-      <Table.Td ta="right">{unit.points}</Table.Td>
+      <Table.Td ta="right">
+        <UnitStat type={unit.type} value={unit.fightingFactor} />
+      </Table.Td>
+      <Table.Td ta="right">
+        <UnitStat type={unit.type} value={unit.points} />
+      </Table.Td>
       {editor && (
         <Table.Td>
           <Group gap={4} justify="flex-end" wrap="nowrap">

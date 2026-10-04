@@ -21,7 +21,7 @@ import {
   usualOffTheLandNations,
   usualSupplyReach,
 } from "@/features/campaigns/supply";
-import { unitTypeOptions } from "@/features/units/unit-types";
+import { fights, unitTypeOptions } from "@/features/units/unit-types";
 import { applyServerErrors } from "@/lib/form-errors";
 import { useOnline } from "@/lib/use-online";
 
@@ -78,7 +78,8 @@ function SupplyFormFields({
     resolver: zodResolver(SupplyForm),
     defaultValues: {
       reach: settings.reach,
-      exemptTypes: [...settings.exemptTypes],
+      // Scouts are exempt whatever is chosen, and no longer offered (decision 0028).
+      exemptTypes: settings.exemptTypes.filter(fights),
       offTheLandNations: [...settings.offTheLandNations],
     },
   });

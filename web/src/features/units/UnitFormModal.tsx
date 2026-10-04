@@ -8,6 +8,7 @@ import {
   NumberInput,
   Select,
   Stack,
+  Text,
   Textarea,
   TextInput,
 } from "@mantine/core";
@@ -24,12 +25,13 @@ import {
   createUnitBodyPointsMax,
   createUnitBodyPointsMin,
 } from "@/api/generated/zod/library/library.zod";
-import { unitTypeOptions } from "@/features/units/unit-types";
+import { fights, unitTypeOptions } from "@/features/units/unit-types";
 import { applyServerErrors } from "@/lib/form-errors";
 import { useOnline } from "@/lib/use-online";
 
 // Orval writes a minimum of 1 inline (.min(1)), with no constant as it has for the others.
 const ffMin = 1;
+const ffError = `Enter an FF from ${String(ffMin)} to ${String(createUnitBodyFightingFactorMax)}.`;
 
 /** Free text up to `max` characters, or none. */
 const upTo = (max: number) =>
@@ -41,12 +43,8 @@ const upTo = (max: number) =>
 // The generated schema, with messages people can act on.
 const UnitForm = CreateUnitBody.extend({
   type: z.enum(Object.values(UnitType), { error: "Choose a type." }),
-  fightingFactor: z
-    .int({
-      error: `Enter an FF from ${String(ffMin)} to ${String(createUnitBodyFightingFactorMax)}.`,
-    })
-    .min(ffMin)
-    .max(createUnitBodyFightingFactorMax),
+  // 0 for a scout, which doesn't fight (decision 0028); checked below.
+  fightingFactor: z.int({ error: ffError }).min(0).max(createUnitBodyFightingFactorMax),
   points: z
     .int({
       error: `Enter points from ${String(createUnitBodyPointsMin)} to ${String(createUnitBodyPointsMax)}.`,
@@ -69,6 +67,9 @@ const UnitForm = CreateUnitBody.extend({
   brigadeCommander: upTo(createUnitBodyDivisionMax),
   notes: upTo(createUnitBodyNotesMax),
   status: z.enum(Object.values(UnitStatus)).nullable(),
+}).refine((values) => !fights(values.type) || values.fightingFactor >= ffMin, {
+  path: ["fightingFactor"],
+  message: ffError,
 });
 
 export type UnitValues = z.infer<typeof UnitForm>;
@@ -169,6 +170,7 @@ interface UnitFormModalProps {
 /**
  * A unit's name, type, Fighting Factor, points, and its corps, division and brigade with their
  * commanders (a library unit, with its notes and status, or an army's copy of one), in a modal.
+ * A scout (decision 0028) stays a scout, with no FF or points: only its name and place change.
  * Mount it only while open.
  */
 export function UnitFormModal({
@@ -187,6 +189,7 @@ export function UnitFormModal({
     defaultValues: { ...noDetails, ...defaultValues },
   });
   const { errors, isSubmitting } = form.formState;
+  const scout = defaultValues.type !== undefined && !fights(defaultValues.type);
   const corps = useWatch({ control: form.control, name: "corps" });
   const division = useWatch({ control: form.control, name: "division" });
   // Each level's names: the chosen corps' divisions, and the chosen division's brigades (all of
@@ -233,24 +236,30 @@ export function UnitFormModal({
             error={errors.name?.message}
             {...form.register("name", { setValueAs: (value: string) => value.trim() })}
           />
-          <Controller
-            control={form.control}
-            name="type"
-            render={({ field }) => (
-              <Select
-                label="Type"
-                required
-                placeholder="Choose a type"
-                data={unitTypeOptions}
-                value={field.value}
-                onChange={field.onChange}
-                onBlur={field.onBlur}
-                allowDeselect={false}
-                error={errors.type?.message}
-                comboboxProps={{ withinPortal: false }}
-              />
-            )}
-          />
+          {scout ? (
+            <Text size="sm" c="dimmed">
+              A scout only watches: it has no FF or points.
+            </Text>
+          ) : (
+            <Controller
+              control={form.control}
+              name="type"
+              render={({ field }) => (
+                <Select
+                  label="Type"
+                  required
+                  placeholder="Choose a type"
+                  data={unitTypeOptions}
+                  value={field.value}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                  allowDeselect={false}
+                  error={errors.type?.message}
+                  comboboxProps={{ withinPortal: false }}
+                />
+              )}
+            />
+          )}
           {levels.map((level) => (
             <Group key={level.group} grow align="flex-start">
               <Controller
@@ -289,54 +298,56 @@ export function UnitFormModal({
               />
             </Group>
           ))}
-          <Group grow align="flex-start">
-            <Controller
-              control={form.control}
-              name="fightingFactor"
-              render={({ field }) => (
-                <NumberInput
-                  label="Fighting Factor (FF)"
-                  required
-                  min={ffMin}
-                  max={createUnitBodyFightingFactorMax}
-                  allowDecimal={false}
-                  allowNegative={false}
-                  clampBehavior="strict"
-                  // Its step buttons have no accessible names; arrow keys still step.
-                  hideControls
-                  value={field.value}
-                  onChange={(value) => {
-                    field.onChange(toNumber(value));
-                  }}
-                  onBlur={field.onBlur}
-                  error={errors.fightingFactor?.message}
-                />
-              )}
-            />
-            <Controller
-              control={form.control}
-              name="points"
-              render={({ field }) => (
-                <NumberInput
-                  label="Points"
-                  required
-                  min={createUnitBodyPointsMin}
-                  max={createUnitBodyPointsMax}
-                  allowDecimal={false}
-                  allowNegative={false}
-                  clampBehavior="strict"
-                  // Its step buttons have no accessible names; arrow keys still step.
-                  hideControls
-                  value={field.value}
-                  onChange={(value) => {
-                    field.onChange(toNumber(value));
-                  }}
-                  onBlur={field.onBlur}
-                  error={errors.points?.message}
-                />
-              )}
-            />
-          </Group>
+          {!scout && (
+            <Group grow align="flex-start">
+              <Controller
+                control={form.control}
+                name="fightingFactor"
+                render={({ field }) => (
+                  <NumberInput
+                    label="Fighting Factor (FF)"
+                    required
+                    min={ffMin}
+                    max={createUnitBodyFightingFactorMax}
+                    allowDecimal={false}
+                    allowNegative={false}
+                    clampBehavior="strict"
+                    // Its step buttons have no accessible names; arrow keys still step.
+                    hideControls
+                    value={field.value}
+                    onChange={(value) => {
+                      field.onChange(toNumber(value));
+                    }}
+                    onBlur={field.onBlur}
+                    error={errors.fightingFactor?.message}
+                  />
+                )}
+              />
+              <Controller
+                control={form.control}
+                name="points"
+                render={({ field }) => (
+                  <NumberInput
+                    label="Points"
+                    required
+                    min={createUnitBodyPointsMin}
+                    max={createUnitBodyPointsMax}
+                    allowDecimal={false}
+                    allowNegative={false}
+                    clampBehavior="strict"
+                    // Its step buttons have no accessible names; arrow keys still step.
+                    hideControls
+                    value={field.value}
+                    onChange={(value) => {
+                      field.onChange(toNumber(value));
+                    }}
+                    onBlur={field.onBlur}
+                    error={errors.points?.message}
+                  />
+                )}
+              />
+            </Group>
+          )}
           {libraryDetails && (
             <>
               <Controller

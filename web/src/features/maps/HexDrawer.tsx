@@ -8,6 +8,7 @@ import { hexKey, hexName, type Hex } from "@/features/maps/hex-grid";
 import type { HexInfo } from "@/features/maps/hex-info";
 import { describeUnit, type PlacedUnit } from "@/features/maps/stacks";
 import { UnitSymbol } from "@/features/units/UnitSymbol";
+import { UnitStat } from "@/features/units/UnitStat";
 import { unitTypeLabels } from "@/features/units/unit-types";
 import { shareOfTheWay } from "@/features/maps/movement";
 import { useListMarches } from "@/api/generated/endpoints/turns/turns";
@@ -187,11 +188,15 @@ function UnitDetails({ shown, actions, showsMarches, supplyOf, screeningOf }: Un
           </Table.Tr>
           <Table.Tr>
             <Table.Th>FF</Table.Th>
-            <Table.Td>{shown.unit.fightingFactor}</Table.Td>
+            <Table.Td>
+              <UnitStat type={shown.unit.type} value={shown.unit.fightingFactor} />
+            </Table.Td>
           </Table.Tr>
           <Table.Tr>
             <Table.Th>Points</Table.Th>
-            <Table.Td>{shown.unit.points}</Table.Td>
+            <Table.Td>
+              <UnitStat type={shown.unit.type} value={shown.unit.points} />
+            </Table.Td>
           </Table.Tr>
           {shown.headingInto && (
             <Table.Tr>

@@ -162,6 +162,17 @@ function serveArmy(
       units = [...units, ...added];
       return HttpResponse.json(added);
     }),
+    http.post(`*/api/armies/${armyId}/scouts`, async ({ request }) => {
+      const body = (await request.json()) as { name: string };
+      requests.push({ method: "POST", path: "scouts", body });
+      const scout: ArmyUnitResponse = {
+        ...unit(String(units.length + 1), body.name, "Scouts", 0, 0),
+        unitId: null,
+        factionId: null,
+      };
+      units = [...units, scout];
+      return HttpResponse.json(scout);
+    }),
     http.put("*/api/army-units/:id", async ({ params, request }) => {
       const body = (await request.json()) as Omit<ArmyUnitResponse, "id" | "armyId">;
       requests.push({ method: "PUT", path: String(params.id), body });
@@ -258,6 +269,94 @@ describe("units", () => {
       { method: "POST", path: "units", body: { unitIds: [library[1]?.id, library[2]?.id] } },
     ]);
     expect(await (await unitsSection()).findByText("Light Division")).toBeInTheDocument();
+  });
+
+  it("lets the Umpire add a scout, which shows no FF or points", async () => {
+    const requests = serveArmy("Umpire", [unit("1", "1st Division")]);
+    const user = userEvent.setup();
+    await renderApp(`/campaigns/${campaignId}/armies/${armyId}`);
+
+    await user.click((await unitsSection()).getByRole("button", { name: "Add a scout" }));
+    const dialog = within(await screen.findByRole("dialog", { name: "Add a scout" }));
+    await user.type(dialog.getByRole("textbox", { name: "Name" }), " Hussar picket ");
+    await user.click(dialog.getByRole("button", { name: "Add scout" }));
+
+    expect(await screen.findByText("Added Hussar picket.")).toBeInTheDocument();
+    expect(requests).toEqual([{ method: "POST", path: "scouts", body: { name: "Hussar picket" } }]);
+    await waitFor(() => {
+      expect(rows().filter((cells) => cells.length > 0)).toEqual([
+        ["1st DivisionLine Infantry", "Line Infantry", "5", "20", ""],
+        ["Hussar picketScouts", "Scouts", "–None", "–None", ""],
+        ["", "", "20", ""],
+      ]);
+    });
+  });
+
+  it("edits a scout's name and place, never its type, FF or points", async () => {
+    const requests = serveArmy("Umpire", [unit("1", "Hussar picket", "Scouts", 0, 0)]);
+    const user = userEvent.setup();
+    await renderApp(`/campaigns/${campaignId}/armies/${armyId}`);
+
+    await user.click((await unitsSection()).getByRole("button", { name: "Edit Hussar picket" }));
+    const dialog = within(await screen.findByRole("dialog"));
+    expect(dialog.queryByRole("combobox", { name: "Type" })).not.toBeInTheDocument();
+    expect(dialog.queryByRole("textbox", { name: "Fighting Factor (FF)" })).not.toBeInTheDocument();
+    expect(dialog.getByText("A scout only watches: it has no FF or points.")).toBeInTheDocument();
+    await user.type(dialog.getByRole("combobox", { name: "Division" }), "Light Cavalry");
+    await user.click(dialog.getByRole("button", { name: "Save" }));
+
+    await waitFor(() => {
+      expect(requests).toEqual([
+        {
+          method: "PUT",
+          path: unit("1", "").id,
+          body: {
+            name: "Hussar picket",
+            type: "Scouts",
+            fightingFactor: 0,
+            points: 0,
+            division: "Light Cavalry",
+            brigade: null,
+            corps: null,
+            corpsCommander: null,
+            divisionCommander: null,
+            brigadeCommander: null,
+          },
+        },
+      ]);
+    });
+  });
+
+  it("never offers scouts among a unit's types", async () => {
+    serveArmy("Umpire", [unit("1", "1st Division")]);
+    const user = userEvent.setup();
+    await renderApp(`/campaigns/${campaignId}/armies/${armyId}`);
+
+    await user.click((await unitsSection()).getByRole("button", { name: "Edit 1st Division" }));
+    await user.click(
+      within(await screen.findByRole("dialog")).getByRole("combobox", { name: "Type" }),
+    );
+
+    expect(
+      await screen.findByRole("option", { name: "Light Cavalry", hidden: true }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("option", { name: "Scouts", hidden: true })).not.toBeInTheDocument();
+  });
+
+  it("won't save an FF of 0 for a unit that fights", async () => {
+    const requests = serveArmy("Umpire", [unit("1", "1st Division")]);
+    const user = userEvent.setup();
+    await renderApp(`/campaigns/${campaignId}/armies/${armyId}`);
+
+    await user.click((await unitsSection()).getByRole("button", { name: "Edit 1st Division" }));
+    const dialog = within(await screen.findByRole("dialog"));
+    const ff = dialog.getByRole("textbox", { name: "Fighting Factor (FF)" });
+    await user.clear(ff);
+    await user.type(ff, "0");
+    await user.click(dialog.getByRole("button", { name: "Save" }));
+
+    expect(await dialog.findByText("Enter an FF from 1 to 9.")).toBeInTheDocument();
+    expect(requests).toEqual([]);
   });
 
   it("asks the Umpire to choose the army's factions first", async () => {

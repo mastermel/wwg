@@ -23,7 +23,7 @@ import {
   usualCavalryTypes,
   usualInfantryTypes,
 } from "@/features/campaigns/concentration";
-import { unitTypeLabels, unitTypeOptions } from "@/features/units/unit-types";
+import { fights, unitTypeLabels, unitTypeOptions } from "@/features/units/unit-types";
 import { applyServerErrors } from "@/lib/form-errors";
 import { useOnline } from "@/lib/use-online";
 
@@ -84,8 +84,9 @@ function ConcentrationFormFields({
   const form = useForm<ConcentrationValues>({
     resolver: zodResolver(ConcentrationForm),
     defaultValues: {
-      infantryTypes: [...concentration.infantryTypes],
-      cavalryTypes: [...concentration.cavalryTypes],
+      // Scouts never count, and are no longer offered (decision 0028).
+      infantryTypes: concentration.infantryTypes.filter(fights),
+      cavalryTypes: concentration.cavalryTypes.filter(fights),
       infantryLimit: concentration.infantryLimit,
       cavalryLimit: concentration.cavalryLimit,
     },

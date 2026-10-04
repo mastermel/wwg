@@ -20,7 +20,7 @@ import type { UnitInHex } from "@/features/maps/contact";
 import { hexKey, hexName } from "@/features/maps/hex-grid";
 import { suggestedSize } from "@/features/maps/sightings";
 import { shownUnits, type SightingEntry, withPastScreen } from "@/features/maps/sighting-entries";
-import { unitTypeLabels } from "@/features/units/unit-types";
+import { fights, unitTypeLabels } from "@/features/units/unit-types";
 
 const strengths: { value: SightingStrength; label: string }[] = [
   { value: "Hidden", label: "Hidden" },
@@ -35,7 +35,12 @@ const sizes: { value: ForceSize; label: string }[] = [
 ];
 
 const describeUnits = (units: readonly SightedUnitResponse[]) =>
-  units.map((u) => `${u.name} (${unitTypeLabels[u.type]}, ${String(u.points)} points)`).join("; ");
+  units
+    .map(
+      (u) =>
+        `${u.name} (${unitTypeLabels[u.type]}${fights(u.type) ? `, ${String(u.points)} points` : ""})`,
+    )
+    .join("; ");
 
 interface SightingsFieldsProps {
   entries: readonly SightingEntry[];

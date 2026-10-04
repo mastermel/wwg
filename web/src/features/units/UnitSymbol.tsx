@@ -6,10 +6,10 @@ import type { UnitType } from "@/api/generated/model";
  * the arm. Drawn by the app, since the standard has nothing for several of the rule book's types
  * (decision 0014): infantry is a cross, cavalry a slash, artillery a dot, engineers the
  * standard's bridge, a supply train a bar across the foot, siege artillery two dots. Letters
- * mark the rest: L light infantry, G partisans (guerrillas), S scouts and M medium cavalry (on
- * the slash); an oval (armour) is heavy cavalry, and a slash (mounted) with the dot horse
- * artillery; a boat is a hull under a mast, and a commander a star. A black frame and a white halo keep it clear on any
- * map, light or dark.
+ * mark the rest: L light infantry, G partisans (guerrillas) and M medium cavalry (on the slash);
+ * an oval (armour) is heavy cavalry, and a slash (mounted) with the dot horse artillery; a boat is
+ * a hull under a mast, a commander a star, and a scout binoculars. A black frame and a white halo
+ * keep it clear on any map, light or dark.
  */
 
 const W = 36;
@@ -51,7 +51,14 @@ const glyphs: Record<UnitType, ReactNode> = {
   LightInfantry: marked(cross, "L"),
   Partisans: marked(cross, "G"),
   LightCavalry: slash,
-  Scouts: marked(slash, "S"),
+  // Binoculars: a scout only watches (decision 0028). Hollow lenses, unlike siege artillery's dots.
+  Scouts: (
+    <>
+      <circle cx={11.5} cy={13} r={5.5} />
+      <circle cx={24.5} cy={13} r={5.5} />
+      <rect x={16} y={10.5} width={4} height={4} fill={ink} stroke="none" />
+    </>
+  ),
   MediumCavalry: marked(slash, "M"),
   HeavyCavalry: (
     <>
