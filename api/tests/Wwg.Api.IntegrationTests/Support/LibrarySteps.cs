@@ -99,6 +99,25 @@ internal static class LibrarySteps
             CancellationToken
         );
 
+    /// <summary>A scout added to the army (the scenario's unless given) by the Umpire: its ID.</summary>
+    public static async Task<Guid> AddScoutAsync(
+        CampaignScenario scenario,
+        string name = "Hussar picket",
+        Guid? armyId = null
+    )
+    {
+        using var response = await scenario
+            .As(Role.Umpire)
+            .PostAsJsonAsync(
+                new Uri($"/api/armies/{armyId ?? scenario.ArmyId}/scouts", UriKind.Relative),
+                new AddScoutRequest(name),
+                CancellationToken
+            );
+        response.EnsureSuccessStatusCode();
+        var scout = await response.Content.ReadAsAsync<ArmyUnitResponse>();
+        return scout?.Id ?? throw new InvalidOperationException("No scout.");
+    }
+
     /// <summary>
     /// A new unit in the scenario's faction, added to the army (the scenario's unless given) by
     /// the Umpire: its army unit's ID.

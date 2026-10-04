@@ -193,6 +193,53 @@
         ]
       }
     },
+    "/api/armies/{id}/scouts": {
+      "post": {
+        "tags": [
+          "ArmyUnits"
+        ],
+        "summary": "Adds a scout to the army (Umpire or Admin): the campaign's own unit, with no library unit,\nFF or points (decision 0028). Placed like any unit added later.",
+        "operationId": "AddScout",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddScoutRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArmyUnitResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      }
+    },
     "/api/campaigns/{id}/places": {
       "get": {
         "tags": [
@@ -2933,7 +2980,7 @@
         "tags": [
           "ArmyUnits"
         ],
-        "summary": "Changes the campaign's copy of a unit: name, type, Fighting Factor, points, and its corps,\ndivision and brigade with their commanders (Umpire or Admin). The library unit stays as it is.",
+        "summary": "Changes the campaign's copy of a unit: name, type, Fighting Factor, points, and its corps,\ndivision and brigade with their commanders (Umpire or Admin). The library unit stays as it\nis. A scout stays a scout, with no FF or points, and no other unit becomes one.",
         "operationId": "UpdateArmyUnit",
         "parameters": [
           {
@@ -2963,6 +3010,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ArmyUnitResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
                 }
               }
             }
@@ -5228,7 +5285,7 @@
         "tags": [
           "Library"
         ],
-        "summary": "Adds a unit to a faction (Manager or Admin).",
+        "summary": "Adds a unit to a faction (Manager or Admin). Not a scout: those are campaigns'.",
         "operationId": "CreateUnit",
         "parameters": [
           {
@@ -5271,6 +5328,16 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -5285,7 +5352,7 @@
         "tags": [
           "Library"
         ],
-        "summary": "Changes a library unit (Manager or Admin). Campaigns it's already in keep their copies.",
+        "summary": "Changes a library unit (Manager or Admin). Campaigns it's already in keep their copies. It\ncan't become a scout.",
         "operationId": "UpdateUnit",
         "parameters": [
           {
@@ -5325,6 +5392,16 @@
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
                 }
               }
             }
@@ -5498,6 +5575,21 @@
           }
         },
         "description": "Adds library units to an army, from the factions it takes units from."
+      },
+      "AddScoutRequest": {
+        "required": [
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string",
+            "description": "The scout's name."
+          }
+        },
+        "description": "Adds a scout to an army (decision 0028): the campaign's own, with no FF or points."
       },
       "AdminCampaignSummary": {
         "required": [
@@ -5973,7 +6065,7 @@
               "null",
               "string"
             ],
-            "description": "The library unit it was copied from; null for a boat built in the campaign.",
+            "description": "The library unit it was copied from; null for a boat built in the campaign, or a scout.",
             "format": "uuid"
           },
           "factionId": {
@@ -5981,7 +6073,7 @@
               "null",
               "string"
             ],
-            "description": "That library unit's faction; null for a built boat.",
+            "description": "That library unit's faction; null for a built boat or a scout.",
             "format": "uuid"
           },
           "nation": {
@@ -5998,12 +6090,12 @@
           },
           "fightingFactor": {
             "type": "integer",
-            "description": "Its Fighting Factor (\"FF\"), 1–9.",
+            "description": "Its Fighting Factor (\"FF\"), 1–9; 0 for a scout, which doesn't fight.",
             "format": "int32"
           },
           "points": {
             "type": "integer",
-            "description": "What it's worth, 0–100.",
+            "description": "What it's worth, 0–100; 0 for a scout.",
             "format": "int32"
           },
           "division": {
@@ -6057,7 +6149,7 @@
             "format": "int32"
           }
         },
-        "description": "A unit in an army: the campaign's copy of a library unit."
+        "description": "A unit in an army: the campaign's copy of a library unit, a boat built or a scout."
       },
       "AssignCommanderRequest": {
         "required": [
@@ -10132,21 +10224,21 @@
             "description": "The unit's name."
           },
           "type": {
-            "description": "What kind of troops it is.",
+            "description": "What kind of troops it is: a scout's stays Scouts, and no other unit becomes one.",
             "$ref": "#/components/schemas/UnitType"
           },
           "fightingFactor": {
             "maximum": 9,
-            "minimum": 1,
+            "minimum": 0,
             "type": "integer",
-            "description": "Its Fighting Factor (\"FF\"), 1–9.",
+            "description": "Its Fighting Factor (\"FF\"), 1–9; 0 for a scout.",
             "format": "int32"
           },
           "points": {
             "maximum": 100,
             "minimum": 0,
             "type": "integer",
-            "description": "What it's worth, 0–100.",
+            "description": "What it's worth, 0–100; 0 for a scout.",
             "format": "int32"
           },
           "division": {

@@ -61,6 +61,33 @@ public sealed class ArmyUnitTests : ApiTest
             ?? throw new InvalidOperationException("No army.");
     }
 
+    private static async Task<ArmyResponse> ArmyAsync(CampaignScenario scenario) =>
+        (
+            await scenario
+                .As(Role.Umpire)
+                .GetAsAsync<ArmyResponse>($"/api/armies/{scenario.ArmyId}")
+        )!; // The Umpire sees every army.
+
+    private static UpdateArmyUnitRequest Change(
+        string name,
+        UnitType type,
+        int fightingFactor,
+        int points
+    ) => new(name, type, fightingFactor, points, null, null, null, null, null, null);
+
+    private static Task<HttpResponseMessage> UpdateAsync(
+        CampaignScenario scenario,
+        Guid unitId,
+        UpdateArmyUnitRequest request
+    ) =>
+        scenario
+            .As(Role.Umpire)
+            .PutAsJsonAsync(
+                new Uri($"/api/army-units/{unitId}", UriKind.Relative),
+                request,
+                CancellationToken
+            );
+
     [Fact]
     public async Task AddUnits_FromTheArmysFaction_AddsCopiesOfThem()
     {
@@ -397,7 +424,7 @@ public sealed class ArmyUnitTests : ApiTest
                 new UpdateArmyUnitRequest(
                     "Guard",
                     UnitType.LineInfantry,
-                    0,
+                    10,
                     101,
                     null,
                     null,
@@ -410,6 +437,153 @@ public sealed class ArmyUnitTests : ApiTest
             );
 
         await response.AssertValidationProblemAsync("fightingFactor", "points");
+    }
+
+    [Fact]
+    public async Task UpdateUnit_NoFightingFactor_IsAValidationError()
+    {
+        using var scenario = await CreateCampaignScenarioAsync();
+
+        using var response = await UpdateAsync(
+            scenario,
+            scenario.UnitId,
+            Change("Guard", UnitType.LineInfantry, 0, 20)
+        );
+
+        await response.AssertValidationProblemAsync("fightingFactor");
+    }
+
+    [Fact]
+    public async Task AddScout_ByTheUmpire_AddsTheArmysOwnScoutWithNoFightingFactorOrPoints()
+    {
+        using var scenario = await CreateCampaignScenarioAsync();
+
+        using var response = await scenario
+            .As(Role.Umpire)
+            .PostAsJsonAsync(
+                new Uri($"/api/armies/{scenario.ArmyId}/scouts", UriKind.Relative),
+                new AddScoutRequest(" Hussar picket "),
+                CancellationToken
+            );
+
+        var scout = await response.Content.ReadAsAsync<ArmyUnitResponse>();
+        var expected = new ArmyUnitResponse(
+            scout!.Id,
+            scenario.ArmyId,
+            null,
+            null,
+            // No library unit, so no faction: it goes as its army.
+            (await ArmyAsync(scenario)).Nation,
+            "Hussar picket",
+            UnitType.Scouts,
+            0,
+            0,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+        );
+        Assert.Equal(expected, scout);
+        Assert.Contains(expected, (await ArmyAsync(scenario)).Units);
+    }
+
+    [Fact]
+    public async Task AddScout_NoName_IsAValidationError()
+    {
+        using var scenario = await CreateCampaignScenarioAsync();
+
+        using var response = await scenario
+            .As(Role.Umpire)
+            .PostAsJsonAsync(
+                new Uri($"/api/armies/{scenario.ArmyId}/scouts", UriKind.Relative),
+                new AddScoutRequest("  "),
+                CancellationToken
+            );
+
+        await response.AssertValidationProblemAsync("name");
+    }
+
+    [Fact]
+    public async Task UpdateUnit_AScout_RenamesItAndGroupsIt()
+    {
+        using var scenario = await CreateCampaignScenarioAsync();
+        var scout = await LibrarySteps.AddScoutAsync(scenario);
+
+        using var response = await UpdateAsync(
+            scenario,
+            scout,
+            Change("Uhlan vedette", UnitType.Scouts, 0, 0) with
+            {
+                Division = "Light Cavalry Division",
+            }
+        );
+
+        var saved = await response.Content.ReadAsAsync<ArmyUnitResponse>();
+        Assert.Equal(
+            ("Uhlan vedette", UnitType.Scouts, "Light Cavalry Division"),
+            (saved!.Name, saved.Type, saved.Division)
+        );
+    }
+
+    [Fact]
+    public async Task UpdateUnit_AScoutToAnotherType_IsAValidationError()
+    {
+        using var scenario = await CreateCampaignScenarioAsync();
+        var scout = await LibrarySteps.AddScoutAsync(scenario);
+
+        using var response = await UpdateAsync(
+            scenario,
+            scout,
+            Change("Hussar picket", UnitType.LightCavalry, 4, 10)
+        );
+
+        await response.AssertValidationProblemAsync("type");
+    }
+
+    [Fact]
+    public async Task UpdateUnit_AScoutWithFightingFactorOrPoints_IsAValidationError()
+    {
+        using var scenario = await CreateCampaignScenarioAsync();
+        var scout = await LibrarySteps.AddScoutAsync(scenario);
+
+        using var response = await UpdateAsync(
+            scenario,
+            scout,
+            Change("Hussar picket", UnitType.Scouts, 1, 5)
+        );
+
+        await response.AssertValidationProblemAsync("fightingFactor", "points");
+    }
+
+    [Fact]
+    public async Task UpdateUnit_ALibraryUnitToAScout_IsAValidationError()
+    {
+        using var scenario = await CreateCampaignScenarioAsync();
+
+        using var response = await UpdateAsync(
+            scenario,
+            scenario.UnitId,
+            Change("1st Division", UnitType.Scouts, 0, 0)
+        );
+
+        await response.AssertValidationProblemAsync("type");
+    }
+
+    [Fact]
+    public async Task DeleteUnit_AScout_RemovesIt()
+    {
+        using var scenario = await CreateCampaignScenarioAsync();
+        var scout = await LibrarySteps.AddScoutAsync(scenario);
+
+        using var response = await scenario
+            .As(Role.Umpire)
+            .DeleteAsync(new Uri($"/api/army-units/{scout}", UriKind.Relative), CancellationToken);
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        Assert.DoesNotContain(scout, (await ArmyAsync(scenario)).Units.Select(u => u.Id));
     }
 
     [Fact]

@@ -160,14 +160,21 @@ internal static class LibraryEndpoints
         return TypedResults.NoContent();
     }
 
-    /// <summary>Adds a unit to a faction (Manager or Admin).</summary>
-    internal static async Task<Results<Created<UnitResponse>, NotFound>> CreateUnitAsync(
+    /// <summary>Adds a unit to a faction (Manager or Admin). Not a scout: those are campaigns'.</summary>
+    internal static async Task<
+        Results<Created<UnitResponse>, NotFound, ValidationProblem>
+    > CreateUnitAsync(
         Guid id,
         SaveUnitRequest request,
         WwgDbContext db,
         CancellationToken cancellationToken
     )
     {
+        if (request.Type == UnitType.Scouts)
+        {
+            return NoScouts();
+        }
+
         if (!await db.Factions.AnyAsync(f => f.Id == id, cancellationToken))
         {
             return TypedResults.NotFound();
@@ -180,14 +187,24 @@ internal static class LibraryEndpoints
         return TypedResults.Created($"/api/units/{unit.Id}", ToResponse(unit));
     }
 
-    /// <summary>Changes a library unit (Manager or Admin). Campaigns it's already in keep their copies.</summary>
-    internal static async Task<Results<Ok<UnitResponse>, NotFound>> UpdateUnitAsync(
+    /// <summary>
+    /// Changes a library unit (Manager or Admin). Campaigns it's already in keep their copies. It
+    /// can't become a scout.
+    /// </summary>
+    internal static async Task<
+        Results<Ok<UnitResponse>, NotFound, ValidationProblem>
+    > UpdateUnitAsync(
         Guid id,
         SaveUnitRequest request,
         WwgDbContext db,
         CancellationToken cancellationToken
     )
     {
+        if (request.Type == UnitType.Scouts)
+        {
+            return NoScouts();
+        }
+
         var unit = await db.Units.SingleOrDefaultAsync(u => u.Id == id, cancellationToken);
         if (unit is null)
         {
@@ -215,6 +232,18 @@ internal static class LibraryEndpoints
             ? TypedResults.NotFound()
             : TypedResults.NoContent();
     }
+
+    /// <summary>Why the library has no scouts (decision 0028), for the form and the import.</summary>
+    internal const string NoScoutsMessage =
+        "Scouts aren't the library's: the Umpire adds them to an army in the campaign.";
+
+    private static ValidationProblem NoScouts() =>
+        TypedResults.ValidationProblem(
+            new Dictionary<string, string[]>(StringComparer.Ordinal)
+            {
+                ["type"] = [NoScoutsMessage],
+            }
+        );
 
     private static void Apply(Unit unit, SaveUnitRequest request)
     {

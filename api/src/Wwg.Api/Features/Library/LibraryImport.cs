@@ -424,6 +424,11 @@ internal static class LibraryImport
                 Text("notes", UnitStats.MaxNotesLength),
                 Choice("status", Statuses)
             );
+            if (row.Type == UnitType.Scouts)
+            {
+                Error("type", LibraryEndpoints.NoScoutsMessage);
+            }
+
             return _failed ? null : row;
         }
 

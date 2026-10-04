@@ -66,6 +66,27 @@ public sealed class ArmyUnitPermissionTests : ApiTest
     [InlineData(Role.Commander, HttpStatusCode.Forbidden)]
     [InlineData(Role.Player, HttpStatusCode.Forbidden)]
     [InlineData(Role.NonMember, HttpStatusCode.NotFound)]
+    public async Task AddScout_ByRole_ReturnsExpectedStatus(Role role, HttpStatusCode expected)
+    {
+        using var scenario = await CreateCampaignScenarioAsync();
+
+        using var response = await scenario
+            .As(role)
+            .PostAsJsonAsync(
+                new Uri($"/api/armies/{scenario.ArmyId}/scouts", UriKind.Relative),
+                new AddScoutRequest("Hussar picket"),
+                CancellationToken
+            );
+
+        Assert.Equal(expected, response.StatusCode);
+    }
+
+    [Theory]
+    [InlineData(Role.Admin, HttpStatusCode.OK)]
+    [InlineData(Role.Umpire, HttpStatusCode.OK)]
+    [InlineData(Role.Commander, HttpStatusCode.Forbidden)]
+    [InlineData(Role.Player, HttpStatusCode.Forbidden)]
+    [InlineData(Role.NonMember, HttpStatusCode.NotFound)]
     public async Task UpdateUnit_ByRole_ReturnsExpectedStatus(Role role, HttpStatusCode expected)
     {
         using var scenario = await CreateCampaignScenarioAsync();

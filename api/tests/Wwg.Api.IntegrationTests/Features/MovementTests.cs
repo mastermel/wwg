@@ -27,10 +27,13 @@ public sealed class MovementTests : ApiTest
         // The scenario's French infantry would march further in turn 1's Morning: not here.
         await TurnSteps.SetCalendarAsync(scenario);
         await TurnSteps.ReadyAsync(scenario);
-        var unitId =
-            type == UnitType.LineInfantry
-                ? scenario.UnitId
-                : await LibrarySteps.AddUnitAsync(scenario, "Mover", type);
+        // Scouts aren't the library's (decision 0028).
+        var unitId = type switch
+        {
+            UnitType.LineInfantry => scenario.UnitId,
+            UnitType.Scouts => await LibrarySteps.AddScoutAsync(scenario, "Mover"),
+            _ => await LibrarySteps.AddUnitAsync(scenario, "Mover", type),
+        };
         if (unitId != scenario.UnitId)
         {
             using var placed = await TurnSteps.PlaceAsync(scenario, unitId);

@@ -208,6 +208,43 @@ public sealed class LibraryTests : ApiTest
     }
 
     [Fact]
+    public async Task CreateUnit_AScout_IsAValidationError()
+    {
+        using var manager = await CreateManagerClientAsync();
+        var faction = await CreateFactionAsync(manager);
+
+        using var response = await manager.PostAsJsonAsync(
+            new Uri($"/api/factions/{faction.Id}/units", UriKind.Relative),
+            Guard with
+            {
+                Type = UnitType.Scouts,
+            },
+            CancellationToken
+        );
+
+        await response.AssertValidationProblemAsync("type");
+    }
+
+    [Fact]
+    public async Task UpdateUnit_ToAScout_IsAValidationError()
+    {
+        using var manager = await CreateManagerClientAsync();
+        var faction = await CreateFactionAsync(manager);
+        var unit = await CreateUnitAsync(manager, faction.Id);
+
+        using var response = await manager.PutAsJsonAsync(
+            new Uri($"/api/units/{unit.Id}", UriKind.Relative),
+            Guard with
+            {
+                Type = UnitType.Scouts,
+            },
+            CancellationToken
+        );
+
+        await response.AssertValidationProblemAsync("type");
+    }
+
+    [Fact]
     public async Task CreateUnit_WithDivisionAndBrigade_KeepsThemTrimmed()
     {
         using var manager = await CreateManagerClientAsync();

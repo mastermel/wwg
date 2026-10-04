@@ -26,6 +26,11 @@ internal static class ArmyUnitEndpoints
             .WithTags("ArmyUnits")
             .RequireCampaignAccess(CampaignAccess.Umpire, CampaignRouteId.Army)
             .ProducesProblem(StatusCodes.Status409Conflict);
+        // ...but for its scouts, which are its own (decision 0028).
+        app.MapPost("/api/armies/{id:guid}/scouts", AddScoutAsync)
+            .WithName("AddScout")
+            .WithTags("ArmyUnits")
+            .RequireCampaignAccess(CampaignAccess.Umpire, CampaignRouteId.Army);
 
         var unit = app.MapGroup("/api/army-units/{id:guid}").WithTags("ArmyUnits");
         unit.MapPut("", UpdateArmyUnitAsync)
@@ -132,6 +137,38 @@ internal static class ArmyUnitEndpoints
     }
 
     /// <summary>
+    /// Adds a scout to the army (Umpire or Admin): the campaign's own unit, with no library unit,
+    /// FF or points (decision 0028). Placed like any unit added later.
+    /// </summary>
+    internal static async Task<Ok<ArmyUnitResponse>> AddScoutAsync(
+        Guid id,
+        AddScoutRequest request,
+        WwgDbContext db,
+        HttpContext httpContext,
+        CancellationToken cancellationToken
+    )
+    {
+        var scout = new ArmyUnit
+        {
+            ArmyId = id,
+            CampaignId = httpContext.CampaignContext().CampaignId,
+            Name = request.Name,
+            Type = UnitType.Scouts,
+            FightingFactor = 0,
+            Points = 0,
+        };
+        db.ArmyUnits.Add(scout);
+        await db.SaveChangesAsync(cancellationToken);
+        return TypedResults.Ok(
+            await db
+                .ArmyUnits.AsNoTracking()
+                .Where(u => u.Id == scout.Id)
+                .Select(ArmyUnitProjection.ToResponse)
+                .SingleAsync(cancellationToken)
+        );
+    }
+
+    /// <summary>
     /// 409 unless every unit is from the army's factions, and none is in the campaign already.
     /// </summary>
     private static async Task<ProblemHttpResult?> RefusedAsync(
@@ -177,9 +214,12 @@ internal static class ArmyUnitEndpoints
 
     /// <summary>
     /// Changes the campaign's copy of a unit: name, type, Fighting Factor, points, and its corps,
-    /// division and brigade with their commanders (Umpire or Admin). The library unit stays as it is.
+    /// division and brigade with their commanders (Umpire or Admin). The library unit stays as it
+    /// is. A scout stays a scout, with no FF or points, and no other unit becomes one.
     /// </summary>
-    internal static async Task<Ok<ArmyUnitResponse>> UpdateArmyUnitAsync(
+    internal static async Task<
+        Results<Ok<ArmyUnitResponse>, ValidationProblem>
+    > UpdateArmyUnitAsync(
         Guid id,
         UpdateArmyUnitRequest request,
         WwgDbContext db,
@@ -188,6 +228,11 @@ internal static class ArmyUnitEndpoints
     )
     {
         var unit = await db.ArmyUnits.Where(u => u.Id == id).SingleOrGoneAsync(cancellationToken);
+        if (ScoutProblems(unit.Type, request) is { Count: > 0 } problems)
+        {
+            return TypedResults.ValidationProblem(problems);
+        }
+
         // Once the campaign has started, a change to its points goes in its history (decision 0018).
         var open = await TurnRules.OpenTurnAsync(db, unit.CampaignId, cancellationToken);
         if (open is { Number: > 0 } && request.Points != unit.Points)
@@ -225,6 +270,46 @@ internal static class ArmyUnitEndpoints
                 .Select(ArmyUnitProjection.ToResponse)
                 .SingleAsync(cancellationToken)
         );
+    }
+
+    /// <summary>
+    /// What a change to a unit would break of the scouts' rules (decision 0028): only the
+    /// campaign makes scouts, and a scout doesn't fight; every other unit has an FF.
+    /// </summary>
+    private static Dictionary<string, string[]> ScoutProblems(
+        UnitType type,
+        UpdateArmyUnitRequest request
+    )
+    {
+        var problems = new Dictionary<string, string[]>(StringComparer.Ordinal);
+        var scout = type == UnitType.Scouts;
+        if (scout != (request.Type == UnitType.Scouts))
+        {
+            problems["type"] =
+            [
+                scout ? "A scout stays a scout." : "Only scouts added to the army are scouts.",
+            ];
+        }
+        else if (scout)
+        {
+            if (request.FightingFactor != 0)
+            {
+                problems["fightingFactor"] = ["A scout doesn't fight: its FF is 0."];
+            }
+            if (request.Points != 0)
+            {
+                problems["points"] = ["A scout doesn't fight: its points are 0."];
+            }
+        }
+        else if (request.FightingFactor < UnitStats.MinFightingFactor)
+        {
+            problems["fightingFactor"] =
+            [
+                $"The FF is {UnitStats.MinFightingFactor}–{UnitStats.MaxFightingFactor}.",
+            ];
+        }
+
+        return problems;
     }
 
     /// <summary>

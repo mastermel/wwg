@@ -328,6 +328,21 @@ public sealed class LibraryImportTests : ApiTest
     }
 
     [Fact]
+    public async Task Preview_AScout_IsARowError()
+    {
+        using var manager = await CreateManagerClientAsync();
+
+        var result = await ImportAsync(
+            manager,
+            File(Row("Hussar picket", type: "Scouts")),
+            preview: true
+        );
+
+        var error = Assert.Single(result.Errors);
+        Assert.Equal((2, "type"), (error.Row, error.Column));
+    }
+
+    [Fact]
     public async Task Preview_AFileWithoutAColumn_SaysWhichIsMissing()
     {
         using var manager = await CreateManagerClientAsync();
