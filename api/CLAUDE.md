@@ -122,6 +122,10 @@ true, because the build launches the app to write the document.
   rest (`Marches`), and units afloat take no towns (`UnitPlace.Afloat`, `Holdings`). A boat a
   unit built (`BoatBuilding`) is an army unit without a library unit: `ArmyUnit.UnitId` and its
   `Unit` are null there, so queries reaching the library through a unit allow for it.
+- Scouts (decision 0028) are army units with no library unit, FF or points (`AddScout`), as
+  built boats have no library unit. The rules leave them out by type (`UnitType.Scouts`): no
+  forced marches or march count (`Marches`), no boat building, supply-exempt, no towns
+  (`Holdings`). The library refuses the type.
 - The library import (decision 0025) is `Features/Library/LibraryImport.cs`: it reads the CSV's
   text (its own RFC 4180 reader), checks each row as the unit form is checked, and plans
   against the library (factions by name, units by `ImportKey`); the preview returns the plan, the

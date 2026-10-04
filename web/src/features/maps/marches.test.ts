@@ -35,6 +35,10 @@ describe("canForceMarch", () => {
     expect(canForceMarch(rules, "LineInfantry", "Night")).toBe(false);
     expect(canForceMarch(rules, "Boat", "Afternoon")).toBe(false);
   });
+
+  it("is never a scout's", () => {
+    expect(canForceMarch(rules, "Scouts", "Morning")).toBe(false);
+  });
 });
 
 describe("attritionInWords", () => {

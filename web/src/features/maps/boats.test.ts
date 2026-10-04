@@ -3,6 +3,7 @@ import type { ArmySummary, ArmyUnitResponse, UnitPosition } from "@/api/generate
 import {
   aboardAfter,
   boatsNeeded,
+  buildsBoats,
   canBuildBoatsAt,
   canEmbark,
   freeBoatsFor,
@@ -73,6 +74,14 @@ describe("canEmbark", () => {
     expect(["LineInfantry", "HeavyCavalry", "SiegeArtillery"].every((t) => canEmbark(t as never)));
     expect(canEmbark("Boat")).toBe(false);
     expect(canEmbark("SupplyTrain")).toBe(false);
+  });
+});
+
+describe("buildsBoats", () => {
+  it("is any land unit but a scout", () => {
+    expect(buildsBoats("LineInfantry")).toBe(true);
+    expect(buildsBoats("Boat")).toBe(false);
+    expect(buildsBoats("Scouts")).toBe(false);
   });
 });
 

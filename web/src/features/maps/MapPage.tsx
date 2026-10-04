@@ -101,6 +101,7 @@ import {
   aboardAfter,
   boatCount,
   boatsNeeded,
+  buildsBoats,
   canBuildBoatsAt,
   canEmbark,
   freeBoatsFor,
@@ -729,7 +730,7 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
           ? { needed: boatsNeeded(unit.unit.points, boatCapacity), free: free.length }
           : undefined,
       canBuild:
-        aboard === 0 && unit.unit.type !== "Boat" && canBuildBoatsAt(unit.hex, costs.terrain),
+        aboard === 0 && buildsBoats(unit.unit.type) && canBuildBoatsAt(unit.hex, costs.terrain),
       overloaded:
         manager && aboard > 0 && unit.unit.points > aboard * boatCapacity
           ? `${String(unit.unit.points)} points on ${boatCount(aboard)} of ${String(boatCapacity)}: more than they carry.`

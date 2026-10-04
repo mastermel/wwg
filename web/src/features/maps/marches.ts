@@ -1,5 +1,6 @@
 import type { TurnPart, UnitMarchResponse, UnitType } from "@/api/generated/model";
 import { classOf, type Rates } from "@/features/maps/movement";
+import { fights } from "@/features/units/unit-types";
 
 /**
  * Forced marches (step 47, decision 0018), in the app: how much further a force march goes, when
@@ -13,9 +14,12 @@ export function forceMarchBonus(rates: Rates, type: UnitType) {
   return flat > 0 ? 1 / flat : 0;
 }
 
-/** Whether the unit can force march this turn: by day, and a class that moves over flat ground. */
+/**
+ * Whether the unit can force march this turn: never a scout (decision 0028); by day, and a class
+ * that moves over flat ground.
+ */
 export function canForceMarch(rates: Rates, type: UnitType, part: TurnPart | null | undefined) {
-  return part !== "Night" && forceMarchBonus(rates, type) > 0;
+  return fights(type) && part !== "Night" && forceMarchBonus(rates, type) > 0;
 }
 
 /** Attrition as a multiple of the rules' scale, in words; null for none. */

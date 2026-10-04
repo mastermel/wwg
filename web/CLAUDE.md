@@ -158,6 +158,10 @@ The pre-commit hook runs `eslint --fix` and Prettier on staged files.
 - Screening (step 56, decision 0026): the unit drawer's switch and the turns it screened are
   `UnitScreening` (worded by `screening.ts`), for the unit's commander and the Umpire only
   (`screeningOf` in `MapPage`); the Umpire sees what screens hide in `SightingsFields`.
+- Scouts (step 58, decision 0028): the Umpire adds them from the army's Units (`AddScoutModal`);
+  `fights(type)` (`unit-types.ts`) is false for them, and they have no FF or points (`UnitStat`
+  shows "–"). `unitTypeOptions` leaves them out, so no form or setting offers the type. The map's
+  rules skip them: `canForceMarch`, `buildsBoats`, `hexWarnings`.
 - Queries that must not be saved for offline use (live status, admin data such as the user list)
   pass `meta: { persist: false }`.
 - Accessibility (WCAG 2.1 AA) is enforced in part by `jsx-a11y`; also give every page a title and

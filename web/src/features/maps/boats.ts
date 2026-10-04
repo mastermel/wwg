@@ -73,6 +73,9 @@ export function landingHexes(from: Hex, terrain: TerrainIndex): Hex[] {
   ];
 }
 
+/** Whether a unit of this type can build boats: not a boat, nor a scout (decision 0028). */
+export const buildsBoats = (type: UnitType) => type !== "Boat" && type !== "Scouts";
+
 /** Whether boats can be built in a hex: a town, city or fortress with a waterway along a side. */
 export function canBuildBoatsAt(hex: Hex, terrain: TerrainIndex) {
   const settlement = terrain.cell(hex)?.settlement;

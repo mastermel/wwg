@@ -8,6 +8,7 @@ import type {
 } from "@/api/generated/model";
 import { hexKey, hexName, type Hex } from "@/features/maps/hex-grid";
 import type { TerrainIndex } from "@/features/maps/terrain";
+import { fights } from "@/features/units/unit-types";
 
 /**
  * Contact and concentration (step 46, decision 0017): the hexes holding units of both sides, and
@@ -60,6 +61,8 @@ export function hexWarnings(
 ): HexWarning[] {
   const byHex = new Map<string, { hex: Hex; sides: Map<string, SideInHex> }>();
   for (const { unit, army, hex, livesOffTheLand } of units) {
+    // Scouts only watch: no contact, and nothing to count (decision 0028).
+    if (!fights(unit.type)) continue;
     const key = hexKey(hex);
     const entry = byHex.get(key) ?? { hex, sides: new Map<string, SideInHex>() };
     byHex.set(key, entry);

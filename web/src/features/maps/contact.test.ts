@@ -100,6 +100,16 @@ describe("hexWarnings", () => {
     expect(describeWarning(warning)).toEqual(["Contact: Coalition and French Empire."]);
   });
 
+  it("finds no contact with scouts, which only watch", () => {
+    const scout = unit(napoleon, 0, "Scouts");
+
+    expect(hexWarnings([unit(wellington, 20), scout], usual, open)).toEqual([]);
+    // Even where a campaign had counted them as cavalry.
+    expect(
+      hexWarnings([unit(wellington, 20), scout], { ...usual, cavalryTypes: ["Scouts"] }, open),
+    ).toEqual([]);
+  });
+
   it("counts a side's armies together, over the infantry limit", () => {
     const [warning] = hexWarnings(
       [unit(wellington, 100), unit(blucher, 60), unit(blucher, 50, "FootArtillery")],

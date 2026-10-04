@@ -2906,18 +2906,19 @@ build on positions.
     - ✅ **57b. The hex's drawer:** a click or tap on a hex or a unit's marker opens `HexDrawer`
       (replacing the hex's card and `UnitDrawer`): its units, then its sightings, then its
       terrain.
-58. **Scouts** (decision 0028): the Scouts type becomes a non-combat observer the Umpire adds to
+58. ✅ **Scouts** (decision 0028): the Scouts type becomes a non-combat observer the Umpire adds to
     an army, in parts:
-    - **58a. Made in the campaign (API):** `POST /api/armies/{id}/scouts { name }` (Umpire) adds
+    - ✅ **58a. Made in the campaign (API):** `POST /api/armies/{id}/scouts { name }` (Umpire) adds
       an army unit with no library unit, FF or points; the library's form and import refuse the
       type; `UpdateArmyUnit` keeps a scout a scout (no FF or points) and makes no other unit one;
       a migration turns library Scouts and their copies into Light cavalry.
-    - **58b. The rules (API):** a scout can't force march (nor do its moves count towards one) or
-      build boats; it's exempt from supply and attrition whatever the campaign's settings, and
-      takes no towns (`Scouting.IsScout`).
-    - **58c. In the app:** binoculars for its symbol; the army page's **Add a scout** (the
-      Umpire's); the unit form without type, FF or points for a scout, and no Scouts among the
-      types elsewhere; "–" for its FF and points.
-    - **58d. The rules in the app:** no force march or boat building in the drawer; no contact
-      or concentration from scouts (`contact.ts`); the supply and concentration settings stop
-      offering the type.
+    - ✅ **58b. The rules (API):** a scout can't force march or build boats (`OrderEndpoints`), and
+      has no march count (`Marches.LoadAsync` leaves it out), so no attrition; it's exempt from
+      supply whatever the campaign exempts (`SupplyLines`), and neither takes a town nor stops the
+      enemy taking one (`Holdings`). The rules' exempt types and cavalry types drop it.
+    - ✅ **58c. In the app:** binoculars for its symbol; the army page's **Add a scout** (the
+      Umpire's, `AddScoutModal`); the unit form without type, FF or points for a scout; "–" for
+      its FF and points (`UnitStat`); `unitTypeOptions` leaves the type out, so no form or setting
+      offers it, and the settings drop it from what they'd save.
+    - ✅ **58d. The rules in the app:** no force march (`canForceMarch`) or boat building
+      (`buildsBoats`) for a scout; no contact or concentration from scouts (`contact.ts`).
