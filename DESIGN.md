@@ -1257,12 +1257,14 @@ visibility); the data is in §5.1. Built in Phase 8 (§7).
   or fewer. Units, the reach while moving and ghost moves are always drawn. The terrain editor
   has the same panel, remembered apart from the Map page's, without the zoom rule (the Umpire
   edits the game map at any zoom).
-- **A hex's card:** a click or tap on a hex (not on a unit, and not while placing or moving)
-  opens a card at it with everything the viewer knows of it: its ground and forest, its town,
-  city or fortress, the roads, rivers, bridges and waterways on its six sides, its actual terrain
-  if they've been shown it, and the depots there they may see; the hex is outlined. With a mouse,
-  a label follows the pointer from hex to hex (step 57): the units in the hex, if any; else what
-  was sighted there (the turn shown and the 3 before, as drawn); else its ground.
+- **A hex's drawer** (step 57, decision 0027): a click or tap on a hex or a unit's marker (not
+  while placing or moving) opens a drawer with everything the viewer knows of it, the hex
+  outlined: first its units (one in full; several listed, each opening in full, with a way back),
+  then what was sighted there, then its terrain: its ground and forest, its town, city or
+  fortress, the roads, rivers, bridges and waterways on its six sides, its actual terrain if
+  they've been shown it, and the depots there they may see. With a mouse, a label follows the
+  pointer from hex to hex: the units in the hex, if any; else what was sighted there (the turn
+  shown and the 3 before, as drawn); else its ground.
 - **The Map page's layout:** on a computer (62em and wider), the map takes the width with the turn
   panel and the legend beside it (340px, as tall as the map, scrolling together; the legend's
   groups open one at a time), and the other panels flow in columns beneath (two; three from 88em,
@@ -1357,8 +1359,8 @@ visibility); the data is in §5.1. Built in Phase 8 (§7).
   notes, if the turn was sent back or reverted; how far the turn has got
   ("4 of 6 armies submitted", no names); and **Submit** once every unit has an
   order. While Submitted, nothing can be changed.
-- **Unit drawer** (tap a unit): name, type, FF, points, the army, this turn's
-  order and any note on it, with **Move** and **Hold**.
+- **Unit drawer** (tap a unit, or its hex: the hex's drawer, decision 0027): name, type, FF,
+  points, the army, this turn's order and any note on it, with **Move** and **Hold**.
 - **Move:** the rest of the interface steps aside; the hexes the unit can reach
   this turn are shaded (by the movement table, from its current hex); tapping one
   picks it as the destination, and the cheapest path there is drawn hex by hex,
@@ -2893,7 +2895,10 @@ build on positions.
       possible screen in the line of sight; a sighting `PastScreen` shows the hidden units too.
     - ✅ **56c. In the app:** the unit drawer's **Screening** switch and the turns it closed
       screening (`UnitScreening`); the start-turn dialog's hidden units and **Past the screen**.
-57. **What's in a hex, first:** the Map page leads with a hex's units and sightings, then its
-    terrain, in parts:
+57. **What's in a hex, first** (decision 0027): the Map page leads with a hex's units and
+    sightings, then its terrain, in parts:
     - ✅ **57a. The hover label:** the units in the hex; else what was sighted there; else its
       ground (`hoverLines`, `sightingsIn`).
+    - ✅ **57b. The hex's drawer:** a click or tap on a hex or a unit's marker opens `HexDrawer`
+      (replacing the hex's card and `UnitDrawer`): its units, then its sightings, then its
+      terrain.
