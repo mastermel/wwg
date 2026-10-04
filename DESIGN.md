@@ -1304,7 +1304,7 @@ visibility); the data is in §5.1. Built in Phase 8 (§7).
   (armour) heavy cavalry, a slash (mounted) horse artillery. From Phase 11 the
   types follow the rules' movement classes (§5.1), with symbols for the new
   ones (medium cavalry, scouts, partisans, engineers, supply trains, siege
-  artillery). A black frame and white halo keep them clear on any map. Not
+  artillery); from step 58 a scout is binoculars. A black frame and white halo keep them clear on any map. Not
   `milsymbol` (decision 0009's choice): none of its codes gave the distinct
   types needed, with nothing for skirmishers or horse artillery. A legend on the
   map says what each means. Each unit on the map is a button named for screen
@@ -1540,6 +1540,8 @@ Unit
                   LightCavalry | Scouts | MediumCavalry | HeavyCavalry |
                   HorseArtillery | SupplyTrain | SiegeArtillery |
                   Boat (step 44d) | Commander (step 54)
+                  (Scouts, from step 58: the campaign's own, never the
+                  library's; no FF or points, stored as 0)
                   (before: HeavyInfantry, now LineInfantry; Skirmishers,
                   now LightInfantry)
   FightingFactor  int 1–9 ("FF" in the app)
@@ -1730,7 +1732,7 @@ Campaign (new fields)
   InfantryLimit / CavalryLimit  int 1–10,000 (a side's points in a hex; 200 / 160)
   SupplyReach        int 0–3 (hexes from a supply route; 1; 48b)
   SupplyExemptTypes  UnitType[]? (null = light infantry, partisans, scouts,
-                     light cavalry)
+                     light cavalry; scouts are exempt whatever it holds, 58)
   OffTheLandNations  Nation[]? (may live off the land; null = France)
   VictoryPoints      VictoryPointsMode: Rules | Chosen (which settlements count; 50d)
   BoatCapacity       int 1–100 (points a boat carries; 14; 51a)
@@ -1956,6 +1958,7 @@ make users Managers (`PUT /api/admin/users/{id}/manager`).
 | Step 50: view the scoreboard (filtered in the handler) | ✅ everything | ✅ everything | every side's totals; their side's settlements and changes | every side's totals | 404 |
 | Step 50: set who holds a settlement | ✅ | ✅ | 403 | 403 | 404 |
 | Step 56: view a unit's screening; turn it on or off | ✅ | ✅ | own army | 403 | 404 |
+| Step 58: add a scout to an army | ✅ | ✅ | 403 | 403 | 404 |
 
 - **The visibility rule** is one server-side check, "can this user see army
   A's positions in turn N?", that every read of positions or orders goes
@@ -2133,6 +2136,7 @@ one, as a campaign is made with both)
 | GET / PUT | `/api/campaigns/{id}/victory-settings` | `{ mode }`: `Rules` or `Chosen` (step 50d) |
 | GET / PUT | `/api/campaigns/{id}/boat-settings` | `{ capacity }`: the points a boat carries, 1–100 (step 51a) |
 | GET / PUT | `/api/army-units/{id}/screening` | A unit's screening `{ canScreen, screening, turns }` / turn it on or off `{ screening }` (a type that can't screen: 409) (step 56) |
+| POST | `/api/armies/{id}/scouts` | Add a scout to the army `{ name }`: an army unit with no library unit, FF and points (step 58) |
 
 Status changes that aren't allowed now (submitting a Submitted turn, reverting
 in a closed turn) are **409**s, as is losing a race for the same change; a Move
@@ -2902,3 +2906,18 @@ build on positions.
     - ✅ **57b. The hex's drawer:** a click or tap on a hex or a unit's marker opens `HexDrawer`
       (replacing the hex's card and `UnitDrawer`): its units, then its sightings, then its
       terrain.
+58. **Scouts** (decision 0028): the Scouts type becomes a non-combat observer the Umpire adds to
+    an army, in parts:
+    - **58a. Made in the campaign (API):** `POST /api/armies/{id}/scouts { name }` (Umpire) adds
+      an army unit with no library unit, FF or points; the library's form and import refuse the
+      type; `UpdateArmyUnit` keeps a scout a scout (no FF or points) and makes no other unit one;
+      a migration turns library Scouts and their copies into Light cavalry.
+    - **58b. The rules (API):** a scout can't force march (nor do its moves count towards one) or
+      build boats; it's exempt from supply and attrition whatever the campaign's settings, and
+      takes no towns (`Scouting.IsScout`).
+    - **58c. In the app:** binoculars for its symbol; the army page's **Add a scout** (the
+      Umpire's); the unit form without type, FF or points for a scout, and no Scouts among the
+      types elsewhere; "–" for its FF and points.
+    - **58d. The rules in the app:** no force march or boat building in the drawer; no contact
+      or concentration from scouts (`contact.ts`); the supply and concentration settings stop
+      offering the type.
