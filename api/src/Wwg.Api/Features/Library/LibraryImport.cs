@@ -15,7 +15,7 @@ namespace Wwg.Api.Features.Library;
 /// </summary>
 internal static class LibraryImport
 {
-    /// <summary>The longest file, in characters: the club's 1,077 units take about 330,000.</summary>
+    /// <summary>The longest file, in characters: the club's 1,567 units take about 480,000.</summary>
     public const int MaxCsvLength = 2_000_000;
 
     /// <summary>How many errors a response lists; the count says how many there are.</summary>

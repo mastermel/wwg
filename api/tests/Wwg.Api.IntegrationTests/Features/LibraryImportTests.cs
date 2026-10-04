@@ -395,7 +395,8 @@ public sealed class LibraryImportTests : ApiTest
 
         var result = await ImportAsync(manager, csv);
 
-        Assert.Equal((1077, 0), (result.UnitCount, result.ErrorCount));
+        // 1,077 units, and 490 formation commanders (decision 0030).
+        Assert.Equal((1567, 0), (result.UnitCount, result.ErrorCount));
         Assert.Equal(
             [
                 "British",
@@ -410,8 +411,36 @@ public sealed class LibraryImportTests : ApiTest
             ],
             result.Factions.Select(f => f.Name).ToList()
         );
-        Assert.Equal(1077, result.Factions.Sum(f => f.Created));
+        Assert.Equal(1567, result.Factions.Sum(f => f.Created));
         Assert.Equal(Nation.UnitedStates, result.Factions[^1].Nation);
+    }
+
+    [Fact]
+    public async Task Import_TheClubsLibrary_ImportsEachFormationsCommanderAsACommander()
+    {
+        using var manager = await CreateManagerClientAsync();
+        var csv = await System.IO.File.ReadAllTextAsync(
+            Path.Combine(AppContext.BaseDirectory, "testdata", "complete_library.csv"),
+            CancellationToken
+        );
+
+        await ImportAsync(manager, csv);
+
+        var british = await FactionAsync(manager, "British");
+        var commanders = british
+            .Units.Where(u => u.Type == UnitType.Commander)
+            .OrderBy(u => u.ImportOrder)
+            .Take(3);
+        Assert.Equal(
+            [
+                ("L.G. Sir John Moore", 1, 0, "I Corps", null, null),
+                ("L.G. Lord Edward Paget", 1, 0, "I Corps", "1st Division", null),
+                ("M.G. Peregrine Maitland", 1, 0, "I Corps", "1st Division", "1st Brigade"),
+            ],
+            commanders.Select(u =>
+                (u.Name, u.FightingFactor, u.Points, u.Corps, u.Division, u.Brigade)
+            )
+        );
     }
 
     [Theory]
