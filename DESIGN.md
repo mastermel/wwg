@@ -2883,12 +2883,12 @@ build on positions.
       read the preview (factions, counts, missing units, errors), then import
       (`ImportLibraryModal`); an e2e test.
 56. **Screening** (decision 0026), in parts:
-    - **56a. The status:** `ArmyUnit.Screening`, turned on or off by the unit's commander (or the
+    - ✅ **56a. The status:** `ArmyUnit.Screening`, turned on or off by the unit's commander (or the
       Umpire) at any time, for light infantry and light or medium cavalry (`Screens.Types`); each
       turn closing with it on kept as a `ScreeningTurn`; `GET` / `PUT
       /api/army-units/{id}/screening` (Commander access on a unit's route).
-    - **56b. Screens in the sightings:** a screening unit hides the rest of its hex from the
+    - ✅ **56b. Screens in the sightings:** a screening unit hides the rest of its hex from the
       sightings due (`SightingDueResponse.ScreenedUnits`), and only screening units flag a
       possible screen in the line of sight; a sighting `PastScreen` shows the hidden units too.
-    - **56c. In the app:** the unit drawer's **Screening** switch and the turns it closed
+    - ✅ **56c. In the app:** the unit drawer's **Screening** switch and the turns it closed
       screening (`UnitScreening`); the start-turn dialog's hidden units and **Past the screen**.
