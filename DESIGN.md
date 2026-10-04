@@ -2936,3 +2936,7 @@ build on positions.
     placed, without a ghost. The Umpire's contact, concentration and depot threats stay where the
     turn's orders leave the units (`afterOrders`); the sightings are already the turn's start's.
     The banner and the past turn's panel say so.
+60. ✅ **Formation commanders in the library** (decision 0030): `scripts/library_csv.py` writes a
+    Commander unit (FF 1, 0 points) for each corps', division's and brigade's named commander,
+    just before the formation's first unit, keyed `… | Commander`; blank and placeholder
+    commanders are skipped and listed in its warnings. The import takes them as they are.

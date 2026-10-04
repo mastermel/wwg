@@ -86,6 +86,12 @@ TRAILING_NOTE = re.compile(r"\s*\(([^()]*)\)\)*\s*$")
 # Horse artillery says so in its name; a British "Troop" is the Royal Horse Artillery's.
 HORSE_ARTILLERY = re.compile(r"\bHorse\b|Cheval|Volante|R\.\s?H\.\s?A\.|\bRHA\b", re.I)
 
+LEVELS = ("corps", "division", "brigade")
+# A commander that's only a rank, waiting for a name: no unit for it (decided).
+PLACEHOLDER_COMMANDER = re.compile(r"^(Gen\.|M\.G\.( Sir)?|GM von)$")
+# A formation's commander as a unit (decision 0030): a general with no figures to fight with.
+COMMANDER_FF, COMMANDER_POINTS = 1, 0
+
 COLUMNS = [
     "key",
     "nation",
@@ -231,6 +237,52 @@ class Hierarchy:
             return True
         return self.in_summary or not self.corps and not self.division
 
+    def formation(self, level):
+        """The level's formation: the path to it, and its commander."""
+        path = (self.corps, self.division, self.brigade)[: LEVELS.index(level) + 1]
+        return path, getattr(self, f"{level}_commander")
+
+
+def commander_units(nation, hierarchy, level, row, warnings):
+    """The level's commander as Commander units: one, or one for each of a Russian cavalry corps
+    and the division joined to its name. None for a blank or placeholder commander."""
+    name, typed = getattr(hierarchy, level), getattr(hierarchy, f"{level}_commander")
+    names, commanders = name.split(" / "), typed.split(" / ")
+    joined = len(names) == len(commanders) > 1
+    depth = LEVELS.index(level) + 1
+    units = []
+    for part, text in zip(names, commanders) if joined else [("", typed)]:
+        # Any further commanders ("; 2nd: Oberst …", an acting commander) go in the notes.
+        commander, _, others = text.partition("; ")
+        commander = tidy(commander)
+        if not commander or PLACEHOLDER_COMMANDER.match(commander):
+            warnings.append(f"{nation} row {row}: no commander unit for {name!r} ({typed!r})")
+            continue
+        units.append(
+            dict(
+                nation=nation,
+                **{
+                    key: getattr(hierarchy, key) if LEVELS.index(lvl) < depth else ""
+                    for lvl in LEVELS
+                    for key in (lvl, f"{lvl}_commander")
+                },
+                unit=commander,
+                notes="; ".join(filter(None, [f"Commands {part}" if part else "", tidy(others)])),
+                arm="",
+                **{"class": ""},
+                type="Commander",
+                type_code="",
+                ff=COMMANDER_FF,
+                count="",
+                count_unit="",
+                points=COMMANDER_POINTS,
+                status="",
+                status_code="",
+                original_name=typed,
+                source_row=row,
+            )
+        )
+    return units
 
 def subtotal_arm(rows_f, start, layout):
     """The arm of the subtotal row below a unit, for tabs whose rows have no count label."""
@@ -265,6 +317,8 @@ def read_nation(nation, sheet_f, sheet_v, warnings):
     rows_v = list(sheet_v.iter_rows(max_col=width))
     hierarchy = Hierarchy()
     units = []
+    # Each level's formation, and the row that last set it; and the formations given commanders.
+    headings, commanded = {}, set()
     for index, (row_f, row_v) in enumerate(zip(rows_f, rows_v)):
         texts = [
             tidy(c.value)
@@ -275,7 +329,18 @@ def read_nation(nation, sheet_f, sheet_v, warnings):
         if not (is_number(row_f[col["ff"] - 1].value) or is_number(row_f[col["points"] - 1].value)):
             if texts and not hierarchy.header(texts[0], texts[1] if len(texts) > 1 else ""):
                 warnings.append(f"{nation} row {row_f[0].row}: skipped {texts}")
+            for level in LEVELS:
+                formation = hierarchy.formation(level)
+                if headings.get(level, (None,))[0] != formation:
+                    headings[level] = (formation, row_f[0].row)
             continue
+
+        # A formation's commanders come before its first unit, so they lead it in the file's order.
+        for level in LEVELS:
+            formation, heading_row = headings.get(level, ((("",), ""), None))
+            if formation[0][-1] and formation not in commanded:
+                commanded.add(formation)
+                units += commander_units(nation, hierarchy, level, heading_row, warnings)
 
         value = lambda key: tidy(row_v[col[key] - 1].value) if key in col else None  # noqa: E731
         original = row_f[[i for i, c in enumerate(row_f) if isinstance(c.value, str)][0]].value.strip()
@@ -353,9 +418,9 @@ def add_keys(units):
     """What the app's import knows each unit by: its place and name, numbered where repeated."""
     seen = defaultdict(int)
     for u in units:
-        path = " | ".join(
-            u[k] for k in ("nation", "corps", "division", "brigade", "unit")
-        )
+        # A commander is keyed by the post, so a new name in the workbook updates the same unit.
+        name = "Commander" if u["type"] == "Commander" else u["unit"]
+        path = " | ".join([*(u[k] for k in ("nation", "corps", "division", "brigade")), name])
         seen[path] += 1
         # The number is a segment of its own: some names end in "#1" already.
         u["key"] = path if seen[path] == 1 else f"{path} | #{seen[path]}"
@@ -369,18 +434,25 @@ def main():
         units += read_nation(nation, formulas[nation], values[nation], warnings)
     for u in units:
         u["flag"] = FLAGS[u["nation"]]
-        u["type"] = unit_type(u)
+        if "type" not in u:
+            u["type"] = unit_type(u)
     add_keys(units)
 
     with OUTPUT.open("w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, COLUMNS)
         writer.writeheader()
         writer.writerows(units)
-    print(f"Wrote {len(units)} units to {OUTPUT.relative_to(ROOT)}")
+    commanders = sum(1 for u in units if u["type"] == "Commander")
+    print(
+        f"Wrote {len(units)} units ({commanders} of them commanders) to"
+        f" {OUTPUT.relative_to(ROOT)}"
+    )
 
-    print("\nAgainst the workbook's Totals tab (points, count):")
+    print("\nAgainst the workbook's Totals tab (points, count; commanders left out):")
     ours = defaultdict(lambda: [0, 0])
     for u in units:
+        if u["type"] == "Commander":
+            continue
         ours[(u["nation"], u["arm"])][0] += u["points"]
         ours[(u["nation"], u["arm"])][1] += u["count"]
     expected = workbook_totals(values["Totals"])

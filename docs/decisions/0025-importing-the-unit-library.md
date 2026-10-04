@@ -58,6 +58,7 @@ entered by hand so far are incomplete, and the club wants to stop relying on the
   Artillery is horse artillery when its name says so (Horse, a Cheval, Volante, R.H.A., a British
   Troop), siege artillery when it says Siege, otherwise foot artillery.
 - Formation commanders are text repeated on each unit of the group. Commanders as units on the
-  map (decision 0024) remain the Umpire's to add.
+  map (decision 0024) remain the Umpire's to add. (Since decision 0030, the CSV includes each
+  formation's commander as a Commander unit.)
 - Problems found in the workbook go back to the president to fix at the source, and reach the
   library with the next import.

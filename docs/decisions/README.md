@@ -70,3 +70,4 @@ A reversal gets a new entry.
 | [0027](0027-whats-in-a-hex-first.md) | A hex's units and sightings come before its terrain on the map | 2026-10-03 |
 | [0028](0028-scouts.md) | Scouts: non-combat observers the Umpire adds to an army | 2026-10-03 |
 | [0029](0029-turns-shown-as-played.md) | Every turn is shown as it was played: where the units started, and their moves | 2026-10-04 |
+| [0030](0030-imported-formation-commanders.md) | Formation commanders imported as Commander units | 2026-10-04 |

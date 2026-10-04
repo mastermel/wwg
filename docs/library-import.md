@@ -136,6 +136,24 @@ don't fit go to whichever level they're most like (decided):
 | US army (no corps) | Corps blank |
 | British "Independent" (Canadian Cavalry Division) and US "Cavalry" | Brigade |
 
+### Commanders as units
+
+The CSV also has a **Commander** unit for each formation's commander (decision 0030): 490 of
+them, in the row just before the formation's first unit.
+
+- Its `unit` is the general's name, as typed. Its corps, division and brigade are the path down
+  to the formation it commands, with the levels below left blank. It has the type `Commander`,
+  FF 1 and 0 points. Its arm, class, count and status are blank.
+- When a formation lists more than one commander, the first is the unit and the rest go in its
+  `notes`: a Prussian brigade's `2nd: Oberst …`, or the acting commander of French IV Corps. The
+  two Russian cavalry corps joined to their Kurassier divisions get a unit for each commander,
+  with a note such as `Commands I Cavalry Corps`.
+- Blank commanders and placeholders (`Gen.`, `M.G.`, `M.G. Sir`, `GM von`; the script's
+  `PLACEHOLDER_COMMANDER`) get no unit, and the script lists them in its warnings: 14 at present.
+- Its `key` ends in `Commander` instead of the name, so a new name in the workbook updates
+  the same unit.
+- `source_row` is the formation's heading, or the last of its commander lines.
+
 A battery belongs to the brigade it's listed under (decided). On the British tab that's the
 division's last brigade, because British batteries come at the end of each division.
 
@@ -147,14 +165,14 @@ X, XI and XIII Corps each have a "17th Cavalry Division".
 
 | Column | Content |
 | --- | --- |
-| `key` | What the app's import knows the unit by (decision 0025): `nation \| corps \| division \| brigade \| unit`, plus `\| #2`, `\| #3`… for a unit that repeats there (3 do) |
+| `key` | What the app's import knows the unit by (decision 0025): `nation \| corps \| division \| brigade \| unit` (`Commander` instead of a commander's name), plus `\| #2`, `\| #3`… for a unit that repeats there (3 units and 2 commanders do) |
 | `nation` | The tab name (`British`, `Italy`, `US`…), which names the unit's faction in the app |
 | `flag` | The faction's flag in the app (its `Nation`): Britain, France, Italy, Warsaw (Polish), Austria, Prussia, Russia, Sweden, UnitedStates |
 | `corps`, `division`, `brigade` | The unit's formation (see above) |
 | `corps_commander`, `division_commander`, `brigade_commander` | Each formation's commander, as typed |
 | `unit` | Name without trailing notes |
 | `notes` | Trailing bracketed notes, `; `-separated |
-| `arm` | Infantry, Cavalry or Artillery |
+| `arm` | Infantry, Cavalry or Artillery. Blank for a commander. |
 | `class` | Heavy, Medium or Light (from `type_code`). Blank for artillery. |
 | `type` | The app's unit type (`UnitType`, see below) |
 | `type_code` | The raw type letter: h, m, l, r, s or blank |
@@ -178,10 +196,11 @@ so check it by hand, and fix it in the CSV if it's wrong:
 | Artillery | "Siege" in the name | SiegeArtillery |
 | Artillery | "Horse", "Cheval", "Volante", "R.H.A."/"RHA" in the name, or a British "Troop" | HorseArtillery |
 | Artillery | anything else (including Austrian and Russian "Light" batteries) | FootArtillery |
+| (a formation's commander) | | Commander |
 
 ## Checks against the workbook
 
-The CSV's points and counts per army and arm match the Totals tab exactly, except in two places:
+Commanders are left out of this check. The CSV's points and counts per army and arm match the Totals tab exactly, except in two places:
 
 - **British artillery** is 40 points / 9 guns higher, because the siege artillery reserve isn't
   in the workbook's totals.
