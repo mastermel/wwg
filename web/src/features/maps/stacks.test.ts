@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ArmySummary, ArmyUnitResponse } from "@/api/generated/model";
-import { describeUnit, stackUnits, type PlacedUnit } from "@/features/maps/stacks";
+import { describeUnit, stackUnits, unitsIn, type PlacedUnit } from "@/features/maps/stacks";
 
 const army: ArmySummary = {
   id: "a",
@@ -55,5 +55,15 @@ describe("stacking units", () => {
     expect(describeUnit(placed("Imperial Guard", 0))).toBe(
       "Imperial Guard, Line Infantry, Armée du Nord",
     );
+  });
+});
+
+describe("unitsIn", () => {
+  it("finds the units in a hex", () => {
+    const here = placed("Guard", 0);
+    const there = { ...placed("Lancers", 1), hex: { q: 1, r: 0 } };
+
+    expect(unitsIn({ q: 0, r: 0 }, [here, there])).toEqual([here]);
+    expect(unitsIn({ q: 2, r: 0 }, [here, there])).toEqual([]);
   });
 });

@@ -96,7 +96,7 @@ import { TurnList } from "@/features/maps/TurnList";
 import { HexDetailsList } from "@/features/maps/HexDetailsList";
 import { MapLegend } from "@/features/maps/MapLegend";
 import classes from "@/features/maps/MapPage.module.css";
-import { describeHex } from "@/features/maps/hex-info";
+import { describeHex, hoverLines } from "@/features/maps/hex-info";
 import {
   aboardAfter,
   boatCount,
@@ -118,7 +118,7 @@ import { ScoreboardPanel } from "@/features/maps/ScoreboardPanel";
 import { IntelligencePanel } from "@/features/maps/IntelligencePanel";
 import { SightingMarkers } from "@/features/maps/SightingMarkers";
 import { SnapshotMarkers } from "@/features/maps/SnapshotMarkers";
-import { sightingsFor } from "@/features/maps/sightings";
+import { sightingsFor, sightingsIn } from "@/features/maps/sightings";
 import { SightingsPanel } from "@/features/maps/SightingsPanel";
 import { HexWarningsLayer } from "@/features/maps/HexWarningsLayer";
 import {
@@ -132,7 +132,7 @@ import {
 import { MapLayersControl } from "@/features/maps/MapLayersControl";
 import { TerrainLayer } from "@/features/maps/TerrainLayer";
 import { TurnPanel } from "@/features/maps/TurnPanel";
-import type { PlacedUnit } from "@/features/maps/stacks";
+import { unitsIn, type PlacedUnit } from "@/features/maps/stacks";
 import { UnitDrawer } from "@/features/maps/UnitDrawer";
 import { UnitMarkers } from "@/features/maps/UnitMarkers";
 import { useOpenTurns, useOrders } from "@/features/maps/use-orders";
@@ -518,6 +518,16 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
       scoreboard.data,
       victorySettings.data,
     ],
+  );
+  // Its units, and what was sighted there, come first in its hover label.
+  const sightedHere = useMemo(
+    () => (shownHex ? sightingsIn(shownHex, drawnSightings, armies.data ?? []) : []),
+    [shownHex, drawnSightings, armies.data],
+  );
+  const hover = useMemo(
+    () =>
+      shownHex && hexInfo ? hoverLines(hexInfo, unitsIn(shownHex, shownOnMap), sightedHere) : [],
+    [shownHex, hexInfo, shownOnMap, sightedHere],
   );
   const hoverAt = (point: Point | null) => {
     const hex = point && idle ? grid.hexAt(point) : null;
@@ -968,6 +978,9 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
             <HexInfoPopup
               at={grid.centre(shownHex)}
               info={hexInfo}
+              hover={hover}
+              // Above the sighting's eye, which is above the hex's centre.
+              offset={sightedHere.length > 0 ? 34 : 12}
               pinned={pinned !== null}
               onClose={() => {
                 setPinned(null);

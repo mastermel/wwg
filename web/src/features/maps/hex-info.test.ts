@@ -5,7 +5,8 @@ import type {
   HexEdgeResponse,
   HexDetailResponse,
 } from "@/api/generated/model";
-import { describeHex } from "@/features/maps/hex-info";
+import { describeHex, hoverLines } from "@/features/maps/hex-info";
+import type { PlacedUnit } from "@/features/maps/stacks";
 import { indexTerrain, noSettlement } from "@/features/maps/terrain";
 
 const edge = (
@@ -155,5 +156,28 @@ describe("describeHex", () => {
       "Actual terrain: Rolling: a small village. A small castle.",
       "Fleurus: Armée du Nord's main depot.",
     ]);
+  });
+});
+
+describe("hoverLines", () => {
+  const info = describeHex(centre, indexTerrain(undefined), [], [], []);
+  const guard = {
+    unit: { name: "Imperial Guard", type: "LineInfantry" },
+    army: nord,
+  } as PlacedUnit;
+  const seen = "Prussian I Corps: a small force.";
+
+  it("names the units in the hex first", () => {
+    expect(hoverLines(info, [guard], [seen])).toEqual([
+      "Imperial Guard, Line Infantry, Armée du Nord",
+    ]);
+  });
+
+  it("says what was sighted there when no units are", () => {
+    expect(hoverLines(info, [], [seen])).toEqual([seen]);
+  });
+
+  it("gives the ground when the hex is empty", () => {
+    expect(hoverLines(info, [], [])).toEqual(["Flat"]);
   });
 });

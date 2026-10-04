@@ -8,6 +8,7 @@ import type {
 import { describeDetail } from "@/features/maps/hex-detail";
 import { settlementValue, victoryPoints } from "@/features/maps/victory";
 import { hexKey, hexName, type Hex } from "@/features/maps/hex-grid";
+import { describeUnit, type PlacedUnit } from "@/features/maps/stacks";
 import {
   describeSettlement,
   flowFor,
@@ -22,7 +23,7 @@ import {
 /** What the viewer knows of a hex, for the map's hex card: a title and a line per fact. */
 export interface HexInfo {
   title: string;
-  /** Its ground and forest, in a few words: the hover label. */
+  /** Its ground and forest, in a few words: the hover label, when nothing's in it. */
   summary: string;
   lines: string[];
 }
@@ -105,4 +106,18 @@ export function describeHex(
 
   const name = cell?.settlement.name;
   return { title: name ? `${hexName(hex)}, ${name}` : hexName(hex), summary, lines };
+}
+
+/**
+ * What a hex's hover label says: the units in it, if any; else what was sighted there (in words,
+ * from `sightingsIn`); else its ground.
+ */
+export function hoverLines(
+  info: HexInfo,
+  units: readonly PlacedUnit[],
+  sightings: readonly string[],
+): string[] {
+  if (units.length > 0) return units.map(describeUnit);
+  if (sightings.length > 0) return [...sightings];
+  return [info.summary];
 }

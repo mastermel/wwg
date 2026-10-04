@@ -73,7 +73,6 @@ export function UnitMarkers({ units, onSelect, highlight, outOfSupply }: UnitMar
           className={classes.marker}
           data-faded={highlight ? !stack.units.some((u) => u.army.id === highlight) : undefined}
           aria-label={label}
-          title={label}
           onClick={() => {
             onSelect(stack);
           }}

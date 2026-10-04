@@ -1,5 +1,5 @@
 import type { ArmySummary, ArmyUnitResponse } from "@/api/generated/model";
-import type { Hex } from "@/features/maps/hex-grid";
+import { hexKey, type Hex } from "@/features/maps/hex-grid";
 import { unitTypeLabels } from "@/features/units/unit-types";
 import type { HeadingInto } from "@/features/maps/movement";
 
@@ -61,6 +61,10 @@ export function stackUnits(
     longitude,
   }));
 }
+
+/** The units in a hex. */
+export const unitsIn = (hex: Hex, units: readonly PlacedUnit[]) =>
+  units.filter((placed) => hexKey(placed.hex) === hexKey(hex));
 
 /** What a screen reader hears for a unit. */
 export const describeUnit = ({ unit, army }: PlacedUnit) =>

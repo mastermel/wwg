@@ -1,5 +1,5 @@
 import type { ArmySummary, ForceSize, SightingResponse, UnitType } from "@/api/generated/model";
-import { hexName } from "@/features/maps/hex-grid";
+import { hexName, type Hex } from "@/features/maps/hex-grid";
 import { unitTypeLabels } from "@/features/units/unit-types";
 
 /**
@@ -45,6 +45,29 @@ export function describeSighting(sighting: SightingResponse, armies: readonly Ar
     sighting.q !== null && sighting.r !== null
       ? hexName({ q: sighting.q, r: sighting.r })
       : sighting.whereabouts;
+  return `${where}: ${sightedForce(sighting, armies)}.`;
+}
+
+/**
+ * The drawn sightings in a hex, in words, for its hover label and drawer: the newest first, those
+ * from an earlier turn than the one shown marked with theirs.
+ */
+export function sightingsIn(
+  hex: Hex,
+  drawn: readonly { sighting: SightingResponse; faded: boolean }[],
+  armies: readonly ArmySummary[],
+) {
+  return drawn
+    .filter(({ sighting }) => sighting.q === hex.q && sighting.r === hex.r)
+    .sort((a, b) => b.sighting.turn - a.sighting.turn)
+    .map(
+      ({ sighting, faded }) =>
+        `${faded ? `Turn ${String(sighting.turn)}: ` : ""}${sightedForce(sighting, armies)}.`,
+    );
+}
+
+/** Whose, what, how strong, and how it came: a sighting without where. */
+function sightedForce(sighting: SightingResponse, armies: readonly ArmySummary[]) {
   const whose = sighting.armyIds
     ? sighting.armyIds.map((id) => armies.find((a) => a.id === id)?.name ?? "an army").join(" and ")
     : "Enemy troops";
@@ -61,5 +84,5 @@ export function describeSighting(sighting: SightingResponse, armies: readonly Ar
     : sighting.byUmpire
       ? " (reported)"
       : "";
-  return `${where}: ${whose}${what}${strength}${afloat}${source}.`;
+  return `${whose}${what}${strength}${afloat}${source}`;
 }

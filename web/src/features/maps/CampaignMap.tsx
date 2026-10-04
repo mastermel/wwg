@@ -5,7 +5,12 @@ import { useComputedColorScheme } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
 import { useMemo, useState, type ReactNode } from "react";
 import type { LngLatBounds } from "maplibre-gl";
-import MapGL, { AttributionControl, NavigationControl, type MapRef } from "react-map-gl/maplibre";
+import MapGL, {
+  AttributionControl,
+  NavigationControl,
+  type MapMouseEvent,
+  type MapRef,
+} from "react-map-gl/maplibre";
 import type { CampaignMapResponse, MapBounds } from "@/api/generated/model";
 import classes from "@/features/maps/CampaignMap.module.css";
 import { contourTiles } from "@/features/maps/contours";
@@ -122,7 +127,10 @@ export function CampaignMap({
               onMouseMove: (event: { lngLat: { lng: number; lat: number } }) => {
                 onHover({ longitude: event.lngLat.lng, latitude: event.lngLat.lat });
               },
-              onMouseOut: () => {
+              onMouseOut: (event: MapMouseEvent) => {
+                // Onto a marker or popup is still over the map: only leaving it ends the hover.
+                const to = event.originalEvent.relatedTarget;
+                if (to instanceof Node && event.target.getContainer().contains(to)) return;
                 onHover(null);
               },
             }

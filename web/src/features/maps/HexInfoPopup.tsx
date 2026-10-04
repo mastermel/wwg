@@ -7,22 +7,26 @@ import type { Point } from "@/features/maps/geo";
 interface HexInfoPopupProps {
   at: Point;
   info: HexInfo;
+  /** The hover label's lines: the units there, what was sighted there, or its ground. */
+  hover: readonly string[];
+  /** How far above the hex's centre, in pixels: clear of the markers there. */
+  offset: number;
   /** Chosen (a click or tap), with everything known and a close button; else a hover label. */
   pinned: boolean;
   onClose: () => void;
 }
 
 /**
- * What the viewer knows of a hex, at the hex, inside a CampaignMap: a label with its ground while
- * the mouse is over it, and on a click or tap, a card with everything known of it.
+ * What the viewer knows of a hex, at the hex, inside a CampaignMap: a label while the mouse is over
+ * it (its units, else what was sighted there, else its ground), and on a click or tap, a card with everything known of it.
  */
-export function HexInfoPopup({ at, info, pinned, onClose }: HexInfoPopupProps) {
+export function HexInfoPopup({ at, info, hover, offset, pinned, onClose }: HexInfoPopupProps) {
   return (
     <Popup
       longitude={at.longitude}
       latitude={at.latitude}
       anchor="bottom"
-      offset={12}
+      offset={offset}
       closeButton={pinned}
       closeOnClick={false}
       onClose={onClose}
@@ -40,7 +44,11 @@ export function HexInfoPopup({ at, info, pinned, onClose }: HexInfoPopupProps) {
             ))}
           </List>
         ) : (
-          <Text size="xs">{info.summary}</Text>
+          hover.map((line) => (
+            <Text key={line} size="xs">
+              {line}
+            </Text>
+          ))
         )}
       </div>
     </Popup>

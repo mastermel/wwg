@@ -4,6 +4,7 @@ import {
   describeSighting,
   describeTypes,
   sightingsFor,
+  sightingsIn,
   suggestedSize,
 } from "@/features/maps/sightings";
 
@@ -85,6 +86,22 @@ describe("sightingsFor", () => {
       [5, false],
     ]);
     expect(sightingsFor(all, 1).map((s) => s.sighting.turn)).toEqual([1]);
+  });
+});
+
+describe("sightingsIn", () => {
+  it("words a hex's sightings without where, newest first, marking earlier turns'", () => {
+    const drawn = [
+      { sighting: sighting({ id: "1", turn: 3 }), faded: true },
+      { sighting: sighting({ id: "2", turn: 4, byUmpire: true, size: "Large" }), faded: false },
+      { sighting: sighting({ id: "3", turn: 4, q: 0 }), faded: false },
+    ];
+
+    expect(sightingsIn({ q: 1, r: -2 }, drawn, [prussians])).toEqual([
+      "Prussian I Corps: 2 line infantry and 1 light cavalry, a large force (reported).",
+      "Turn 3: Prussian I Corps: 2 line infantry and 1 light cavalry, a medium force.",
+    ]);
+    expect(sightingsIn({ q: 5, r: 5 }, drawn, [prussians])).toEqual([]);
   });
 });
 
