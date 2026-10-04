@@ -63,7 +63,7 @@ true, because the build launches the app to write the document.
   `.RequireLibraryEditor()` (Managers and Admins, decision 0015; the Manager role is read from
   the database, so granting or removing it applies at once) or
   `.RequireCampaignAccess(CampaignAccess.Member | Commander | Umpire, routeId)`. `Commander`
-  (the army's commander, the Umpire, Admins) needs an army or army-turn route; where the Umpire's
+  (the army's commander, the Umpire, Admins) needs an army, army-turn or army-unit route; where the Umpire's
   rules differ (orders, decision 0011), the handler checks `CampaignContext().CanManage`.
   `EndpointConventionTests` fails for any endpoint without one.
 - Campaign endpoints: the `RequireCampaignAccess` filter finds the campaign from the route's `{id}`

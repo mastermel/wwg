@@ -40,3 +40,17 @@ internal sealed class ArmyUnitConfiguration : IEntityTypeConfiguration<ArmyUnit>
         builder.HasIndex(u => new { u.CampaignId, u.UnitId }).IsUnique();
     }
 }
+
+internal sealed class ScreeningTurnConfiguration : IEntityTypeConfiguration<ScreeningTurn>
+{
+    public void Configure(EntityTypeBuilder<ScreeningTurn> builder)
+    {
+        builder
+            .HasOne(s => s.ArmyUnit)
+            .WithMany()
+            .HasForeignKey(s => s.ArmyUnitId)
+            .OnDelete(DeleteBehavior.Cascade);
+        // A turn closes once.
+        builder.HasIndex(s => new { s.ArmyUnitId, s.Turn }).IsUnique();
+    }
+}

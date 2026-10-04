@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
 using Wwg.Api.Data;
 using Wwg.Api.Data.Entities;
+using Wwg.Api.Features.Screening;
 using Wwg.Api.Features.Turns;
 using Wwg.Api.Infrastructure;
 using Wwg.Api.Infrastructure.Auth;
@@ -206,6 +207,8 @@ internal static class ArmyUnitEndpoints
 
         unit.Name = request.Name;
         unit.Type = request.Type;
+        // Only some types screen (decision 0026).
+        unit.Screening &= Screens.Types.Contains(request.Type);
         unit.FightingFactor = request.FightingFactor;
         unit.Points = request.Points;
         unit.Division = UnitGroups.Normalize(request.Division);

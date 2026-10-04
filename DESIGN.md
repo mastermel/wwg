@@ -1783,6 +1783,16 @@ Holding (who holds a settlement; 50a)   HoldingChange (kept for the scoreboard)
                                           ByUmpire    bool
 ```
 
+**Step 56** (decision 0026) adds screening:
+
+```
+ArmyUnit (new field)                      ScreeningTurn (a turn a unit closed screening)
+  Screening  bool (its commander's to       ArmyUnitId  → ArmyUnit
+             turn on or off; light          Turn        int (unique together)
+             infantry, light or medium
+             cavalry only)
+```
+
 - What a sighting or report records is **copied in**, as it was then, so later changes don't
   rewrite it. Deleting an army deletes its depots, its sightings and the reports it sent or got;
   a holding or holding change whose army goes is kept, with no one in its place.
@@ -1942,6 +1952,7 @@ make users Managers (`PUT /api/admin/users/{id}/manager`).
 | Step 49: list reports (filtered in the handler) | ✅ all | ✅ all | own army's sent (not whether they arrived) and those that reached it | none (empty) | 404 |
 | Step 50: view the scoreboard (filtered in the handler) | ✅ everything | ✅ everything | every side's totals; their side's settlements and changes | every side's totals | 404 |
 | Step 50: set who holds a settlement | ✅ | ✅ | 403 | 403 | 404 |
+| Step 56: view a unit's screening; turn it on or off | ✅ | ✅ | own army | 403 | 404 |
 
 - **The visibility rule** is one server-side check, "can this user see army
   A's positions in turn N?", that every read of positions or orders goes
@@ -2118,6 +2129,7 @@ one, as a campaign is made with both)
 | GET | `/api/campaigns/{id}/scoreboard` | Each side's total with its armies' parts, the totals after every turn, and the settlements and changes the viewer may see (step 50b) |
 | GET / PUT | `/api/campaigns/{id}/victory-settings` | `{ mode }`: `Rules` or `Chosen` (step 50d) |
 | GET / PUT | `/api/campaigns/{id}/boat-settings` | `{ capacity }`: the points a boat carries, 1–100 (step 51a) |
+| GET / PUT | `/api/army-units/{id}/screening` | A unit's screening `{ canScreen, screening, turns }` / turn it on or off `{ screening }` (a type that can't screen: 409) (step 56) |
 
 Status changes that aren't allowed now (submitting a Submitted turn, reverting
 in a closed turn) are **409**s, as is losing a race for the same change; a Move
@@ -2870,3 +2882,13 @@ build on positions.
     - ✅ **55f. The import page:** the library's **Import** (Managers, Admins): choose the file,
       read the preview (factions, counts, missing units, errors), then import
       (`ImportLibraryModal`); an e2e test.
+56. **Screening** (decision 0026), in parts:
+    - **56a. The status:** `ArmyUnit.Screening`, turned on or off by the unit's commander (or the
+      Umpire) at any time, for light infantry and light or medium cavalry (`Screens.Types`); each
+      turn closing with it on kept as a `ScreeningTurn`; `GET` / `PUT
+      /api/army-units/{id}/screening` (Commander access on a unit's route).
+    - **56b. Screens in the sightings:** a screening unit hides the rest of its hex from the
+      sightings due (`SightingDueResponse.ScreenedUnits`), and only screening units flag a
+      possible screen in the line of sight; a sighting `PastScreen` shows the hidden units too.
+    - **56c. In the app:** the unit drawer's **Screening** switch and the turns it closed
+      screening (`UnitScreening`); the start-turn dialog's hidden units and **Past the screen**.

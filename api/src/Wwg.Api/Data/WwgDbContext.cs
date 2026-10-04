@@ -54,6 +54,8 @@ internal sealed class WwgDbContext(DbContextOptions<WwgDbContext> options)
 
     public DbSet<PointsChange> PointsChanges => Set<PointsChange>();
 
+    public DbSet<ScreeningTurn> ScreeningTurns => Set<ScreeningTurn>();
+
     public DbSet<Depot> Depots => Set<Depot>();
 
     public DbSet<Sighting> Sightings => Set<Sighting>();

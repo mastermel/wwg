@@ -137,4 +137,11 @@ internal sealed class ArmyUnit : Entity
     /// the 7th, each costs attrition.
     /// </summary>
     public int UnsuppliedTurns { get; set; }
+
+    /// <summary>
+    /// Whether it's screening (decision 0026): its commander's to turn on or off at any time, for
+    /// the light troops that can screen. It hides the rest of its hex from enemy sightings, and
+    /// each turn that closes with it on goes in its <see cref="ScreeningTurn"/>s.
+    /// </summary>
+    public bool Screening { get; set; }
 }

@@ -13,8 +13,8 @@ internal enum CampaignAccess
     Member,
 
     /// <summary>
-    /// The army's commander, the campaign's Umpire, or an Admin. Army and army-turn routes only:
-    /// other members get 403.
+    /// The army's commander, the campaign's Umpire, or an Admin. Army, army-turn and army-unit
+    /// routes only: other members get 403.
     /// </summary>
     Commander,
 
@@ -80,10 +80,15 @@ internal static class CampaignAccessExtensions
     )
         where TBuilder : IEndpointConventionBuilder
     {
-        // Only an army (or army-turn) route knows which army, so which commander.
+        // Only an army (or army-turn, or army-unit) route knows which army, so which commander.
         if (
             access == CampaignAccess.Commander
-            && routeId is not (CampaignRouteId.Army or CampaignRouteId.ArmyTurn)
+            && routeId
+                is not (
+                    CampaignRouteId.Army
+                    or CampaignRouteId.ArmyTurn
+                    or CampaignRouteId.ArmyUnit
+                )
         )
         {
             throw new ArgumentException("Commander access needs an army route.", nameof(access));

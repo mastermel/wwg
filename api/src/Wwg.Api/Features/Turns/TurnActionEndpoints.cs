@@ -6,6 +6,7 @@ using Wwg.Api.Data.Entities;
 using Wwg.Api.Features.Boats;
 using Wwg.Api.Features.Campaigns;
 using Wwg.Api.Features.Intelligence;
+using Wwg.Api.Features.Screening;
 using Wwg.Api.Features.Sightings;
 using Wwg.Api.Features.Supply;
 using Wwg.Api.Features.Victory;
@@ -331,6 +332,8 @@ internal static class TurnActionEndpoints
             };
         }
 
+        // Screening (decision 0026): the turn closes with these units screening.
+        await Screens.CloseTurnAsync(db, campaignId, closing, cancellationToken);
         // Supply (decision 0019): the closing turn counts towards each unit's turns cut off.
         await SupplyData.CloseTurnAsync(db, campaignId, cancellationToken);
         // Couriers (decision 0020) ride a turn on, and some arrive.

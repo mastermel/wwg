@@ -4528,6 +4528,98 @@
         ]
       }
     },
+    "/api/army-units/{id}/screening": {
+      "get": {
+        "tags": [
+          "Screening"
+        ],
+        "summary": "The unit's screening (its commander, the Umpire or an Admin): whether it can, whether it\nis, and the turns it closed screening.",
+        "operationId": "GetScreening",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScreeningResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "Screening"
+        ],
+        "summary": "Turns the unit's screening on or off (its commander, the Umpire or an Admin), at any time:\nit stays so until turned back. Only light infantry and light or medium cavalry can screen\n(409).",
+        "operationId": "UpdateScreening",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateScreeningRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScreeningResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      }
+    },
     "/api/campaigns/{id}/victory-settings": {
       "get": {
         "tags": [
@@ -8881,6 +8973,33 @@
         },
         "description": "The campaign's victory points (decision 0021), as the viewer may see them: every side's total;\ntheir own side's settlements and the changes it made or suffered (the Umpire's, all)."
       },
+      "ScreeningResponse": {
+        "required": [
+          "canScreen",
+          "screening",
+          "turns"
+        ],
+        "type": "object",
+        "properties": {
+          "canScreen": {
+            "type": "boolean",
+            "description": "Whether its type can screen (light infantry, light or medium cavalry)."
+          },
+          "screening": {
+            "type": "boolean",
+            "description": "Whether it's screening now."
+          },
+          "turns": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "description": "The turns it closed screening, oldest first."
+          }
+        },
+        "description": "A unit's screening (decision 0026), for its commander and the Umpire."
+      },
       "SendReportRequest": {
         "required": [
           "toArmyId",
@@ -10413,6 +10532,19 @@
         },
         "description": "Updates the signed-in user's name."
       },
+      "UpdateScreeningRequest": {
+        "required": [
+          "screening"
+        ],
+        "type": "object",
+        "properties": {
+          "screening": {
+            "type": "boolean",
+            "description": "Whether it screens from now on."
+          }
+        },
+        "description": "Turns a unit's screening on or off (decision 0026)."
+      },
       "UpdateVictorySettingsRequest": {
         "required": [
           "mode"
@@ -10639,6 +10771,9 @@
     },
     {
       "name": "Armies"
+    },
+    {
+      "name": "Screening"
     },
     {
       "name": "Boats"
