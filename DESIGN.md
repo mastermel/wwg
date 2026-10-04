@@ -1351,9 +1351,10 @@ visibility); the data is in §5.1. Built in Phase 8 (§7).
   public-domain designs, plus a plain one.
 
 **A commander's view** (one army)
-- Their units at their current positions (the latest Completed turn), and,
-  in a Draft, each ordered move as a **ghost** icon at the destination with a
-  line from where the unit is.
+- Their units where they started the open turn (after the last closed one), and each move
+  ordered in it, whatever the army turn's status, as a **ghost** icon at the destination with a
+  dashed line along its path (decision 0029; before step 59, an approved army's units showed at
+  their destinations, without ghosts).
 - **Turn panel:** the turn number and its status; each unit Moved, Held or
   without an order, with an **undo** button for those with one; the Umpire's
   notes, if the turn was sent back or reverted; how far the turn has got
@@ -1367,15 +1368,18 @@ visibility); the data is in §5.1. Built in Phase 8 (§7).
   with what it costs; **Confirm** or **Cancel**. Each order saves straight away,
   so a draft survives closing the tab. (Phase 8 measured a straight-line range
   instead; decision 0014 replaced it.)
-- **History:** their army's turns, newest first; choosing one shows the units
-  where they were in that turn. The arrow keys step through them, so moving
+- **History:** their army's turns, newest first; choosing one shows it as it was
+  played, as the open turn is: the units where they started it, and its moves as ghosts
+  (decision 0029; turn 0, where they were placed). The arrow keys step through them, so moving
   forward and back through the campaign is quick.
 
 **The Umpire's view** (Admins see the same)
-- Every army's units at their current positions, in the armies' colours.
+- Every army's units where they started the open turn, with its moves as ghosts, in the
+  armies' colours.
 - **Armies list:** choosing one highlights its units and fades the rest.
 - **Turn list**, from 0 to the open turn, each with its progress ("Turn 4 – 5
-  of 6"). Choosing a turn shows everyone's positions in it, and each army's turn
+  of 6"). Choosing a turn shows it as it was played (where everyone started it, and
+  its moves as ghosts; decision 0029), and each army's turn
   under it: status, submitted and completed times, and **Approve**, **Send
   back** or **Revert** (the last two with a note for the turn and for units),
   for the open turn only. A Submitted turn shows the commander's note to the Umpire (the latest
@@ -2502,7 +2506,8 @@ including the e2e flows) and DESIGN updates, in commits under 500 lines.
     - A past turn shows where units were after it (`GET /positions?turn=`: each unit's latest
       order at or before it), a banner with Back to now, and each army's part: status and its
       history (who submitted, approved, sent back or reopened, when, and the notes). No ghosts
-      or actions. The open turn is "now": positions and ghosts as before.
+      or actions. The open turn is "now": positions and ghosts as before. (Step 59 shows every
+      turn, past or open, from where the units started it, with its moves as ghosts.)
     - The Umpire's Armies list picks out one army: other stacks fade (opacity 0.3) and only its
       moves show as ghosts; choosing it again shows all alike.
     - The chosen row's detail text isn't dimmed: dimmed text fails contrast on its tint.
@@ -2922,3 +2927,10 @@ build on positions.
       offers it, and the settings drop it from what they'd save.
     - ✅ **58d. The rules in the app:** no force march (`canForceMarch`) or boat building
       (`buildsBoats`) for a scout; no contact or concentration from scouts (`contact.ts`).
+59. **Turns shown as they were played** (decision 0029): choosing a turn, past or open, shows the
+    units where they started it (`GET /positions?turn=` for the turn before; turn 0 as placed),
+    and its moves as ghosts with a dashed line along each path, whatever each army turn's status
+    (from the armies' turns, already loaded). A unit placed during the turn shows where it was
+    placed, without a ghost. The Umpire's contact, concentration and depot threats stay where the
+    turn's orders leave the units (`afterOrders`); the sightings are already the turn's start's.
+    The banner and the past turn's panel say so.
