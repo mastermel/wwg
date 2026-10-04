@@ -2927,7 +2927,7 @@ build on positions.
       offers it, and the settings drop it from what they'd save.
     - ✅ **58d. The rules in the app:** no force march (`canForceMarch`) or boat building
       (`buildsBoats`) for a scout; no contact or concentration from scouts (`contact.ts`).
-59. **Turns shown as they were played** (decision 0029): choosing a turn, past or open, shows the
+59. ✅ **Turns shown as they were played** (decision 0029): choosing a turn, past or open, shows the
     units where they started it (`GET /positions?turn=` for the turn before; turn 0 as placed),
     and its moves as ghosts with a dashed line along each path, whatever each army turn's status
     (from the armies' turns, already loaded). A unit placed during the turn shows where it was

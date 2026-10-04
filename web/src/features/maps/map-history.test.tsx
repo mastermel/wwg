@@ -8,6 +8,7 @@ import type {
   CampaignMapResponse,
   CampaignResponse,
   CampaignTurnsResponse,
+  UnitPosition,
 } from "@/api/generated/model";
 import { expectNoAxeViolations, renderApp } from "@/test/render";
 import { server } from "@/test/server";
@@ -169,7 +170,7 @@ describe("the turn list", () => {
     expect(items[0]).toHaveAttribute("aria-pressed", "true");
   });
 
-  it("shows a past turn: where the units were, and what happened to each army's turn", async () => {
+  it("shows a past turn as it was played, and what happened to each army's turn", async () => {
     const positionRequests = serveHistory();
     const user = userEvent.setup();
     await openMap();
@@ -177,9 +178,10 @@ describe("the turn list", () => {
     await user.click(await screen.findByRole("button", { name: /^Turn 1:/ }));
 
     expect(
-      await screen.findByText("Showing where the units were after turn 1."),
+      await screen.findByText("Showing turn 1: where the units started it, and their moves."),
     ).toBeInTheDocument();
-    expect(positionRequests.at(-1)).toBe("?turn=1");
+    // Where they started it: after turn 0.
+    expect(positionRequests.at(-1)).toBe("?turn=0");
     const history = screen.getByRole("list", { name: "What happened to Armée du Nord's turn" });
     expect(within(history).getByText(/^Submitted by Bob Tester/)).toBeInTheDocument();
     expect(
@@ -194,8 +196,10 @@ describe("the turn list", () => {
 
     await user.click(screen.getByRole("button", { name: "Back to now" }));
 
-    expect(screen.queryByText(/Showing where/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/^Showing/)).not.toBeInTheDocument();
     expect(await screen.findByRole("button", { name: "Start turn 3" })).toBeInTheDocument();
+    // The open turn starts where the units were after the last closed one.
+    expect(positionRequests[0]).toBe("?turn=1");
   });
 
   it("steps through the turns with the arrow keys", async () => {
@@ -217,7 +221,7 @@ describe("the turn list", () => {
     ).toBeInTheDocument();
     expect(positionRequests.at(-1)).toBe("?turn=0");
     await user.keyboard("{ArrowUp}{ArrowRight}");
-    expect(screen.queryByText(/Showing where/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/^Showing/)).not.toBeInTheDocument();
   });
 
   it("lets the Umpire pick out an army, and put it back", async () => {
@@ -237,31 +241,39 @@ describe("the turn list", () => {
 });
 
 describe("contact and concentration on a past turn", () => {
-  it("warns the Umpire of a hex over a limit, from where the units ended up", async () => {
+  it("warns the Umpire of a hex over a limit, from where the turn's moves took the units", async () => {
     serveHistory();
+    const at = (q: number, r: number, turn: number, kind: "Hold" | "Move"): UnitPosition => ({
+      unitId: guardId,
+      armyId: nord.id,
+      turn,
+      status: "Completed",
+      kind,
+      latitude: 50.7,
+      longitude: 4.4,
+      byUmpire: false,
+      progress: null,
+      q,
+      r,
+      path: kind === "Move" ? [{ q, r }] : [],
+      forceMarch: false,
+      livesOffTheLand: false,
+      boats: [],
+      carriedBy: null,
+    });
     server.use(
-      // After turn 1 the guard was at (0, 0); now, nowhere on the map.
+      // The guard started turn 1 at (1, 0), and moved to (0, 0) in it.
       http.get(`*/api/campaigns/${campaignId}/positions`, ({ request }) =>
         HttpResponse.json(
-          new URL(request.url).searchParams.get("turn") === "1"
-            ? [
-                {
-                  unitId: guardId,
-                  armyId: nord.id,
-                  turn: 1,
-                  status: "Completed",
-                  kind: "Hold",
-                  latitude: 50.7,
-                  longitude: 4.4,
-                  byUmpire: false,
-                  progress: null,
-                  q: 0,
-                  r: 0,
-                  path: [],
-                },
-              ]
-            : [],
+          new URL(request.url).searchParams.get("turn") === "0" ? [at(1, 0, 0, "Hold")] : [],
         ),
+      ),
+      http.get(`*/api/armies/${nord.id}/turns`, () =>
+        HttpResponse.json([
+          armyTurn(2),
+          armyTurn(1, { orders: [at(0, 0, 1, "Move")] }),
+          armyTurn(0, { orders: [at(1, 0, 0, "Hold")] }),
+        ]),
       ),
       http.get(`*/api/campaigns/${campaignId}/concentration`, () =>
         HttpResponse.json({

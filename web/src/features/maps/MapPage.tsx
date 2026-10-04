@@ -262,9 +262,33 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
   // The army the Umpire picked out on the map, if any.
   const [highlighted, setHighlighted] = useState<string | null>(null);
   const past = !setup && viewing !== null && viewing !== turns.data?.openTurn ? viewing : null;
-  // While setting up, the Umpire works on turn 0's placements; for a past turn, where units were
-  // after it; otherwise, where units are now.
-  const positionsOf = setup && manager ? { turn: 0 } : past !== null ? { turn: past } : undefined;
+  // Once running, the open turn of every army the viewer can see: the Umpire's, all of them; a
+  // commander's, their own.
+  const myArmies = useMemo(
+    () => (armies.data ?? []).filter((a) => user && a.commander?.userId === user.id),
+    [armies.data, user],
+  );
+  const openTurns = useOpenTurns(
+    turns.data?.stage === "Running" ? (manager ? (armies.data ?? []) : myArmies) : [],
+  );
+  // Once running, a turn shows as it was played (decision 0029): the units where they started
+  // it, and its orders, whatever their army turn's status (turn 0 has none: it's the placements).
+  const shownTurn = setup ? null : (past ?? turns.data?.openTurn ?? null);
+  const shownOrders = useMemo(
+    () =>
+      shownTurn !== null && shownTurn > 0
+        ? openTurns.flatMap(({ turns }) => turns.find((t) => t.turn === shownTurn)?.orders ?? [])
+        : [],
+    [shownTurn, openTurns],
+  );
+  // While setting up, the Umpire works on turn 0's placements; once running, where units were
+  // after the turn before the one shown; otherwise, where units are now.
+  const positionsOf =
+    setup && manager
+      ? { turn: 0 }
+      : shownTurn !== null
+        ? { turn: Math.max(shownTurn - 1, 0) }
+        : undefined;
   const positions = useListPositions(campaignId, positionsOf, {
     query: { meta: { persist: false }, enabled: turns.data !== undefined },
   });
@@ -291,29 +315,44 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
       }),
     [units.data, armies.data],
   );
+  // Units placed during the turn shown (added later, decision 0029): not there at its start, so
+  // where they were placed, without a ghost.
+  const arrived = useMemo(
+    () =>
+      new Set(
+        positions.data
+          ? shownOrders
+              .filter((o) => !positions.data.some((p) => p.unitId === o.unitId))
+              .map((o) => o.unitId)
+          : [],
+      ),
+    [positions.data, shownOrders],
+  );
   const onMap = useMemo<PlacedUnit[]>(
     () =>
-      (positions.data ?? []).flatMap((position) => {
-        const known = everyUnit.find((u) => u.unit.id === position.unitId);
-        return known
-          ? [
-              {
-                ...known,
-                hex: { q: position.q, r: position.r },
-                latitude: position.latitude,
-                longitude: position.longitude,
-                headingInto:
-                  position.progress !== null && position.path.length > 0
-                    ? { hex: position.path.at(-1) ?? position, progress: position.progress }
-                    : undefined,
-                livesOffTheLand: position.livesOffTheLand,
-                // At 0 points it has lost its boats: they're free (decision 0022).
-                boats: known.unit.points === 0 ? [] : aboardAfter(position),
-              },
-            ]
-          : [];
-      }),
-    [positions.data, everyUnit],
+      [...(positions.data ?? []), ...shownOrders.filter((o) => arrived.has(o.unitId))].flatMap(
+        (position) => {
+          const known = everyUnit.find((u) => u.unit.id === position.unitId);
+          return known
+            ? [
+                {
+                  ...known,
+                  hex: { q: position.q, r: position.r },
+                  latitude: position.latitude,
+                  longitude: position.longitude,
+                  headingInto:
+                    position.progress !== null && position.path.length > 0
+                      ? { hex: position.path.at(-1) ?? position, progress: position.progress }
+                      : undefined,
+                  livesOffTheLand: position.livesOffTheLand,
+                  // At 0 points it has lost its boats: they're free (decision 0022).
+                  boats: known.unit.points === 0 ? [] : aboardAfter(position),
+                },
+              ]
+            : [];
+        },
+      ),
+    [positions.data, shownOrders, arrived, everyUnit],
   );
   // Boats tied to units (step 51) go with them: not drawn, listed or ordered on their own.
   const tied = useMemo(() => tiedBoats(onMap), [onMap]);
@@ -368,16 +407,6 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
   } | null>(null);
   const [depotForm, setDepotForm] = useState<DepotResponse | "new" | null>(null);
   const [removingDepot, setRemovingDepot] = useState<DepotResponse | null>(null);
-
-  // Once running, the open turn of every army the viewer can see: the Umpire's, all of them; a
-  // commander's, their own.
-  const myArmies = useMemo(
-    () => (armies.data ?? []).filter((a) => user && a.commander?.userId === user.id),
-    [armies.data, user],
-  );
-  const openTurns = useOpenTurns(
-    turns.data?.stage === "Running" ? (manager ? (armies.data ?? []) : myArmies) : [],
-  );
   const commanded = manager ? [] : openTurns;
   const orders = useOrders(campaignId);
   const review = useReview(campaignId);
@@ -452,40 +481,21 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
         : withinTurn,
     [grid, moving, movingType, manager, landing, withinTurn, costs],
   );
-  // Contact and concentration, for the Umpire (step 46): in the open turn from the orders as
-  // given, on a past one from where the units ended up.
-  // Where the open turn's orders as given leave the units (the Umpire's warnings and sightings).
-  const afterTheOrders = useMemo(
-    () =>
-      afterOrders(
-        onMap,
-        openTurns.flatMap(({ turn }) => turn?.orders ?? []),
-      ),
-    [onMap, openTurns],
-  );
+  // Where the shown turn's orders (as given, in the open turn) leave the units: the Umpire's
+  // contact and concentration (step 46), depot threats and sightings.
+  const afterTheOrders = useMemo(() => afterOrders(onMap, shownOrders), [onMap, shownOrders]);
   const warnings = useMemo(
     () =>
       manager && !setup && concentration.data
-        ? hexWarnings(past !== null ? onMap : afterTheOrders, concentration.data, costs.terrain)
+        ? hexWarnings(afterTheOrders, concentration.data, costs.terrain)
         : [],
-    [manager, setup, concentration.data, past, onMap, afterTheOrders, costs.terrain],
+    [manager, setup, concentration.data, afterTheOrders, costs.terrain],
   );
   // Depots with the other side's units in their hex: the Umpire captures or destroys them.
   const threats = useMemo(
     () =>
-      manager && !setup
-        ? depotThreats(
-            past !== null
-              ? onMap
-              : afterOrders(
-                  onMap,
-                  openTurns.flatMap(({ turn }) => turn?.orders ?? []),
-                ),
-            depots.data ?? [],
-            armies.data ?? [],
-          )
-        : [],
-    [manager, setup, past, onMap, openTurns, depots.data, armies.data],
+      manager && !setup ? depotThreats(afterTheOrders, depots.data ?? [], armies.data ?? []) : [],
+    [manager, setup, afterTheOrders, depots.data, armies.data],
   );
   // What's in a hex (step 57): a click or tap on it (or on a unit's marker) opens its drawer, and
   // on a screen with a mouse, a label says what's in the hex it's over. Only while not placing or
@@ -565,34 +575,31 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
       const { longitude, latitude } = grid.centre(hex);
       return [longitude, latitude];
     });
-  const allMoves: PendingMove[] =
-    past !== null
-      ? []
-      : [
-          ...openTurns.flatMap(({ turn }) =>
-            turn && turn.status !== "Completed"
-              ? turn.orders.flatMap((order) => {
-                  const placed = onMap.find((p) => p.unit.id === order.unitId);
-                  return placed && order.kind === "Move" && placed.unit.id !== moving?.unit.id
-                    ? [
-                        {
-                          placed,
-                          to: order,
-                          // A move from before the grid has no path: a straight line.
-                          line: lineOf(
-                            placed.hex,
-                            order.path.length > 0 ? order.path : [{ q: order.q, r: order.r }],
-                          ),
-                        },
-                      ]
-                    : [];
-                })
-              : [],
-          ),
-          ...(moving && target && targetPath
-            ? [{ placed: moving, to: grid.centre(target), line: lineOf(moving.hex, targetPath) }]
-            : []),
-        ];
+  // The shown turn's moves (decision 0029), past or open, whatever their army turn's status.
+  const allMoves: PendingMove[] = [
+    ...shownOrders.flatMap((order) => {
+      const placed = onMap.find((p) => p.unit.id === order.unitId);
+      return placed &&
+        order.kind === "Move" &&
+        !arrived.has(order.unitId) &&
+        placed.unit.id !== moving?.unit.id
+        ? [
+            {
+              placed,
+              to: order,
+              // A move from before the grid has no path: a straight line.
+              line: lineOf(
+                placed.hex,
+                order.path.length > 0 ? order.path : [{ q: order.q, r: order.r }],
+              ),
+            },
+          ]
+        : [];
+    }),
+    ...(moving && target && targetPath
+      ? [{ placed: moving, to: grid.centre(target), line: lineOf(moving.hex, targetPath) }]
+      : []),
+  ];
 
   // A picked-out army's moves only; the rest would clutter it.
   const moves = highlighted ? allMoves.filter((m) => m.placed.army.id === highlighted) : allMoves;
@@ -811,7 +818,7 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
             <Text size="sm">
               {past === 0
                 ? "Showing where the Umpire placed the units."
-                : `Showing where the units were after turn ${String(past)}.`}
+                : `Showing turn ${String(past)}: where the units started it, and their moves.`}
             </Text>
             <Button
               size="compact-sm"

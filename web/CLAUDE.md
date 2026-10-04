@@ -80,7 +80,9 @@ The pre-commit hook runs `eslint --fix` and Prettier on staged files.
   `geo.ts` holds `Point` and the haversine distance (`distanceMetres`, which measures the view
   for the game map's zoom rule); orders in words from `orders.ts`. Ghost moves and the reach
   (the hexes the unit can reach, shaded as hex polygons) are `OrderOverlay`, inside the map:
-  sight only, as the turn panel lists the same orders.
+  sight only, as the turn panel lists the same orders. Every turn, past or open, is shown as it
+  was played (step 59, decision 0029): the units from the positions after the turn before
+  (`shownTurn - 1`), and the turn's orders (`shownOrders`, from `useOpenTurns`' turns) as ghosts.
   A commander's turn changes go through `useOrders` (`use-orders.ts`), which also refetches the
   army's turns: they're keyed by the army, so `refreshCampaign` doesn't reach them.
   The hex grid (decision 0014) is `hex-grid.ts`: its arithmetic matches the API's `HexGrid.cs`,
@@ -112,7 +114,7 @@ The pre-commit hook runs `eslint --fix` and Prettier on staged files.
   `TurnParts`. The march itself is `movement.ts`'s `budgetFor`, as the API's.
 - Contact and concentration (step 46, decision 0017) is `features/maps/contact.ts`: `hexWarnings`
   per hex and side, by the campaign's concentration settings (`features/campaigns/concentration.ts`
-  has the usual ones); `afterOrders` for the open turn. The Umpire's only: `HexWarningsList` in
+  has the usual ones); `afterOrders` for the turn shown. The Umpire's only: `HexWarningsList` in
   the turn panels, `HexWarningsLayer` on the map. Name a hex with `hexName` (`hex-grid.ts`).
 - The Map page's layers (`map-layers.ts`, `MapLayersControl`): each viewer hides what the
   campaign's map settings show, layer by layer or a whole map by its own switch (`groups`, which

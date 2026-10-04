@@ -241,27 +241,33 @@ test("a commander steps back through the turns; the Umpire picks out an army", a
   });
   await api.put(`/api/army-units/${brigade.id}/placement`, { q: 2, r: 0 });
 
-  // Bob steps back to the setup, and forward to turn 1: the Guard is further north after it.
+  // Bob steps back to the setup, and forward to turn 1: shown as it was played, the Guard starts
+  // where it was placed (its march a ghost); now, in turn 2, it starts further north.
   const page = commander.page;
   await page.goto(`${campaignUrl}/map`);
   const guard = page.getByRole("button", { name: "Imperial Guard, Line Infantry, Armée du Nord" });
+  // How far down the map the Guard is: the page may scroll between turns.
+  const map = page.getByRole("region", { name: "Map", exact: true });
+  const guardY = async () =>
+    ((await guard.boundingBox())?.y ?? 0) - ((await map.boundingBox())?.y ?? 0);
   const turns = page.getByRole("list", { name: "Turns" });
   await turns.getByRole("button", { name: "Turn 0: Setup" }).click();
   await expect(page.getByText("Showing where the Umpire placed the units.")).toBeVisible();
   await expect(guard).toBeVisible();
-  const atSetup = await guard.boundingBox();
+  const atSetup = await guardY();
   expect(await scan(page, "map, a past turn")).toEqual([]);
   await page.keyboard.press("ArrowUp");
-  await expect(page.getByText("Showing where the units were after turn 1.")).toBeVisible();
+  await expect(
+    page.getByText("Showing turn 1: where the units started it, and their moves."),
+  ).toBeVisible();
   await expect(turns.getByRole("button", { name: /^Turn 1:/ })).toHaveAttribute(
     "aria-pressed",
     "true",
   );
-  await expect
-    .poll(async () => (await guard.boundingBox())?.y ?? 0)
-    .toBeLessThan((atSetup?.y ?? 0) - 20);
+  await expect.poll(async () => Math.abs((await guardY()) - atSetup)).toBeLessThan(2);
   await page.getByRole("button", { name: "Back to now" }).click();
   await expect(page.getByRole("region", { name: "Turn 2" })).toBeVisible();
+  await expect.poll(guardY).toBeLessThan(atSetup - 20);
 
   // The Umpire picks out Bob's army: the Prussians' unit fades.
   await umpire.page.goto(`${campaignUrl}/map`);

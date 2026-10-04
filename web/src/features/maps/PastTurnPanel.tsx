@@ -68,7 +68,7 @@ export function PastTurnPanel({
       description={
         turn.number === 0
           ? "Where the Umpire placed the units."
-          : `Where the units were after this turn${turnWhen(turn) ? ` (${turnWhen(turn) ?? ""})` : ""}.`
+          : `Where the units started this turn${turnWhen(turn) ? ` (${turnWhen(turn) ?? ""})` : ""}, and their moves.`
       }
     >
       <Stack gap="lg">
