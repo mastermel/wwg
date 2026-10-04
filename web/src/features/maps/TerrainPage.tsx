@@ -221,6 +221,7 @@ function TerrainEditor({ campaignId, settings, bounds, terrain, details }: Terra
                 terrain: showsGame("terrain"),
                 roads: showsGame("roads"),
                 rivers: showsGame("rivers"),
+                waterways: showsGame("waterways"),
                 towns: showsGame("towns"),
                 bridges: showsGame("bridges"),
               }}

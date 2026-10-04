@@ -26,13 +26,12 @@ interface MapLayersControlProps {
  * this device.
  */
 export function MapLayersControl({ campaign, layers, zoomedIn, warnings }: MapLayersControlProps) {
-  const { hidden, toggleReal, toggleGame, toggleGroup, reset } = layers;
+  const { hidden, changed, toggleReal, toggleGame, toggleGroup, reset } = layers;
   const realShown = !hidden.groups.includes("real");
   const gameShown = !hidden.groups.includes("game");
   const real = realLayers.filter(({ key }) => campaign[key]);
   // The game map is all or nothing in the campaign's settings (its grid).
   const game = campaign.grid ? gameLayers.filter(({ key }) => key !== "warnings" || warnings) : [];
-  const changed = hidden.real.length > 0 || hidden.game.length > 0 || hidden.groups.length > 0;
   // A map's own switch: off hides all its layers, keeping theirs as they were for when it's on.
   const groupSwitch = (group: "real" | "game", label: string, shown: boolean) => (
     <Switch
@@ -108,7 +107,7 @@ export function MapLayersControl({ campaign, layers, zoomedIn, warnings }: MapLa
       )}
       {changed && (
         <Button size="compact-sm" variant="subtle" onClick={reset}>
-          Show everything again
+          Back to the defaults
         </Button>
       )}
     </Stack>

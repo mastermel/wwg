@@ -339,8 +339,9 @@ describe("the map's layers", () => {
     );
     expect(JSON.parse(localStorage.getItem(`wwg:map-layers:${campaignId}`) ?? "{}")).toEqual({
       real: ["forests"],
-      game: [],
+      game: ["rivers"],
       groups: [],
+      version: 2,
     });
   });
 
@@ -382,8 +383,9 @@ describe("the map's layers", () => {
     expect(within(game).getByRole("switch", { name: "Grid", hidden: true })).toBeChecked();
     expect(JSON.parse(localStorage.getItem(`wwg:map-layers:${campaignId}`) ?? "{}")).toEqual({
       real: [],
-      game: [],
+      game: ["rivers"],
       groups: ["game"],
+      version: 2,
     });
   });
 

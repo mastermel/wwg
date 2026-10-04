@@ -188,6 +188,10 @@ test("a Player hides map layers, and the map remembers it", async ({ signUp }) =
   await expect(real.getByRole("switch", { name: "Forests" })).toBeChecked();
   await expect(real.getByRole("switch", { name: "Contours" })).toHaveCount(0);
   await expect(page.getByRole("group", { name: "Game map" })).toBeVisible();
+  // Rivers along the hexsides start hidden; the waterways show the same rivers.
+  const gameMap = page.getByRole("group", { name: "Game map" });
+  await expect(gameMap.getByRole("switch", { name: "Rivers" })).not.toBeChecked();
+  await expect(gameMap.getByRole("switch", { name: "Waterways" })).toBeChecked();
   // The panel fades in (a sheet on a phone): a half-shown one fails axe's contrast check.
   await expect(page.getByRole("dialog")).toHaveCSS("opacity", "1");
   expect(await scan(page, "map, layers")).toEqual([]);
@@ -211,7 +215,7 @@ test("a Player hides map layers, and the map remembers it", async ({ signUp }) =
   await expect(
     page.getByRole("group", { name: "Game map" }).getByRole("switch", { name: "Game map" }),
   ).not.toBeChecked();
-  await page.getByRole("button", { name: "Show everything again" }).click();
+  await page.getByRole("button", { name: "Back to the defaults" }).click();
   await expect(
     page.getByRole("group", { name: "Real map" }).getByRole("switch", { name: "Forests" }),
   ).toBeChecked();

@@ -1249,11 +1249,13 @@ visibility); the data is in §5.1. Built in Phase 8 (§7).
 - **Map layers, for each viewer** (the Map page's **Map layers** button, over the map's top-left
   corner; a popover, or on a phone a sheet from the bottom): every member shows or hides the
   **Real map**'s layers (roads, place names, water, forests, hills, contours) and the **Game
-  map**'s (grid, terrain, roads, rivers & waterways, towns & cities, bridges; for the Umpire,
+  map**'s (grid, terrain, roads, rivers, waterways, towns & cities, bridges; for the Umpire,
   contact & concentration), of those the campaign's settings show: what the Umpire switches off
   isn't offered. Each map also has its own switch, hiding all of it at once and leaving its
   layers' switches as they were for when it's back. Remembered on that device, per campaign
-  (`localStorage`); "Show everything again" puts them back. The game map is drawn only once the view's longest side spans 20 hexes
+  (`localStorage`). Rivers along the hexsides start hidden on the Map page, as the waterways show
+  the same rivers less busily (the terrain editor starts with everything, as the Umpire edits
+  both); "Back to the defaults" puts them back. The game map is drawn only once the view's longest side spans 20 hexes
   or fewer. Units, the reach while moving and ghost moves are always drawn. The terrain editor
   has the same panel, remembered apart from the Map page's, without the zoom rule (the Umpire
   edits the game map at any zoom).

@@ -961,6 +961,7 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
                 terrain: showGame("terrain"),
                 roads: showGame("roads"),
                 rivers: showGame("rivers"),
+                waterways: showGame("waterways"),
                 towns: showGame("towns"),
                 bridges: showGame("bridges"),
               }}

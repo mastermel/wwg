@@ -11,6 +11,7 @@ export interface TerrainParts {
   terrain: boolean;
   roads: boolean;
   rivers: boolean;
+  waterways: boolean;
   towns: boolean;
   bridges: boolean;
 }
@@ -19,6 +20,7 @@ const everyPart: TerrainParts = {
   terrain: true,
   roads: true,
   rivers: true,
+  waterways: true,
   towns: true,
   bridges: true,
 };
@@ -157,7 +159,7 @@ export function TerrainLayer({ grid, terrain, show = everyPart }: TerrainLayerPr
         />
         <Layer
           id="terrain-waterways"
-          layout={visibility(show.rivers)}
+          layout={visibility(show.waterways)}
           type="line"
           filter={["==", ["get", "kind"], "waterway"]}
           paint={{ "line-color": p.river, "line-width": 2, "line-dasharray": [1, 1] }}

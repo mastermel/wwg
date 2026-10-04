@@ -1,6 +1,11 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import type { MapLayers } from "@/api/generated/model";
-import { hexesAcross, loadHidden, shownRealLayers } from "@/features/maps/map-layers";
+import {
+  differsFromDefault,
+  hexesAcross,
+  loadHidden,
+  shownRealLayers,
+} from "@/features/maps/map-layers";
 
 const campaign: MapLayers = {
   roads: true,
@@ -51,10 +56,14 @@ describe("loadHidden", () => {
     localStorage.clear();
   });
 
-  it("is nothing when nothing's saved, or what's saved isn't ours", () => {
-    expect(loadHidden("c")).toEqual({ real: [], game: [], groups: [] });
+  it("is the defaults when nothing's saved, or what's saved isn't ours", () => {
+    expect(loadHidden("c")).toEqual({ real: [], game: ["rivers"], groups: [] });
     localStorage.setItem("wwg:map-layers:c", "not json");
-    expect(loadHidden("c")).toEqual({ real: [], game: [], groups: [] });
+    expect(loadHidden("c")).toEqual({ real: [], game: ["rivers"], groups: [] });
+  });
+
+  it("hides rivers by default only on the Map page, not in the terrain editor", () => {
+    expect(loadHidden("c", "terrain")).toEqual({ real: [], game: [], groups: [] });
   });
 
   it("keeps only the layers it knows", () => {
@@ -64,9 +73,31 @@ describe("loadHidden", () => {
         real: ["roads", "railways"],
         game: ["bridges", "units"],
         groups: ["game", "both"],
+        version: 2,
       }),
     );
 
     expect(loadHidden("c")).toEqual({ real: ["roads"], game: ["bridges"], groups: ["game"] });
+  });
+
+  it("brings what was saved before rivers and waterways were apart up to date", () => {
+    localStorage.setItem("wwg:map-layers:c", JSON.stringify({ real: [], game: [], groups: [] }));
+    expect(loadHidden("c").game).toEqual(["rivers"]);
+
+    // Hiding `rivers` hid the waterways too.
+    localStorage.setItem(
+      "wwg:map-layers:c",
+      JSON.stringify({ real: [], game: ["rivers"], groups: [] }),
+    );
+    expect(loadHidden("c").game).toEqual(["rivers", "waterways"]);
+  });
+});
+
+describe("differsFromDefault", () => {
+  it("is false for the defaults, in any order, and true otherwise", () => {
+    expect(differsFromDefault({ real: [], game: ["rivers"], groups: [] })).toBe(false);
+    expect(differsFromDefault({ real: [], game: [], groups: [] })).toBe(true);
+    expect(differsFromDefault({ real: [], game: [], groups: [] }, "terrain")).toBe(false);
+    expect(differsFromDefault({ real: [], game: ["rivers", "grid"], groups: [] })).toBe(true);
   });
 });
