@@ -28,15 +28,19 @@ public sealed record SightedUnitResponse(
 /// <param name="Q">The hex (axial q).</param>
 /// <param name="R">The hex (axial r).</param>
 /// <param name="Whereabouts">Where it is, roughly, from the army's nearest unit.</param>
-/// <param name="Screened">The observed side's light troops stand in the way: perhaps a screen.</param>
-/// <param name="Units">The other side's units there.</param>
+/// <param name="Screened">The observed side's screening units stand in the way: perhaps a screen.</param>
+/// <param name="Units">
+/// The other side's units seen there: only the screening ones, where some are (decision 0026).
+/// </param>
+/// <param name="ScreenedUnits">The other side's units there that the screen hides.</param>
 public sealed record SightingDueResponse(
     Guid ObservingArmyId,
     int Q,
     int R,
     string Whereabouts,
     bool Screened,
-    IReadOnlyList<SightedUnitResponse> Units
+    IReadOnlyList<SightedUnitResponse> Units,
+    IReadOnlyList<SightedUnitResponse> ScreenedUnits
 );
 
 /// <summary>The Umpire's shaping of one sighting, when starting the next turn (decision 0020).</summary>
@@ -49,6 +53,9 @@ public sealed record SightingDueResponse(
 /// <param name="Strength">Hidden, a rough size, or their points.</param>
 /// <param name="Size">The rough size, when that's what's shown.</param>
 /// <param name="ShowsAfloat">Whether they learn if the force is on boats (decision 0022).</param>
+/// <param name="PastScreen">
+/// Whether it gets past a screen in the hex (decision 0026), seeing the units it hides too.
+/// </param>
 public sealed record SightingRequest(
     [property: JsonRequired] Guid ObservingArmyId,
     [property: JsonRequired] int Q,
@@ -58,7 +65,8 @@ public sealed record SightingRequest(
     [property: JsonRequired] bool ShowsTypes,
     [property: JsonRequired, EnumDataType(typeof(SightingStrength))] SightingStrength Strength,
     [property: EnumDataType(typeof(ForceSize))] ForceSize? Size = null,
-    bool ShowsAfloat = false
+    bool ShowsAfloat = false,
+    bool PastScreen = false
 );
 
 /// <summary>What an army saw of a hex of the other side's units, on a turn (decision 0020).</summary>

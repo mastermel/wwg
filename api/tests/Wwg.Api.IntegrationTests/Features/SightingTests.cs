@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using Wwg.Api.Data.Entities;
 using Wwg.Api.Features.Armies;
 using Wwg.Api.Features.Maps;
+using Wwg.Api.Features.Screening;
 using Wwg.Api.Features.Sightings;
 using Wwg.Api.Features.Turns;
 using Wwg.Api.IntegrationTests.Support;
@@ -19,7 +20,8 @@ public sealed class SightingTests : ApiTest
 
     private static readonly Hex Brigade = new(1, 0);
 
-    private async Task<(CampaignScenario Scenario, Guid Enemy)> StartedAsync()
+    /// <summary>Started; with screening hussars beside the brigade, if wanted (decision 0026).</summary>
+    private async Task<(CampaignScenario Scenario, Guid Enemy)> StartedAsync(bool screen = false)
     {
         var scenario = await CreateCampaignScenarioAsync();
         await TurnSteps.SetCalendarAsync(scenario);
@@ -35,6 +37,26 @@ public sealed class SightingTests : ApiTest
         var unit = await LibrarySteps.AddUnitAsync(scenario, "Brigade", points: 30, armyId: enemy);
         using var placed = await TurnSteps.PlaceAsync(scenario, unit, Brigade);
         placed.EnsureSuccessStatusCode();
+        if (screen)
+        {
+            var hussars = await LibrarySteps.AddUnitAsync(
+                scenario,
+                "Hussars",
+                UnitType.LightCavalry,
+                points: 10,
+                armyId: enemy
+            );
+            using var there = await TurnSteps.PlaceAsync(scenario, hussars, Brigade);
+            there.EnsureSuccessStatusCode();
+            using var screening = await scenario
+                .As(Role.Umpire)
+                .PutAsJsonAsync(
+                    new Uri($"/api/army-units/{hussars}/screening", UriKind.Relative),
+                    new UpdateScreeningRequest(true),
+                    Token
+                );
+            screening.EnsureSuccessStatusCode();
+        }
         using var started = await TurnSteps.StartAsync(scenario);
         started.EnsureSuccessStatusCode();
         return (scenario, enemy);
@@ -251,5 +273,48 @@ public sealed class SightingTests : ApiTest
             );
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task StartNextTurn_AScreenedHex_ShowsOnlyTheScreen()
+    {
+        var (scenario, enemy) = await StartedAsync(screen: true);
+        using var _ = scenario;
+
+        using var next = await NextTurnAsync(
+            scenario,
+            enemy,
+            Everything(scenario) with
+            {
+                Strength = SightingStrength.Exact,
+            }
+        );
+        next.EnsureSuccessStatusCode();
+        var seen = Assert.Single(await SightingsAsync(scenario));
+
+        Assert.Equal([UnitType.LightCavalry], seen.UnitTypes);
+        Assert.Equal(10, seen.Points);
+    }
+
+    [Fact]
+    public async Task StartNextTurn_PastTheScreen_ShowsWhatItHides()
+    {
+        var (scenario, enemy) = await StartedAsync(screen: true);
+        using var _ = scenario;
+
+        using var next = await NextTurnAsync(
+            scenario,
+            enemy,
+            Everything(scenario) with
+            {
+                Strength = SightingStrength.Exact,
+                PastScreen = true,
+            }
+        );
+        next.EnsureSuccessStatusCode();
+        var seen = Assert.Single(await SightingsAsync(scenario));
+
+        Assert.Equal([UnitType.LineInfantry, UnitType.LightCavalry], seen.UnitTypes);
+        Assert.Equal(40, seen.Points);
     }
 }

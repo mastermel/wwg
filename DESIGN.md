@@ -2119,7 +2119,7 @@ one, as a campaign is made with both)
 | PUT / DELETE | `/api/depots/{id}` | Move, rename or change a depot (the same fields) / remove it (204) |
 | GET / PUT | `/api/campaigns/{id}/supply-settings` | `{ reach, exemptTypes, offTheLandNations }` (step 48b) |
 | GET | `/api/campaigns/{id}/supply` | Each unit's supply as the open turn began and by its orders as given, and each intermediate depot's, as the viewer may see (step 48c) |
-| GET | `/api/campaigns/{id}/sightings/due` | The sightings the open turn's orders give, per observing army, possible screens flagged, for the Umpire to shape (step 49a) |
+| GET | `/api/campaigns/{id}/sightings/due` | The sightings the open turn's orders give, per observing army, possible screens flagged, for the Umpire to shape (step 49a); from step 56, a screened hex's hidden units apart (`screenedUnits`) |
 | GET | `/api/campaigns/{id}/sightings` | The sightings the viewer may see, every turn's, oldest first (step 49b) |
 | POST | `/api/armies/{id}/reports` | Send an ally a report `{ toArmyId, includesSnapshot, includesSightings, note }` (201; not an ally, or nothing to send: 400; not under way, or an army off the map: 409) (step 49c) |
 | GET | `/api/campaigns/{id}/reports` | The reports the viewer may see, newest first |

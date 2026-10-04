@@ -8,7 +8,8 @@ namespace Wwg.Api.Features.Turns;
 
 /// <summary>
 /// A unit where a turn leaves it, with what the rules on it need: whether it's afloat, too (on
-/// boats, or a boat tied to a unit on them; decision 0022).
+/// boats, or a boat tied to a unit on them; decision 0022), and whether it's screening (decision
+/// 0026; as it is now, whichever turn).
 /// </summary>
 internal sealed record UnitPlace(
     Guid UnitId,
@@ -19,7 +20,8 @@ internal sealed record UnitPlace(
     int Points,
     Hex At,
     bool LivesOffTheLand,
-    bool Afloat = false
+    bool Afloat = false,
+    bool Screening = false
 );
 
 /// <summary>
@@ -43,18 +45,22 @@ internal static class Whereabouts
         CancellationToken cancellationToken
     )
     {
+        // Each unit as it is, placed by its order below.
         var units = await db
             .ArmyUnits.AsNoTracking()
             .Where(u => u.CampaignId == campaignId)
-            .Select(u => new
-            {
+            .Select(u => new UnitPlace(
                 u.Id,
                 u.ArmyId,
                 u.Army.SideId,
                 u.Name,
                 u.Type,
                 u.Points,
-            })
+                new Hex(0, 0),
+                false,
+                false,
+                u.Screening
+            ))
             .ToListAsync(cancellationToken);
         var orders = await db
             .UnitOrders.AsNoTracking()
@@ -77,20 +83,15 @@ internal static class Whereabouts
         List<UnitPlace> At(Func<Guid, OrderRow?> orderOf, Func<Guid, bool> afloat) =>
             [
                 .. units.SelectMany(u =>
-                    orderOf(u.Id) is { } order
+                    orderOf(u.UnitId) is { } order
                         ?
                         [
-                            new UnitPlace(
-                                u.Id,
-                                u.ArmyId,
-                                u.SideId,
-                                u.Name,
-                                u.Type,
-                                u.Points,
-                                new Hex(order.Q, order.R),
-                                order.LivesOffTheLand,
-                                afloat(u.Id)
-                            ),
+                            u with
+                            {
+                                At = new Hex(order.Q, order.R),
+                                LivesOffTheLand = order.LivesOffTheLand,
+                                Afloat = afloat(u.UnitId),
+                            },
                         ]
                         : Array.Empty<UnitPlace>()
                 ),

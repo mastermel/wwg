@@ -47,7 +47,8 @@ internal static class SightingRecords
             }
 
             var hex = new Hex(request.Q, request.R);
-            var seen = next.Where(p => p.At == hex && p.SideId != side).ToList();
+            var there = next.Where(p => p.At == hex && p.SideId != side).ToList();
+            var seen = request.PastScreen ? there : Sight.Screen(there).Seen;
             if (seen.Count == 0)
             {
                 return $"Hex ({request.Q}, {request.R}) holds none of the other side's units.";

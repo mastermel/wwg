@@ -8,14 +8,18 @@ namespace Wwg.Api.Features.Sightings;
 /// <param name="ObservingArmyId">The army that sees it.</param>
 /// <param name="At">The hex.</param>
 /// <param name="Observer">Its unit nearest the hex, for where it is roughly.</param>
-/// <param name="Screened">The observed side's light troops stand in the way: perhaps a screen.</param>
-/// <param name="Units">The other side's units there.</param>
+/// <param name="Screened">The observed side's screening units stand in the way: perhaps a screen.</param>
+/// <param name="Units">
+/// The other side's units seen there: only those screening, where some are (decision 0026).
+/// </param>
+/// <param name="Hidden">The other side's units there that the screen hides.</param>
 internal sealed record SightCandidate(
     Guid ObservingArmyId,
     Hex At,
     UnitPlace Observer,
     bool Screened,
-    List<UnitPlace> Units
+    List<UnitPlace> Units,
+    List<UnitPlace> Hidden
 );
 
 /// <summary>
@@ -25,14 +29,6 @@ internal sealed record SightCandidate(
 /// </summary>
 internal static class Sight
 {
-    /// <summary>The types that can screen (§K.2).</summary>
-    public static readonly IReadOnlySet<UnitType> ScreeningTypes = new HashSet<UnitType>
-    {
-        UnitType.LightInfantry,
-        UnitType.LightCavalry,
-        UnitType.MediumCavalry,
-    };
-
     public static int Elevation(Terrain terrain) =>
         terrain switch
         {
@@ -122,18 +118,18 @@ internal static class Sight
 
                 var screened = seeing.All(x =>
                     x.Between!.Any(h =>
-                        places.Any(p =>
-                            p.At == h && p.SideId != side && ScreeningTypes.Contains(p.Type)
-                        )
+                        places.Any(p => p.At == h && p.SideId != side && p.Screening)
                     )
                 );
+                var (seen, hidden) = Screen([.. hex]);
                 candidates.Add(
                     new(
                         army.Key,
                         hex.Key,
                         seeing[0].Observer,
                         screened && seeing[0].Between!.Count > 0,
-                        [.. hex]
+                        seen,
+                        hidden
                     )
                 );
             }
@@ -144,6 +140,15 @@ internal static class Sight
             .. candidates.OrderBy(c => c.ObservingArmyId).ThenBy(c => c.At.R).ThenBy(c => c.At.Q),
         ];
     }
+
+    /// <summary>
+    /// What a hex's units show the enemy (decision 0026): where some are screening, only they're
+    /// seen, and the rest are hidden behind them.
+    /// </summary>
+    public static (List<UnitPlace> Seen, List<UnitPlace> Hidden) Screen(List<UnitPlace> units) =>
+        units.Any(u => u.Screening)
+            ? ([.. units.Where(u => u.Screening)], [.. units.Where(u => !u.Screening)])
+            : (units, []);
 
     /// <summary>Where a hex is from a unit, roughly: "2 hexes north-east of Imperial Guard".</summary>
     public static string Roughly(Hex at, UnitPlace from)

@@ -432,6 +432,7 @@ describe("sightings when starting the next turn", () => {
                 afloat: false,
               },
             ],
+            screenedUnits: [],
           },
         ]),
       ),
@@ -465,9 +466,52 @@ describe("sightings when starting the next turn", () => {
           showsAfloat: false,
           strength: "Exact",
           size: null,
+          pastScreen: false,
         },
       ],
     });
+  });
+
+  it("lists what a screen hides, and sends a sighting past it", async () => {
+    const requests = serveUmpire(approved, armyTurn(prussians, { status: "Completed" }), []);
+    const unit = (unitId: string, name: string, type: "LightCavalry" | "LineInfantry") => ({
+      unitId,
+      armyId: prussians.id,
+      name,
+      type,
+      points: 20,
+      afloat: false,
+    });
+    server.use(
+      http.get(`*/api/campaigns/${campaignId}/sightings/due`, () =>
+        HttpResponse.json([
+          {
+            observingArmyId: nord.id,
+            q: 1,
+            r: 0,
+            whereabouts: "1 hex south-east of Imperial Guard",
+            screened: false,
+            units: [unit("0192f5c1-0000-7000-8000-00000000b009", "Hussars", "LightCavalry")],
+            screenedUnits: [unit("0192f5c1-0000-7000-8000-00000000b010", "Corps", "LineInfantry")],
+          },
+        ]),
+      ),
+    );
+    const user = userEvent.setup();
+    await openMap();
+
+    await user.click(await screen.findByRole("button", { name: "Start turn 2" }));
+    const sighting = await within(await screen.findByRole("dialog")).findByRole("group", {
+      name: "Armée du Nord sees Hex (1, 0)",
+    });
+    expect(sighting).toHaveTextContent("Behind the screen: Corps (Line Infantry, 20 points).");
+    await user.click(within(sighting).getByRole("checkbox", { name: "Past the screen" }));
+    await user.click(
+      within(screen.getByRole("dialog")).getByRole("button", { name: "Start turn 2" }),
+    );
+
+    expect(await screen.findByText("Turn 2 has started.")).toBeInTheDocument();
+    expect(requests.at(-1)?.body).toMatchObject({ sightings: [{ pastScreen: true }] });
   });
 });
 

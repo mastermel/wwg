@@ -10,11 +10,16 @@ import {
 } from "@mantine/core";
 import { IconPlus } from "@tabler/icons-react";
 import { useState } from "react";
-import type { ArmySummary, ForceSize, SightingStrength } from "@/api/generated/model";
+import type {
+  ArmySummary,
+  ForceSize,
+  SightedUnitResponse,
+  SightingStrength,
+} from "@/api/generated/model";
 import type { UnitInHex } from "@/features/maps/contact";
 import { hexKey, hexName } from "@/features/maps/hex-grid";
 import { suggestedSize } from "@/features/maps/sightings";
-import type { SightingEntry } from "@/features/maps/sighting-entries";
+import { shownUnits, type SightingEntry, withPastScreen } from "@/features/maps/sighting-entries";
 import { unitTypeLabels } from "@/features/units/unit-types";
 
 const strengths: { value: SightingStrength; label: string }[] = [
@@ -28,6 +33,9 @@ const sizes: { value: ForceSize; label: string }[] = [
   { value: "Medium", label: "Medium" },
   { value: "Large", label: "Large" },
 ];
+
+const describeUnits = (units: readonly SightedUnitResponse[]) =>
+  units.map((u) => `${u.name} (${unitTypeLabels[u.type]}, ${String(u.points)} points)`).join("; ");
 
 interface SightingsFieldsProps {
   entries: readonly SightingEntry[];
@@ -86,6 +94,8 @@ export function SightingsFields({ entries, onChange, armies, places }: Sightings
         whereabouts: "Reported (spies, scouts)",
         screened: false,
         units,
+        screenedUnits: [],
+        pastScreen: false,
         byHand: true,
         include: true,
         showsHex: true,
@@ -137,6 +147,11 @@ export function SightingsFields({ entries, onChange, armies, places }: Sightings
                   Possible screen
                 </Badge>
               )}
+              {entry.screenedUnits.length > 0 && (
+                <Badge color="orange" variant="light">
+                  Screened hex
+                </Badge>
+              )}
               {entry.byHand && (
                 <Badge color="gray" variant="light">
                   Added
@@ -144,12 +159,13 @@ export function SightingsFields({ entries, onChange, armies, places }: Sightings
               )}
             </Group>
             <Text size="xs" c="dimmed">
-              {entry.whereabouts}.{" "}
-              {entry.units
-                .map((u) => `${u.name} (${unitTypeLabels[u.type]}, ${String(u.points)} points)`)
-                .join("; ")}
-              .
+              {entry.whereabouts}. {describeUnits(entry.units)}.
             </Text>
+            {entry.screenedUnits.length > 0 && (
+              <Text size="xs" c="dimmed">
+                Behind the screen: {describeUnits(entry.screenedUnits)}.
+              </Text>
+            )}
             {entry.include && (
               <>
                 <Group gap="md">
@@ -177,7 +193,20 @@ export function SightingsFields({ entries, onChange, armies, places }: Sightings
                       change(index, { showsTypes: event.currentTarget.checked });
                     }}
                   />
-                  {entry.units.some((u) => u.afloat) && (
+                  {entry.screenedUnits.length > 0 && (
+                    <Checkbox
+                      size="xs"
+                      label="Past the screen"
+                      checked={entry.pastScreen}
+                      onChange={(event) => {
+                        const past = event.currentTarget.checked;
+                        onChange(
+                          entries.map((e, i) => (i === index ? withPastScreen(e, past) : e)),
+                        );
+                      }}
+                    />
+                  )}
+                  {shownUnits(entry).some((u) => u.afloat) && (
                     <Checkbox
                       size="xs"
                       label="On boats"

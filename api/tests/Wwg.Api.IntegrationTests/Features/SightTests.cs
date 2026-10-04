@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using Wwg.Api.Data.Entities;
 using Wwg.Api.Features.Armies;
 using Wwg.Api.Features.Maps;
+using Wwg.Api.Features.Screening;
 using Wwg.Api.Features.Sightings;
 using Wwg.Api.IntegrationTests.Support;
 
@@ -51,7 +52,7 @@ public sealed class SightTests : ApiTest
         return (await created.Content.ReadAsAsync<ArmyResponse>())!.Id;
     }
 
-    private static async Task EnemyAsync(
+    private static async Task<Guid> EnemyAsync(
         CampaignScenario scenario,
         Guid army,
         Hex at,
@@ -62,6 +63,27 @@ public sealed class SightTests : ApiTest
         var unit = await LibrarySteps.AddUnitAsync(scenario, name, type, armyId: army);
         using var placed = await TurnSteps.PlaceAsync(scenario, unit, at);
         placed.EnsureSuccessStatusCode();
+        return unit;
+    }
+
+    /// <summary>The enemy's light troops, screening (decision 0026).</summary>
+    private static async Task<Guid> ScreenAsync(
+        CampaignScenario scenario,
+        Guid army,
+        Hex at,
+        string name
+    )
+    {
+        var unit = await EnemyAsync(scenario, army, at, name, UnitType.LightCavalry);
+        using var screening = await scenario
+            .As(Role.Umpire)
+            .PutAsJsonAsync(
+                new Uri($"/api/army-units/{unit}/screening", UriKind.Relative),
+                new UpdateScreeningRequest(true),
+                Token
+            );
+        screening.EnsureSuccessStatusCode();
+        return unit;
     }
 
     /// <summary>The hexes the scenario's army would see.</summary>
@@ -145,12 +167,12 @@ public sealed class SightTests : ApiTest
     }
 
     [Fact]
-    public async Task ListSightingsDue_LightTroopsInTheWay_FlagAScreen()
+    public async Task ListSightingsDue_AScreenInTheWay_FlagsAScreen()
     {
         using var scenario = await StartedAsync();
         await GroundAsync(scenario, TurnSteps.Start, Terrain.LowHill);
         var enemy = await EnemyArmyAsync(scenario);
-        await EnemyAsync(scenario, enemy, new Hex(1, 0), "Hussars", UnitType.LightCavalry);
+        await ScreenAsync(scenario, enemy, new Hex(1, 0), "Hussars");
         await EnemyAsync(scenario, enemy, new Hex(2, 0), "Brigade");
 
         var seen = await SeenAsync(scenario);
@@ -159,6 +181,50 @@ public sealed class SightTests : ApiTest
             [(1, 0, false), (2, 0, true)],
             seen.OrderBy(s => s.Q).Select(s => (s.Q, s.R, s.Screened))
         );
+    }
+
+    [Fact]
+    public async Task ListSightingsDue_LightTroopsInTheWayNotScreening_FlagNoScreen()
+    {
+        using var scenario = await StartedAsync();
+        await GroundAsync(scenario, TurnSteps.Start, Terrain.LowHill);
+        var enemy = await EnemyArmyAsync(scenario);
+        await EnemyAsync(scenario, enemy, new Hex(1, 0), "Hussars", UnitType.LightCavalry);
+        await EnemyAsync(scenario, enemy, new Hex(2, 0), "Brigade");
+
+        Assert.DoesNotContain(await SeenAsync(scenario), s => s.Screened);
+    }
+
+    [Fact]
+    public async Task ListSightingsDue_AScreenInTheHex_HidesTheRest()
+    {
+        using var scenario = await StartedAsync();
+        var enemy = await EnemyArmyAsync(scenario);
+        await ScreenAsync(scenario, enemy, new Hex(1, 0), "Hussars");
+        await EnemyAsync(scenario, enemy, new Hex(1, 0), "Brigade");
+
+        var seen = Assert.Single(await SeenAsync(scenario));
+
+        Assert.Equal("Hussars", Assert.Single(seen.Units).Name);
+        Assert.Equal("Brigade", Assert.Single(seen.ScreenedUnits).Name);
+    }
+
+    [Fact]
+    public async Task ListSightingsDue_NoScreenInTheHex_HidesNothing()
+    {
+        using var scenario = await StartedAsync();
+        var enemy = await EnemyArmyAsync(scenario);
+        await EnemyAsync(scenario, enemy, new Hex(1, 0), "Hussars", UnitType.LightCavalry);
+        await EnemyAsync(scenario, enemy, new Hex(1, 0), "Brigade");
+
+        var seen = Assert.Single(await SeenAsync(scenario));
+
+        Assert.Equal(
+            ["Brigade", "Hussars"],
+            seen.Units.Select(u => u.Name),
+            StringComparer.Ordinal
+        );
+        Assert.Empty(seen.ScreenedUnits);
     }
 
     [Theory]

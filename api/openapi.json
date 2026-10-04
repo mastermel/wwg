@@ -9267,7 +9267,8 @@
           "r",
           "whereabouts",
           "screened",
-          "units"
+          "units",
+          "screenedUnits"
         ],
         "type": "object",
         "properties": {
@@ -9292,14 +9293,21 @@
           },
           "screened": {
             "type": "boolean",
-            "description": "The observed side's light troops stand in the way: perhaps a screen."
+            "description": "The observed side's screening units stand in the way: perhaps a screen."
           },
           "units": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/SightedUnitResponse"
             },
-            "description": "The other side's units there."
+            "description": "The other side's units seen there: only the screening ones, where some are (decision 0026)."
+          },
+          "screenedUnits": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SightedUnitResponse"
+            },
+            "description": "The other side's units there that the screen hides."
           }
         },
         "description": "A sighting the closing turn gives (decision 0020): another side's hex an army can see, for the\nUmpire to shape when starting the next turn."
@@ -9361,6 +9369,11 @@
           "showsAfloat": {
             "type": "boolean",
             "description": "Whether they learn if the force is on boats (decision 0022).",
+            "default": false
+          },
+          "pastScreen": {
+            "type": "boolean",
+            "description": "Whether it gets past a screen in the hex (decision 0026), seeing the units it hides too.",
             "default": false
           }
         },

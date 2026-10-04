@@ -42,21 +42,25 @@ internal static class SightingEndpoints
                     c.At.R,
                     Sight.Roughly(c.At, c.Observer),
                     c.Screened,
-                    [
-                        .. c
-                            .Units.OrderBy(u => u.Name, StringComparer.Ordinal)
-                            .Select(u => new SightedUnitResponse(
-                                u.UnitId,
-                                u.ArmyId,
-                                u.Name,
-                                u.Type,
-                                u.Points,
-                                u.Afloat
-                            )),
-                    ]
+                    Sighted(c.Units),
+                    Sighted(c.Hidden)
                 ))
                 .ToList()
         );
+
+    private static List<SightedUnitResponse> Sighted(List<UnitPlace> units) =>
+        [
+            .. units
+                .OrderBy(u => u.Name, StringComparer.Ordinal)
+                .Select(u => new SightedUnitResponse(
+                    u.UnitId,
+                    u.ArmyId,
+                    u.Name,
+                    u.Type,
+                    u.Points,
+                    u.Afloat
+                )),
+        ];
 
     /// <summary>
     /// The sightings the viewer may see, every turn's, oldest first: the Umpire's and Admins', every
