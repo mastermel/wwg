@@ -45,7 +45,7 @@ const library: UnitResponse[] = [
     points: 35,
     division: null,
     brigade: null,
-    corps: null,
+    corps: "I Corps",
     corpsCommander: null,
     divisionCommander: null,
     brigadeCommander: null,
@@ -60,9 +60,9 @@ const library: UnitResponse[] = [
     type: "LightCavalry",
     fightingFactor: 4,
     points: 15,
-    division: null,
+    division: "Cavalry Division",
     brigade: null,
-    corps: null,
+    corps: "I Corps",
     corpsCommander: null,
     divisionCommander: null,
     brigadeCommander: null,
@@ -256,7 +256,17 @@ describe("units", () => {
 
     await user.click((await unitsSection()).getByRole("button", { name: "Add units" }));
     const dialog = within(await screen.findByRole("dialog", { name: "Add units" }));
-    expect(await dialog.findByRole("group", { name: "French" })).toBeInTheDocument();
+    const french = within(await dialog.findByRole("group", { name: "French" }));
+    // The faction's order of battle, as on the Library page.
+    expect(french.getAllByRole("row").map((row) => row.firstElementChild?.textContent)).toEqual([
+      "Name",
+      "Not in a division1 unit · 20 points",
+      "1st DivisionIn First CorpsLine Infantry",
+      "I Corps2 units · 50 points",
+      "Light DivisionLight Infantry",
+      "Cavalry Division1 unit · 15 points",
+      "HussarsLight Cavalry",
+    ]);
     expect(dialog.getByRole("checkbox", { name: "1st Division" })).toBeDisabled();
     expect(dialog.getByText("In First Corps")).toBeInTheDocument();
     expect(dialog.getByRole("button", { name: "Add units" })).toBeDisabled();

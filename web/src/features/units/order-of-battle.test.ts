@@ -143,6 +143,19 @@ describe("the order of battle", () => {
     expect(oob.corps[0]?.divisions[0]?.brigades[0]?.commander).toBe("Maitland");
   });
 
+  it("names no commander who's a Commander unit of the group's own (decision 0030)", () => {
+    const named = { corps: "I Corps", corpsCommander: "Moore", divisionCommander: "Paget" };
+    const oob = orderOfBattle([
+      { ...unit("1st Foot Guards", "1st Division", "1st Brigade"), ...named },
+      // The division's commander, in the division but no brigade; it names the corps' too.
+      { ...unit("Paget", "1st Division", null, "Commander"), ...named },
+    ]);
+
+    // The corps' commander, Moore, isn't among its own units: a division's doesn't count.
+    expect(oob.corps[0]?.commander).toBe("Moore");
+    expect(oob.corps[0]?.divisions[0]?.commander).toBeNull();
+  });
+
   it("keeps the imported file's order, then sorts the rest by name", () => {
     const oob = orderOfBattle([
       { ...unit("Cuirassiers"), corps: "Cavalry Reserve", importOrder: 9 },

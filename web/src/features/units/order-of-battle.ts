@@ -13,9 +13,13 @@ export interface Placed {
   importOrder?: number | null;
 }
 
-/** A brigade: who commands it (if anyone's named), and its units. */
+/** A brigade: its units, and who commands it when no unit of its own is that commander. */
 export interface Brigade<T> {
   name: string;
+  /**
+   * The commander named on its units, to show beside its name; null when it has a Commander unit
+   * of its own (decision 0030: theirs sits in the formation they command) or names nobody.
+   */
   commander: string | null;
   units: T[];
 }
@@ -68,11 +72,16 @@ function ordered<T extends Placed>(units: T[]) {
   ];
 }
 
-/** Who commands a group: the first of its units to name someone. */
+/**
+ * Who commands a group, to name beside it: the first of its units to name someone, unless one of
+ * its `own` units (not its brigades' or divisions') is a Commander, which shows them already.
+ */
 function commanderOf<T extends Placed>(
   units: readonly T[],
+  own: readonly T[],
   pick: (unit: T) => string | null | undefined,
 ) {
+  if (own.some((unit) => unit.type === "Commander")) return null;
   for (const unit of ordered([...units])) {
     const name = pick(unit)?.trim();
     if (name) return name;
@@ -109,7 +118,7 @@ function brigaded<T extends Placed>(units: readonly T[]): Division<T> {
     units: ordered(loose),
     brigades: groups.map((brigade) => ({
       name: brigade.name,
-      commander: commanderOf(brigade.units, (unit) => unit.brigadeCommander),
+      commander: commanderOf(brigade.units, brigade.units, (unit) => unit.brigadeCommander),
       units: ordered(brigade.units),
     })),
   };
@@ -120,11 +129,14 @@ function divided<T extends Placed>(units: readonly T[]): Corps<T> {
   const { loose, groups } = grouped(units, (unit) => unit.division);
   return {
     ...brigaded(loose),
-    divisions: groups.map((division) => ({
-      ...brigaded(division.units),
-      name: division.name,
-      commander: commanderOf(division.units, (unit) => unit.divisionCommander),
-    })),
+    divisions: groups.map((division) => {
+      const brigades = brigaded(division.units);
+      return {
+        ...brigades,
+        name: division.name,
+        commander: commanderOf(division.units, brigades.units, (unit) => unit.divisionCommander),
+      };
+    }),
   };
 }
 
@@ -134,11 +146,14 @@ export function orderOfBattle<T extends Placed>(units: readonly T[]): OrderOfBat
   const top = divided(loose);
   return {
     ...top,
-    corps: groups.map((corps) => ({
-      ...divided(corps.units),
-      name: corps.name,
-      commander: commanderOf(corps.units, (unit) => unit.corpsCommander),
-    })),
+    corps: groups.map((corps) => {
+      const divisions = divided(corps.units);
+      return {
+        ...divisions,
+        name: corps.name,
+        commander: commanderOf(corps.units, divisions.units, (unit) => unit.corpsCommander),
+      };
+    }),
     grouped: groups.length > 0 || top.divisions.length > 0 || top.brigades.length > 0,
   };
 }

@@ -1,4 +1,4 @@
-import { ActionIcon, Group, Table, Text, VisuallyHidden } from "@mantine/core";
+import { ActionIcon, Checkbox, Group, Table, Text, VisuallyHidden } from "@mantine/core";
 import { IconEdit, IconTrash } from "@tabler/icons-react";
 import { Fragment } from "react";
 import classes from "@/features/units/OrderOfBattleTable.module.css";
@@ -23,17 +23,27 @@ interface Row extends Placed {
   notes?: string | null;
 }
 
+/** Units to choose from, each with a checkbox by its name (Add units). */
+export interface Selection<T> {
+  /** The chosen units' ids, in the order they were chosen. */
+  chosen: readonly string[];
+  onChange: (chosen: string[]) => void;
+  /** Why a unit can't be chosen ("In First Corps"), or undefined when it can. */
+  unavailable?: (unit: T) => string | undefined;
+}
+
 interface OrderOfBattleTableProps<T extends Row> {
   units: T[];
   /** Shows each unit's Edit and Delete (or Remove) buttons. */
-  editor: boolean;
-  online: boolean;
-  onEdit: (unit: T) => void;
-  onDelete: (unit: T) => void;
+  editor?: boolean;
+  online?: boolean;
+  onEdit?: (unit: T) => void;
+  onDelete?: (unit: T) => void;
   /** The delete button's word: an army's units are removed from it, not deleted. */
   deleteVerb?: "Delete" | "Remove";
   /** Ends with a row of the unit count and total points (the army's). */
   totals?: boolean;
+  selection?: Selection<T>;
 }
 
 /** A row's first cell, stepped in by its level in the order of battle. */
@@ -47,25 +57,50 @@ const points = (units: readonly Row[]) => units.reduce((sum, unit) => sum + unit
 /**
  * Units in their order of battle (decisions 0024 and 0025), a library faction's or an army's: each
  * corps a band, its divisions under it (bands too), their brigades under them, each with its units
- * and each heading naming its commander; units in no corps or division come first. With no
- * corps, divisions or brigades at all, a plain list.
+ * (its commander first); units in no corps or division come first. A heading names its commander
+ * when no unit of its own is that commander (an army without its general, say). With no corps,
+ * divisions or brigades at all, a plain list. With a `selection`, each unit can be ticked.
  */
 export function OrderOfBattleTable<T extends Row>({
   units,
-  editor,
-  online,
+  editor = false,
+  online = true,
   onEdit,
   onDelete,
   deleteVerb = "Delete",
   totals = false,
+  selection,
 }: OrderOfBattleTableProps<T>) {
   const oob = orderOfBattle(units);
   const columns = editor ? 5 : 4;
 
+  const toggle = (unit: T, checked: boolean) => {
+    if (!selection) return;
+    const others = selection.chosen.filter((id) => id !== unit.id);
+    selection.onChange(checked ? [...others, unit.id] : others);
+  };
+
+  /** A unit's name: with a checkbox when choosing, saying why if it can't be chosen. */
+  const nameOf = (unit: T) => {
+    if (!selection) return unit.name;
+    const unavailable = selection.unavailable?.(unit);
+    return (
+      <Checkbox
+        label={unit.name}
+        description={unavailable}
+        disabled={unavailable !== undefined}
+        checked={selection.chosen.includes(unit.id)}
+        onChange={(event) => {
+          toggle(unit, event.currentTarget.checked);
+        }}
+      />
+    );
+  };
+
   const unitRow = (unit: T, depth: number) => (
     <Table.Tr key={unit.id}>
       <Table.Td style={indent(depth)}>
-        {unit.name}
+        {nameOf(unit)}
         <Text size="xs" c="dimmed" hiddenFrom="sm">
           {unitTypeLabels[unit.type]}
         </Text>
@@ -89,7 +124,7 @@ export function OrderOfBattleTable<T extends Row>({
               variant="subtle"
               aria-label={`Edit ${unit.name}`}
               onClick={() => {
-                onEdit(unit);
+                onEdit?.(unit);
               }}
               disabled={!online}
             >
@@ -100,7 +135,7 @@ export function OrderOfBattleTable<T extends Row>({
               color="red"
               aria-label={`${deleteVerb} ${unit.name}`}
               onClick={() => {
-                onDelete(unit);
+                onDelete?.(unit);
               }}
               disabled={!online}
             >

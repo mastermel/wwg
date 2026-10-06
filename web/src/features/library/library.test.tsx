@@ -205,6 +205,14 @@ describe("the library", () => {
         division: "16th Division",
         importOrder: 1,
       }),
+      at(3, {
+        name: "Reynier",
+        type: "Commander",
+        points: 0,
+        corps: "IX Corps",
+        corpsCommander: "Reynier",
+        importOrder: 2,
+      }),
     ]);
     const { container } = await renderApp(`/library/${factionId}`, { user: manager });
 
@@ -219,7 +227,9 @@ describe("the library", () => {
       "V CorpsLannes1 unit · 40 points",
       "16th Division1 unit · 40 points",
       "GrenadiersLine Infantry",
-      "IX CorpsReynier1 unit · 40 points",
+      // Reynier is a unit of IX Corps' own (decision 0030), so its heading doesn't name him too.
+      "IX Corps2 units · 40 points",
+      "ReynierCommander",
       "34th Divisionvon Zezschwitz1 unit · 40 points",
       "Saxon GuardLine Infantrysub in V",
     ]);

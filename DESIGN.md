@@ -1337,10 +1337,12 @@ visibility); the data is in §5.1. Built in Phase 8 (§7).
   units; Managers and Admins create, edit and delete them there, and only there. A faction's
   units show as its order of battle (step 54): each division a band, its brigades under it with
   their units, unit and point totals on each; units in no division first (an army's units too,
-  on its page). From step 55, corps above the divisions, each group's commander in its
-  heading, and formations in the order of the imported file (decision 0025); Managers and
+  on its page). From step 55, corps above the divisions, and formations in the order of the
+  imported file (decision 0025), and each group's commander in its heading unless they're a
+  Commander unit of the group's own (decision 0030, step 61), shown first in it. Managers and
   Admins **Import** the club's CSV there, from a preview of what it will change. In a campaign,
-  **Edit army** selects the army's factions, and **Add units** lists only their units.
+  **Edit army** selects the army's factions, and **Add units** lists only their units, in each
+  faction's order of battle.
 - The campaign page gains a **Factions** section (the Umpire creates, renames
   and deletes them; from step 41, **Sides**; from step 46a, the campaign's two sides, renamed only); the army page's **Edit army** covers name, faction (side), colour (with
   swatches; a new army is offered the first free one) and nation (with its flag).
@@ -2940,3 +2942,8 @@ build on positions.
     Commander unit (FF 1, 0 points) for each corps', division's and brigade's named commander,
     just before the formation's first unit, keyed `… | Commander`; blank and placeholder
     commanders are skipped and listed in its warnings. The import takes them as they are.
+61. ✅ **Add units by order of battle:** the army page's **Add units** shows each faction's units
+    in their order of battle, with a checkbox by each name (`OrderOfBattleTable`'s `selection`);
+    one already in the campaign is disabled, saying which army has it. With commanders as units
+    (step 60), a heading names its commander only when the group has no Commander unit of its
+    own (not its divisions' or brigades'): an army given its brigades but not their general.
