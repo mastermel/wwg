@@ -34,6 +34,9 @@ true, because the build launches the app to write the document.
 - `BannedSymbols.txt`: APIs that must not be used, each with what to use instead. An ID without a
   parameter list only matches the parameterless overload, so list every overload.
 - `Directory.Build.targets`: installs the Husky.Net hook on restore.
+- The Request Delegate Generator compiles endpoint handlers at build time (each test's app
+  would otherwise compile them as it starts). It drops the pattern from
+  `MapFallback(pattern, handler)`: give a fallback a `RequestDelegate`, as `MapSpaFallback` does.
 
 ## Code conventions
 

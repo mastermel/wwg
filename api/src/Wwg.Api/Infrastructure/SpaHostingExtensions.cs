@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.StaticFiles;
 
 namespace Wwg.Api.Infrastructure;
@@ -81,7 +80,13 @@ internal static class SpaHostingExtensions
         return app;
     }
 
-    private static ProblemHttpResult NotFound() => TypedResults.Problem(statusCode: 404);
+    /// <summary>
+    /// A plain <see cref="RequestDelegate"/>, not a handler: the Request Delegate Generator
+    /// drops the pattern from <c>MapFallback(pattern, handler)</c>, mapping it at the default
+    /// <c>{*path:nonfile}</c> instead.
+    /// </summary>
+    private static Task NotFound(HttpContext context) =>
+        TypedResults.Problem(statusCode: 404).ExecuteAsync(context);
 
     private static StaticFileOptions CreateStaticFileOptions()
     {

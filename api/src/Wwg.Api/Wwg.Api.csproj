@@ -8,6 +8,11 @@
   <PropertyGroup>
     <OpenApiDocumentsDirectory>$(MSBuildThisFileDirectory)../..</OpenApiDocumentsDirectory>
     <OpenApiGenerateDocumentsOptions>--file-name openapi</OpenApiGenerateDocumentsOptions>
+    <!--
+      Minimal API handlers are compiled at build time, not from expression trees as each app
+      starts: every test hosts its own app, so this takes the API tests from ~9 minutes to ~1.
+    -->
+    <EnableRequestDelegateGenerator>true</EnableRequestDelegateGenerator>
     <UserSecretsId>1eecf179-bfa2-4987-815e-bd5b08ea614d</UserSecretsId>
   </PropertyGroup>
 
