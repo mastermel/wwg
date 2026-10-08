@@ -74,7 +74,7 @@ import { depotName, useDepots } from "@/features/maps/use-depots";
 import { CampaignMap } from "@/features/maps/CampaignMap";
 import { afterOrders, depotThreats, hexWarnings } from "@/features/maps/contact";
 import type { Point } from "@/features/maps/geo";
-import { hexGrid, hexKey, type Hex } from "@/features/maps/hex-grid";
+import { hexGrid, hexKey, hexName, type Hex } from "@/features/maps/hex-grid";
 import {
   budgetFor,
   classOf,
@@ -360,6 +360,16 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
   const boatSettings = useGetBoatSettings(campaignId, live);
   const boatCapacity = boatSettings.data?.capacity ?? usualBoatCapacity;
   const placingUnit = everyUnit.find((u) => u.unit.id === placing);
+  // Once running, the units added since the start that the Umpire hasn't placed yet: not where
+  // the open turn starts. Placing one can't be undone, so it asks first (the hex chosen).
+  const unplaced = useMemo(
+    () =>
+      !setup && manager && past === null && positions.data
+        ? everyUnit.filter((u) => !positions.data.some((p) => p.unitId === u.unit.id))
+        : [],
+    [setup, manager, past, positions.data, everyUnit],
+  );
+  const [placingIn, setPlacingIn] = useState<Hex | null>(null);
   // Depots (step 48a): those the viewer may see, and the Umpire placing, moving or changing one.
   const depots = useListDepots(campaignId, live);
   const supplySettings = useGetSupplySettings(campaignId, live);
@@ -677,16 +687,24 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
       notifications.show({ color: "red", message: "That's outside the campaign's area." });
       return;
     }
+    if (setup) await placeIn(hex);
+    else setPlacingIn(hex);
+  };
+
+  const placeIn = async (hex: Hex) => {
+    if (!placingUnit) return;
     try {
       await place.mutateAsync({ id: placingUnit.unit.id, data: hex });
       notifications.show({ color: "green", message: `Placed ${placingUnit.unit.name}.` });
       setPlacing(null);
+      setPlacingIn(null);
       await refreshCampaign(queryClient, campaignId);
     } catch (error) {
       notifications.show({
         color: "red",
         message: errorMessage(error, `${placingUnit.unit.name} couldn't be placed. Try again.`),
       });
+      setPlacingIn(null);
     }
   };
 
@@ -1079,6 +1097,9 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
         warnings={warnings}
         threats={threats}
         terrain={costs.terrain}
+        unplaced={unplaced}
+        placing={placing}
+        onPlace={setPlacing}
       />
     ) : !setup && commanded.length > 0 && openTurn ? (
       <TurnPanel
@@ -1232,6 +1253,22 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
         }}
       >
         It was captured, destroyed or given up: its army&apos;s units no longer draw supply from it.
+      </ConfirmModal>
+      <ConfirmModal
+        opened={placingIn !== null}
+        onClose={() => {
+          setPlacingIn(null);
+        }}
+        title={`Place ${placingUnit?.unit.name ?? "the unit"} here?`}
+        confirmLabel="Place unit"
+        color="navy"
+        loading={place.isPending}
+        onConfirm={() => {
+          if (placingIn) void placeIn(placingIn);
+        }}
+      >
+        {placingIn ? `${hexName(placingIn)}. ` : ""}It joins its army where the open turn starts,
+        and can&apos;t be moved again except by its orders.
       </ConfirmModal>
       <HexDrawer
         hex={chosen && chosenCard ? { hex: chosen.hex, info: chosenCard.info } : null}

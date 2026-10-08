@@ -1,8 +1,8 @@
 import { scan } from "./support/axe.ts";
-import { expect, test } from "./support/fixtures.ts";
+import { desktopOnly, expect, test } from "./support/fixtures.ts";
 import { latestEmailText } from "./support/mailpit.ts";
 import { apiAs } from "./support/api.ts";
-import { clickMapPart } from "./support/map.ts";
+import { clickMapCentre, clickMapPart } from "./support/map.ts";
 import { approveAndStartNext, holdAndSubmit, startedCampaign } from "./support/turns.ts";
 import { browserOf, libraryFaction } from "./support/library.ts";
 
@@ -118,6 +118,44 @@ test("the Umpire sends a turn back, approves it resubmitted, and starts the next
   await expect(bob.getByRole("region", { name: "Turn 2" }).getByText("No order yet")).toHaveCount(
     2,
   );
+});
+
+test("the Umpire places a unit added since the start, and then the next turn can start", async ({
+  signUp,
+  isMobile,
+}) => {
+  test.skip(isMobile, desktopOnly);
+  const umpire = await signUp("Ada");
+  const commander = await signUp("Bob");
+  const { campaignUrl, campaignId, armyId } = await startedCampaign(
+    umpire,
+    commander,
+    "Quatre Bras 1815",
+  );
+  await holdAndSubmit(commander, campaignId, armyId);
+  const api = await apiAs(umpire.page);
+  await api.post(`/api/armies/${armyId}/scouts`, { name: "Éclaireurs" });
+
+  const page = umpire.page;
+  await page.goto(`${campaignUrl}/map`);
+  const panel = page.getByRole("region", { name: "Turn 1" });
+  await panel.getByRole("button", { name: "Approve Armée du Nord's turn" }).click();
+  await expect(page.getByText("Approved Armée du Nord's turn 1.")).toBeVisible();
+  await expect(panel.getByText("Place 1 unit on the map.")).toBeVisible();
+  await expect(panel.getByRole("button", { name: "Start turn 2" })).toBeDisabled();
+  expect(await scan(page, "map, a unit to place")).toEqual([]);
+
+  await panel.getByRole("button", { name: "Place Éclaireurs" }).click();
+  await expect(page.getByText(/Click the map where/)).toContainText("Éclaireurs");
+  await clickMapCentre(page);
+  await page
+    .getByRole("dialog", { name: "Place Éclaireurs here?" })
+    .getByRole("button", { name: "Place unit" })
+    .click();
+  await expect(page.getByText("Placed Éclaireurs.")).toBeVisible();
+  await expect(panel.getByText("Not on the map yet")).toHaveCount(0);
+  await expect(panel.getByRole("button", { name: "Start turn 2" })).toBeEnabled();
+  await expect(page.getByRole("button", { name: /Éclaireurs/ })).toBeVisible();
 });
 
 test("the Umpire is warned where the orders bring the two sides together", async ({ signUp }) => {

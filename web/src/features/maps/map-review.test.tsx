@@ -12,9 +12,20 @@ import type {
 import { expectNoAxeViolations, renderApp } from "@/test/render";
 import { server } from "@/test/server";
 
-// MapLibre needs WebGL, which jsdom lacks: the map is a stand-in (e2e covers the real one).
+// MapLibre needs WebGL, which jsdom lacks: the map is a stand-in (e2e covers the real one), and
+// clicking it clicks at a fixed point.
 vi.mock("@/features/maps/CampaignMap", () => ({
-  CampaignMap: () => <div role="application" aria-label="Campaign map" />,
+  CampaignMap: ({
+    onMapClick,
+  }: {
+    onMapClick?: (point: { longitude: number; latitude: number }) => void;
+  }) => (
+    <div role="application" aria-label="Campaign map">
+      <button type="button" onClick={() => onMapClick?.({ longitude: 4.4, latitude: 50.7 })}>
+        Click the map
+      </button>
+    </div>
+  ),
 }));
 
 const campaignId = "0192f5c1-0000-7000-8000-00000000c001";
@@ -51,6 +62,26 @@ const armyTurn = (army: ArmySummary, changes: Partial<ArmyTurnDetails>): ArmyTur
   orders: [],
   history: [],
   ...changes,
+});
+
+/** Where a unit was placed, in turn 0. */
+const at = (unitId: string, armyId: string, q: number, r: number) => ({
+  unitId,
+  armyId,
+  turn: 0,
+  status: "Completed" as const,
+  kind: "Move" as const,
+  latitude: 50.7,
+  longitude: 4.4,
+  byUmpire: true,
+  progress: null,
+  forceMarch: false,
+  livesOffTheLand: false,
+  boats: [],
+  carriedBy: null,
+  q,
+  r,
+  path: [],
 });
 
 const turns = (startProblems: string[]): CampaignTurnsResponse => ({
@@ -131,7 +162,9 @@ function serveUmpire(nordTurn: ArmyTurnDetails, prussianTurn: ArmyTurnDetails, p
       ]),
     ),
     http.get(`*/api/campaigns/${campaignId}/turns`, () => HttpResponse.json(turns(problems))),
-    http.get(`*/api/campaigns/${campaignId}/positions`, () => HttpResponse.json([])),
+    http.get(`*/api/campaigns/${campaignId}/positions`, () =>
+      HttpResponse.json([at(guardId, nord.id, 0, 0)]),
+    ),
     http.get(`*/api/campaigns/${campaignId}/attrition`, () => HttpResponse.json([])),
     http.get(`*/api/campaigns/${campaignId}/sightings/due`, () => HttpResponse.json([])),
     http.get(`*/api/armies/${nord.id}/turns`, () => HttpResponse.json([nordTurn])),
@@ -521,24 +554,6 @@ describe("contact and concentration in the Umpire's turn", () => {
     side: { id: "0192f5c1-0000-7000-8000-00000000f002", name: "French Empire" },
   };
   const lancersId = "0192f5c1-0000-7000-8000-00000000b002";
-  const at = (unitId: string, armyId: string, q: number, r: number) => ({
-    unitId,
-    armyId,
-    turn: 0,
-    status: "Completed" as const,
-    kind: "Move" as const,
-    latitude: 50.7,
-    longitude: 4.4,
-    byUmpire: true,
-    progress: null,
-    forceMarch: false,
-    livesOffTheLand: false,
-    boats: [],
-    carriedBy: null,
-    q,
-    r,
-    path: [],
-  });
 
   /** The guard (Coalition) at (0, 0), French lancers (220 points of cavalry) at (1, 0). */
   function serveContact(guardOrder: ArmyTurnDetails["orders"]) {
@@ -604,5 +619,94 @@ describe("contact and concentration in the Umpire's turn", () => {
     expect(
       screen.getByText("Where the units will be, by the orders as given."),
     ).toBeInTheDocument();
+  });
+});
+
+describe("a unit added since the start", () => {
+  const hussarsId = "0192f5c1-0000-7000-8000-00000000b003";
+
+  /** The guard where turn 1 starts, and hussars added to the Armée du Nord since. */
+  function serveHussars() {
+    const requests = serveUmpire(approved, waiting, ["Place 1 unit on the map."]);
+    server.use(
+      http.get(`*/api/campaigns/${campaignId}/units`, () =>
+        HttpResponse.json([
+          {
+            id: guardId,
+            armyId: nord.id,
+            name: "Imperial Guard",
+            type: "LineInfantry",
+            fightingFactor: 6,
+            points: 30,
+          },
+          {
+            id: hussarsId,
+            armyId: nord.id,
+            name: "Hussars",
+            type: "LightCavalry",
+            fightingFactor: 4,
+            points: 12,
+          },
+        ]),
+      ),
+      http.put(`*/api/army-units/${hussarsId}/placement`, async ({ request }) => {
+        await record(request);
+        return HttpResponse.json({ ...at(hussarsId, nord.id, -1, 0) });
+      }),
+    );
+    async function record(request: Request) {
+      requests.push({ url: new URL(request.url).pathname, body: await request.json() });
+    }
+    return requests;
+  }
+
+  it("is listed for the Umpire to place, holding up the next turn", async () => {
+    serveHussars();
+
+    await openMap();
+
+    const panel = await screen.findByRole("region", { name: "Turn 1" });
+    expect(await within(panel).findByText("Not on the map yet")).toBeInTheDocument();
+    expect(within(panel).getByRole("button", { name: "Place Hussars" })).toBeInTheDocument();
+    expect(
+      within(panel).queryByRole("button", { name: "Place Imperial Guard" }),
+    ).not.toBeInTheDocument();
+    expect(within(panel).getByText("Place 1 unit on the map.")).toBeInTheDocument();
+    expect(within(panel).getByRole("button", { name: "Start turn 2" })).toBeDisabled();
+    await expectNoAxeViolations(document.body);
+  });
+
+  it("is placed where the Umpire clicks, once they confirm", async () => {
+    const requests = serveHussars();
+    const user = userEvent.setup();
+    await openMap();
+
+    await user.click(await screen.findByRole("button", { name: "Place Hussars" }));
+    expect(screen.getByText(/Click the map where/)).toHaveTextContent("Hussars");
+    await user.click(screen.getByRole("button", { name: "Click the map" }));
+    const dialog = await screen.findByRole("dialog", { name: "Place Hussars here?" });
+    // The stand-in map's click, (4.4, 50.7), is in hex (-1, 0) of this area's grid.
+    expect(dialog).toHaveTextContent("Hex (−1, 0).");
+    await user.click(within(dialog).getByRole("button", { name: "Place unit" }));
+
+    expect(await screen.findByText("Placed Hussars.")).toBeInTheDocument();
+    expect(requests).toEqual([
+      { url: `/api/army-units/${hussarsId}/placement`, body: { q: -1, r: 0 } },
+    ]);
+  });
+
+  it("isn't placed if the Umpire cancels", async () => {
+    const requests = serveHussars();
+    const user = userEvent.setup();
+    await openMap();
+
+    await user.click(await screen.findByRole("button", { name: "Place Hussars" }));
+    await user.click(screen.getByRole("button", { name: "Click the map" }));
+    const dialog = await screen.findByRole("dialog", { name: "Place Hussars here?" });
+    await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
+
+    expect(requests).toEqual([]);
+    // Still placing: the Umpire can choose another hex.
+    expect(screen.getByText(/Click the map where/)).toHaveTextContent("Hussars");
   });
 });

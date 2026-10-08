@@ -11,10 +11,12 @@ import type {
 import { Section } from "@/components/Section";
 import { ArmyBadge } from "@/features/armies/identity/ArmyBadge";
 import type { DepotThreat, HexWarning, UnitInHex } from "@/features/maps/contact";
+import type { PlacedUnit } from "@/features/maps/stacks";
 import { HexWarningsList } from "@/features/maps/HexWarningsList";
 import type { TerrainIndex } from "@/features/maps/terrain";
 import { ReviewModal } from "@/features/maps/ReviewModal";
 import { StartTurnModal } from "@/features/maps/StartTurnModal";
+import { UnitPlacementRow } from "@/features/maps/UnitPlacementRow";
 import type { OpenArmyTurn } from "@/features/maps/use-orders";
 import type { useReview } from "@/features/maps/use-review";
 import { formatDateTime } from "@/lib/format";
@@ -41,12 +43,18 @@ interface ReviewPanelProps {
   warnings: readonly HexWarning[];
   threats: readonly DepotThreat[];
   terrain: TerrainIndex;
+  /** Units added since the start and not on the map yet, which hold up the next turn. */
+  unplaced: readonly { unit: PlacedUnit["unit"]; army: PlacedUnit["army"] }[];
+  /** The unit being placed, if one is. */
+  placing: string | null;
+  onPlace: (unitId: string) => void;
 }
 
 /**
  * The Umpire's open turn (DESIGN.md §3.13): each army's turn with its status and times; Submit
  * for it while it's a Draft (decision 0011), Approve or Send back once it's submitted, Reopen
- * once it's approved; and Start turn N+1 once every army's turn is approved.
+ * once it's approved; a unit added since the start to place; and Start turn N+1 once every
+ * army's turn is approved and every unit is on the map.
  */
 export function ReviewPanel({
   campaignId,
@@ -59,6 +67,9 @@ export function ReviewPanel({
   warnings,
   threats,
   terrain,
+  unplaced,
+  placing,
+  onPlace,
 }: ReviewPanelProps) {
   const online = useOnline();
   const [reviewing, setReviewing] = useState<{
@@ -80,6 +91,27 @@ export function ReviewPanel({
         .join("\n")}
     >
       <Stack gap="lg">
+        {unplaced.length > 0 && (
+          <Stack gap={6}>
+            <Text fw={600} size="sm">
+              Not on the map yet
+            </Text>
+            <Text size="xs" c="dimmed">
+              Added since the campaign started. Place each where it joins its army: from then on it
+              moves by its orders.
+            </Text>
+            {unplaced.map(({ unit, army }) => (
+              <UnitPlacementRow
+                key={unit.id}
+                unit={unit}
+                army={army}
+                placed={false}
+                placing={placing}
+                onPlace={onPlace}
+              />
+            ))}
+          </Stack>
+        )}
         {armyTurns.map((entry) =>
           entry.turn ? (
             <ArmyTurnReview

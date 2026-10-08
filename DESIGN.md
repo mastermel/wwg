@@ -1395,8 +1395,10 @@ visibility); the data is in §5.1. Built in Phase 8 (§7).
   history lists what the Umpire changed.
 - **Setup (turn 0):** the units not yet placed are listed; the Umpire places
   each one on the map, then presses **Start campaign** (every army needs a
-  side, and every unit a position). A unit or army added later appears in
-  that list until it's placed; the next turn can't start until then.
+  side, and every unit a position). Once running, a unit or army's unit added
+  since the start is listed at the top of the open turn's panel, **Not on the
+  map yet**, until it's placed; the next turn can't start until then. Placing
+  one asks first, naming the hex: it can't be moved again except by its orders.
 
 **Testing:** MapLibre needs WebGL, which jsdom lacks. Component tests stub the
 map component and test the panels, drawer, lists and move flow around it; the

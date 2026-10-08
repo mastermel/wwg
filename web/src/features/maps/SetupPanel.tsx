@@ -1,17 +1,16 @@
-import { Alert, Button, Group, List, Stack, Text } from "@mantine/core";
+import { Alert, Button, List, Stack, Text } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
-import { IconFlag3, IconMapPin } from "@tabler/icons-react";
+import { IconFlag3 } from "@tabler/icons-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useStartCampaign } from "@/api/generated/endpoints/turns/turns";
 import type { CampaignTurnsResponse } from "@/api/generated/model";
 import { ConfirmModal } from "@/components/ConfirmModal";
 import { Section } from "@/components/Section";
 import { ArmyBadge } from "@/features/armies/identity/ArmyBadge";
-import { armyColorVar } from "@/features/armies/identity/army-colors";
 import { refreshCampaign } from "@/features/campaigns/campaign-cache";
 import type { PlacedUnit } from "@/features/maps/stacks";
-import { UnitSymbol } from "@/features/units/UnitSymbol";
+import { UnitPlacementRow } from "@/features/maps/UnitPlacementRow";
 import { errorMessage } from "@/lib/errors";
 import { useOnline } from "@/lib/use-online";
 
@@ -70,31 +69,14 @@ export function SetupPanel({ campaignId, turns, units, placing, onPlace }: Setup
             {units
               .filter((u) => u.army.id === army.id)
               .map(({ unit, placed }) => (
-                <Group key={unit.id} justify="space-between" wrap="nowrap" gap="xs">
-                  <Group gap="xs" wrap="nowrap" miw={0}>
-                    <UnitSymbol type={unit.type} color={armyColorVar(army.color)} width={26} />
-                    <div style={{ minWidth: 0 }}>
-                      <Text size="sm" truncate>
-                        {unit.name}
-                      </Text>
-                      <Text size="xs" c="dimmed">
-                        {placed ? "On the map" : "Not placed yet"}
-                      </Text>
-                    </div>
-                  </Group>
-                  <Button
-                    size="compact-sm"
-                    variant={placed ? "subtle" : "light"}
-                    leftSection={<IconMapPin size={14} aria-hidden />}
-                    disabled={!online || placing === unit.id}
-                    aria-label={`${placed ? "Move" : "Place"} ${unit.name}`}
-                    onClick={() => {
-                      onPlace(unit.id);
-                    }}
-                  >
-                    {placed ? "Move" : "Place"}
-                  </Button>
-                </Group>
+                <UnitPlacementRow
+                  key={unit.id}
+                  unit={unit}
+                  army={army}
+                  placed={placed}
+                  placing={placing}
+                  onPlace={onPlace}
+                />
               ))}
           </Stack>
         ))}
