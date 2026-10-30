@@ -12,6 +12,17 @@
   border-radius: var(--mantine-radius-sm);
 }
 
+/* On a phone the name takes two lines beside the mark, so the 60px header still fits it. */
+@media (max-width: $mantine-breakpoint-sm) {
+  .brandName {
+    line-height: 1.15;
+
+    & span {
+      display: block;
+    }
+  }
+}
+
 .userButton {
   color: var(--app-header-text);
 

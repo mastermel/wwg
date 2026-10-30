@@ -78,10 +78,10 @@ export function AppLayout() {
             aria-label="Wasatch Wargamers, start page"
             className={classes.brand}
           >
-            <Group gap="xs">
+            <Group gap="xs" wrap="nowrap">
               <BrandMark size={40} />
-              <Text fw={700} size="lg">
-                Wasatch Wargamers
+              <Text fw={700} size="lg" className={classes.brandName}>
+                <span>Wasatch</span> <span>Wargamers</span>
               </Text>
             </Group>
           </UnstyledButton>
