@@ -7,11 +7,12 @@ const wcag = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"];
 
 /**
  * axe's violations on the page, each labelled with `label`; empty if none. Waits first for any
- * notification to finish fading in: half-shown, its text fails the contrast check.
+ * notification or dialog (a drawer, a modal) to finish fading in: half-shown, its text fails the
+ * contrast check.
  */
 export async function scan(page: Page, label: string): Promise<string[]> {
   await page.waitForFunction(() =>
-    [...document.querySelectorAll(".mantine-Notification-root")].every((n) => {
+    [...document.querySelectorAll(".mantine-Notification-root, [role='dialog']")].every((n) => {
       for (let el: Element | null = n; el; el = el.parentElement) {
         if (Number(getComputedStyle(el).opacity) < 1) return false;
       }
