@@ -128,9 +128,8 @@ public sealed class CampaignEmailTests : ApiTest
 
         // The submitted turn's own email, queued after any every-army one would be.
         await Emails.WaitForEmailToAsync("umpire@example.com", "submitted turn 1");
-        Assert.DoesNotContain(
-            Emails.Sent,
-            e => e.Subject.Contains("every army", StringComparison.Ordinal)
+        Assert.DoesNotContain(Emails.Sent, e =>
+            e.Subject.Contains("every army", StringComparison.Ordinal)
         );
     }
 
@@ -170,9 +169,8 @@ public sealed class CampaignEmailTests : ApiTest
             Token
         );
         await Emails.WaitForEmailToAsync("joiner@example.com", "Reset");
-        Assert.DoesNotContain(
-            Emails.Sent,
-            e => e.Subject.Contains("joined", StringComparison.Ordinal)
+        Assert.DoesNotContain(Emails.Sent, e =>
+            e.Subject.Contains("joined", StringComparison.Ordinal)
         );
     }
 }

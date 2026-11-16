@@ -24,8 +24,7 @@ public sealed class MasqueradeTests : ApiTest
     )
     {
         response.EnsureSuccessStatusCode();
-        var token =
-            await response.Content.ReadAsAsync<TokenResponse>()
+        var token = await response.Content.ReadAsAsync<TokenResponse>()
             ?? throw new InvalidOperationException("No token.");
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
             "Bearer",

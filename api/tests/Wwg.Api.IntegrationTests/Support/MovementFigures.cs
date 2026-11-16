@@ -31,11 +31,10 @@ internal static class MovementFigures
         Converters = { new JsonStringEnumConverter() },
     };
 
-    private static readonly Figures All =
-        JsonSerializer.Deserialize<Figures>(
-            File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "testdata", "movement.json")),
-            Json
-        ) ?? throw new InvalidOperationException("No movement figures.");
+    private static readonly Figures All = JsonSerializer.Deserialize<Figures>(
+        File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "testdata", "movement.json")),
+        Json
+    ) ?? throw new InvalidOperationException("No movement figures.");
 
     public static IReadOnlyList<StepCase> Cases => All.Cases;
 }

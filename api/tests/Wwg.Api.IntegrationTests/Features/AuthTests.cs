@@ -98,9 +98,8 @@ public sealed class AuthTests : ApiTest
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var token = await response.Content.ReadFromJsonAsync<TokenResponse>(CancellationToken);
         Assert.False(string.IsNullOrEmpty(token?.AccessToken));
-        Assert.Contains(
-            response.Headers.GetValues("Set-Cookie"),
-            c => c.StartsWith("__Secure-wwg-refresh=", StringComparison.Ordinal)
+        Assert.Contains(response.Headers.GetValues("Set-Cookie"), c =>
+            c.StartsWith("__Secure-wwg-refresh=", StringComparison.Ordinal)
         );
     }
 

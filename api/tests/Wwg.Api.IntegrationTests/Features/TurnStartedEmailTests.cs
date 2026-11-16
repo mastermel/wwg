@@ -67,9 +67,8 @@ public sealed class TurnStartedEmailTests : ApiTest
 
         // The Umpire's own, of the submitting, went after the first turn's would have.
         await Emails.WaitForEmailToAsync("umpire@example.com", "submitted turn 1");
-        Assert.DoesNotContain(
-            Emails.Sent,
-            e => e.Subject.Contains("has started", StringComparison.Ordinal)
+        Assert.DoesNotContain(Emails.Sent, e =>
+            e.Subject.Contains("has started", StringComparison.Ordinal)
         );
     }
 }

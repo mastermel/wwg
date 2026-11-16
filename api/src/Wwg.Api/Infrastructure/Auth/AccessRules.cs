@@ -47,9 +47,8 @@ internal static class AccessRuleExtensions
         authorization
             .SetFallbackPolicy(new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build())
             .AddPolicy(AdminPolicy, policy => policy.RequireRole(Roles.Admin))
-            .AddPolicy(
-                LibraryPolicy,
-                policy => policy.RequireAuthenticatedUser().AddRequirements(new LibraryEditor())
+            .AddPolicy(LibraryPolicy, policy =>
+                policy.RequireAuthenticatedUser().AddRequirements(new LibraryEditor())
             );
 }
 

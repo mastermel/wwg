@@ -78,9 +78,8 @@ internal static class RateLimiting
             options.OnRejected = WriteRejectionAsync;
 
             options.AddPolicy(AuthPolicy, httpContext => PerClientIp(httpContext, o => o.Auth));
-            options.AddPolicy(
-                RefreshPolicy,
-                httpContext => PerClientIp(httpContext, o => o.Refresh)
+            options.AddPolicy(RefreshPolicy, httpContext =>
+                PerClientIp(httpContext, o => o.Refresh)
             );
             options.AddPolicy(EmailPolicy, httpContext => PerClientIp(httpContext, o => o.Email));
             options.AddPolicy(PlacesPolicy, httpContext => PerClientIp(httpContext, o => o.Places));

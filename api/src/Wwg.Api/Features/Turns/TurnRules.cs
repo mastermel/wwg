@@ -78,10 +78,9 @@ internal static class TurnRules
         CancellationToken cancellationToken
     )
     {
-        var armyTurn =
-            db.ArmyTurns.Local.SingleOrDefault(t =>
-                t.CampaignTurnId == campaignTurn.Id && t.ArmyId == armyId
-            )
+        var armyTurn = db.ArmyTurns.Local.SingleOrDefault(t =>
+            t.CampaignTurnId == campaignTurn.Id && t.ArmyId == armyId
+        )
             ?? await db.ArmyTurns.SingleOrDefaultAsync(
                 t => t.CampaignTurnId == campaignTurn.Id && t.ArmyId == armyId,
                 cancellationToken

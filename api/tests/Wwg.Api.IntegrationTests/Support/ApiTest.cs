@@ -83,8 +83,7 @@ public abstract class ApiTest : IAsyncDisposable
         var client = await CreateUserClientAsync(email);
         await using var scope = App.Services.CreateAsyncScope();
         var users = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
-        var user =
-            await users.FindByEmailAsync(email)
+        var user = await users.FindByEmailAsync(email)
             ?? throw new InvalidOperationException("The manager didn't register.");
         (await users.AddToRoleAsync(user, Roles.Manager)).EnsureSucceeded();
         return client;
@@ -100,8 +99,7 @@ public abstract class ApiTest : IAsyncDisposable
         await using (var scope = App.Services.CreateAsyncScope())
         {
             var users = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
-            var user =
-                await users.FindByEmailAsync(email)
+            var user = await users.FindByEmailAsync(email)
                 ?? throw new InvalidOperationException("The admin didn't register.");
             (await users.AddToRoleAsync(user, Roles.Admin)).EnsureSucceeded();
         }
@@ -224,9 +222,9 @@ public abstract class ApiTest : IAsyncDisposable
         Guid campaignId
     )
     {
-        var sides =
-            await umpire.GetAsAsync<List<SideResponse>>($"/api/campaigns/{campaignId}/sides")
-            ?? throw new InvalidOperationException("No sides.");
+        var sides = await umpire.GetAsAsync<List<SideResponse>>(
+            $"/api/campaigns/{campaignId}/sides"
+        ) ?? throw new InvalidOperationException("No sides.");
         var first = sides.Single(s => string.Equals(s.Name, "Side 1", StringComparison.Ordinal)).Id;
         var second = sides
             .Single(s => string.Equals(s.Name, "Side 2", StringComparison.Ordinal))
@@ -269,8 +267,7 @@ public abstract class ApiTest : IAsyncDisposable
             CancellationToken
         );
         response.EnsureSuccessStatusCode();
-        var created =
-            await response.Content.ReadAsAsync<TResponse>()
+        var created = await response.Content.ReadAsAsync<TResponse>()
             ?? throw new InvalidOperationException($"POST {path} returned nothing.");
         return id(created);
     }

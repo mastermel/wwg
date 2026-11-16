@@ -16,8 +16,8 @@ internal sealed class MailKitEmailService(IOptions<SmtpOptions> options) : IEmai
         var smtp = options.Value;
         // Only used when Host is set, and then validation requires FromAddress.
         var host = smtp.Host ?? throw new InvalidOperationException("Smtp:Host isn't set.");
-        var from =
-            smtp.FromAddress ?? throw new InvalidOperationException("Smtp:FromAddress isn't set.");
+        var from = smtp.FromAddress
+            ?? throw new InvalidOperationException("Smtp:FromAddress isn't set.");
 
         using var mime = new MimeMessage();
         mime.From.Add(new MailboxAddress(smtp.FromName, from));

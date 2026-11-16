@@ -71,8 +71,7 @@ internal static class LibrarySteps
         params Guid[] factionIds
     )
     {
-        var army =
-            await umpire.GetAsAsync<ArmyResponse>($"/api/armies/{armyId}")
+        var army = await umpire.GetAsAsync<ArmyResponse>($"/api/armies/{armyId}")
             ?? throw new InvalidOperationException("No army.");
         using var response = await umpire.PutAsJsonAsync(
             new Uri($"/api/armies/{armyId}", UriKind.Relative),

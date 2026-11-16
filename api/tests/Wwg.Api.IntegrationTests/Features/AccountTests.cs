@@ -18,8 +18,7 @@ public sealed class AccountTests : ApiTest
     {
         await using var scope = App.Services.CreateAsyncScope();
         var users = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
-        var user =
-            await users.FindByEmailAsync(email)
+        var user = await users.FindByEmailAsync(email)
             ?? throw new InvalidOperationException($"No user {email}");
         await action(users, user);
     }
@@ -61,9 +60,8 @@ public sealed class AccountTests : ApiTest
     public async Task GetMe_SecurityStampChanged_Returns401Immediately()
     {
         using var client = await CreateUserClientAsync("mel@example.com");
-        await WithUserAsync(
-            "mel@example.com",
-            (users, user) => users.UpdateSecurityStampAsync(user)
+        await WithUserAsync("mel@example.com", (users, user) =>
+            users.UpdateSecurityStampAsync(user)
         );
 
         using var response = await GetMeAsync(client);

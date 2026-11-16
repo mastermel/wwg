@@ -265,12 +265,11 @@ public sealed class MapTests : ApiTest
         );
 
         response.EnsureSuccessStatusCode();
-        var positions =
-            await scenario
-                .As(Role.Umpire)
-                .GetAsAsync<List<UnitPosition>>(
-                    $"/api/campaigns/{scenario.CampaignId}/positions?turn=0"
-                )
+        var positions = await scenario
+            .As(Role.Umpire)
+            .GetAsAsync<List<UnitPosition>>(
+                $"/api/campaigns/{scenario.CampaignId}/positions?turn=0"
+            )
             ?? [];
         Assert.NotEmpty(units);
         foreach (var (id, hex) in units)

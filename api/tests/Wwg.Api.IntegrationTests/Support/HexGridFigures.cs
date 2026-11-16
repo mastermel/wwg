@@ -31,11 +31,10 @@ internal static class HexGridFigures
 
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
 
-    private static readonly Figures All =
-        JsonSerializer.Deserialize<Figures>(
-            File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "testdata", "hex-grid.json")),
-            Json
-        ) ?? throw new InvalidOperationException("No hex grid figures.");
+    private static readonly Figures All = JsonSerializer.Deserialize<Figures>(
+        File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "testdata", "hex-grid.json")),
+        Json
+    ) ?? throw new InvalidOperationException("No hex grid figures.");
 
     public static IReadOnlyList<GridCase> Cases => All.Cases;
 

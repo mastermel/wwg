@@ -72,12 +72,10 @@ internal static class Marches
             id =>
             {
                 var given = byTurn[id].ToDictionary(o => o.Turn);
-                return turns.Aggregate(
-                    MarchState.Rested,
-                    (state, turn) =>
-                        given.TryGetValue(turn, out var order)
-                            ? state.After(order.Moved, order.ForceMarch)
-                            : state.After(moved: false, forceMarch: false)
+                return turns.Aggregate(MarchState.Rested, (state, turn) =>
+                    given.TryGetValue(turn, out var order)
+                        ? state.After(order.Moved, order.ForceMarch)
+                        : state.After(moved: false, forceMarch: false)
                 );
             }
         );

@@ -287,8 +287,7 @@ internal static class OrderEndpoints
             httpContext.CampaignContext().CampaignId,
             cancellationToken
         );
-        var carrier =
-            embarked.CarrierNow(unitId)
+        var carrier = embarked.CarrierNow(unitId)
             ?? await TiedThisTurnAsync(db, id, unitId, cancellationToken);
         if (carrier is { } tiedTo)
         {
@@ -352,10 +351,9 @@ internal static class OrderEndpoints
         StagedOrder staged
     )
     {
-        var order =
-            await db.UnitOrders.SingleOrDefaultAsync(o =>
-                o.ArmyTurnId == turn.Id && o.UnitId == unitId
-            ) ?? db.UnitOrders.Add(new UnitOrder { ArmyTurnId = turn.Id, UnitId = unitId }).Entity;
+        var order = await db.UnitOrders.SingleOrDefaultAsync(o =>
+            o.ArmyTurnId == turn.Id && o.UnitId == unitId
+        ) ?? db.UnitOrders.Add(new UnitOrder { ArmyTurnId = turn.Id, UnitId = unitId }).Entity;
         (order.Kind, order.Q, order.R, order.Path, order.Progress, order.ByUmpire) = (
             staged.Kind,
             staged.At.Q,
@@ -410,8 +408,7 @@ internal static class OrderEndpoints
         var moves = staged.Kind == OrderKind.Move;
         foreach (var boat in boats)
         {
-            var order =
-                orders.Find(o => o.UnitId == boat)
+            var order = orders.Find(o => o.UnitId == boat)
                 ?? db.UnitOrders.Add(new UnitOrder { ArmyTurnId = turn.Id, UnitId = boat }).Entity;
             var at = moves ? staged.At : from;
             (order.Kind, order.Q, order.R) = (moves ? OrderKind.Move : OrderKind.Hold, at.Q, at.R);
@@ -756,8 +753,7 @@ internal static class OrderEndpoints
         }
 
         var embarked = await Embarkation.LoadAsync(db, unit.CampaignId, cancellationToken);
-        var carrier =
-            embarked.CarrierNow(unitId)
+        var carrier = embarked.CarrierNow(unitId)
             ?? await TiedThisTurnAsync(db, turn.Id, unitId, cancellationToken);
         return carrier is { } tiedTo
             ? (null, await TiedAsync(db, tiedTo, cancellationToken))

@@ -436,9 +436,8 @@ public sealed class BoatTests : ApiTest
 
         Assert.Empty((await held.Content.ReadAsAsync<UnitPosition>())!.Boats);
         var orders = await OpenOrdersAsync(scenario);
-        Assert.All(
-            orders.Where(o => boats.Contains(o.UnitId)),
-            o => Assert.Equal(other, o.CarriedBy)
+        Assert.All(orders.Where(o => boats.Contains(o.UnitId)), o =>
+            Assert.Equal(other, o.CarriedBy)
         );
     }
 
@@ -582,9 +581,8 @@ public sealed class BoatTests : ApiTest
     [Fact]
     public async Task StartNextTurn_LooseBoatsInATown_TakeNothing()
     {
-        var (scenario, boats) = await AfloatAsync(
-            boats: 1,
-            beforeStart: s => TownAsync(s, new Hex(1, 0))
+        var (scenario, boats) = await AfloatAsync(boats: 1, beforeStart: s =>
+            TownAsync(s, new Hex(1, 0))
         );
         // The unit holds; its boat rows down the river into the town.
         var turn = await TurnSteps.OpenArmyTurnAsync(scenario);
@@ -713,14 +711,11 @@ public sealed class BoatTests : ApiTest
     [Fact]
     public async Task GiveOrder_BuildBoatWithTheEnemyInTheTown_IsAValidationError()
     {
-        var (scenario, _) = await AfloatAsync(
-            boats: 0,
-            beforeStart: async s =>
-            {
-                await TownAsync(s);
-                await EnemyAsync(s, Here);
-            }
-        );
+        var (scenario, _) = await AfloatAsync(boats: 0, beforeStart: async s =>
+        {
+            await TownAsync(s);
+            await EnemyAsync(s, Here);
+        });
         var turn = await TurnSteps.OpenArmyTurnAsync(scenario);
 
         using var given = await BuildAsync(scenario, turn.Id);

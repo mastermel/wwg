@@ -11,8 +11,7 @@ internal static class HealthCheckCommand
     public static async Task<int> RunAsync(Uri? baseAddress = null)
     {
         // The port the container listens on (the .NET images set ASPNETCORE_HTTP_PORTS=8080).
-        var port =
-            Environment.GetEnvironmentVariable("ASPNETCORE_HTTP_PORTS")?.Split([',', ';'])[0]
+        var port = Environment.GetEnvironmentVariable("ASPNETCORE_HTTP_PORTS")?.Split([',', ';'])[0]
             ?? "8080";
         baseAddress ??= new Uri($"http://localhost:{port}");
 

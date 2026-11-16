@@ -32,11 +32,9 @@ public sealed class EmailQueueTests : ApiTest
         // Without moving the clock: the first email is still waiting to be tried again.
         var sent = await Emails.WaitForEmailToAsync("ada@example.com");
         Assert.Equal("ada@example.com", sent.ToAddress, StringComparer.Ordinal);
-        Assert.DoesNotContain(
-            Emails.Sent,
-            e =>
-                string.Equals(e.ToAddress, "mel@example.com", StringComparison.Ordinal)
-                && !e.Subject.StartsWith("Welcome to", StringComparison.Ordinal)
+        Assert.DoesNotContain(Emails.Sent, e =>
+            string.Equals(e.ToAddress, "mel@example.com", StringComparison.Ordinal)
+            && !e.Subject.StartsWith("Welcome to", StringComparison.Ordinal)
         );
     }
 

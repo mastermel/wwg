@@ -48,9 +48,9 @@ public sealed class SideTests : ApiTest
         );
         var campaign = await created.Content.ReadAsAsync<CampaignResponse>();
 
-        var sides =
-            await umpire.GetAsAsync<List<SideResponse>>($"/api/campaigns/{campaign!.Id}/sides")
-            ?? [];
+        var sides = await umpire.GetAsAsync<List<SideResponse>>(
+            $"/api/campaigns/{campaign!.Id}/sides"
+        ) ?? [];
 
         Assert.Equal(["Side 1", "Side 2"], sides.Select(s => s.Name).ToList());
         Assert.All(sides, s => Assert.Equal(0, s.ArmyCount));

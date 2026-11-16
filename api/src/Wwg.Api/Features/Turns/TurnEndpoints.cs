@@ -436,11 +436,10 @@ internal static class TurnEndpoints
         CancellationToken cancellationToken
     )
     {
-        var order =
-            await db.UnitOrders.SingleOrDefaultAsync(
-                o => o.ArmyTurnId == armyTurn.Id && o.UnitId == id,
-                cancellationToken
-            ) ?? db.UnitOrders.Add(new UnitOrder { ArmyTurnId = armyTurn.Id, UnitId = id }).Entity;
+        var order = await db.UnitOrders.SingleOrDefaultAsync(
+            o => o.ArmyTurnId == armyTurn.Id && o.UnitId == id,
+            cancellationToken
+        ) ?? db.UnitOrders.Add(new UnitOrder { ArmyTurnId = armyTurn.Id, UnitId = id }).Entity;
         order.Kind = OrderKind.Move;
         (order.Q, order.R) = (hex.Q, hex.R);
         await db.SaveChangesAsync(cancellationToken);

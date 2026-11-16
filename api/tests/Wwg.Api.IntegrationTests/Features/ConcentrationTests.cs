@@ -46,9 +46,8 @@ public sealed class ConcentrationTests : ApiTest
         Assert.Contains(UnitType.FootArtillery, concentration.InfantryTypes);
         Assert.Contains(UnitType.HorseArtillery, concentration.CavalryTypes);
         // Supply trains, siege artillery and boats are free.
-        Assert.DoesNotContain(
-            concentration.InfantryTypes.Concat(concentration.CavalryTypes),
-            t => t is UnitType.SupplyTrain or UnitType.SiegeArtillery or UnitType.Boat
+        Assert.DoesNotContain(concentration.InfantryTypes.Concat(concentration.CavalryTypes), t =>
+            t is UnitType.SupplyTrain or UnitType.SiegeArtillery or UnitType.Boat
         );
     }
 

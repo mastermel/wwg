@@ -107,9 +107,8 @@ public sealed class LibraryImportTests : ApiTest
         );
         var british = await FactionAsync(manager, "British");
         Assert.Equal(Nation.Britain, british.Nation);
-        var guards = Assert.Single(
-            british.Units,
-            u => string.Equals(u.Name, "1/1st Foot Guards", StringComparison.Ordinal)
+        var guards = Assert.Single(british.Units, u =>
+            string.Equals(u.Name, "1/1st Foot Guards", StringComparison.Ordinal)
         );
         Assert.Equal(
             (
@@ -153,9 +152,8 @@ public sealed class LibraryImportTests : ApiTest
             File(Row("1/1st Foot Guards"), Row("RHA Troop A", type: "HorseArtillery", status: ""))
         );
 
-        var troop = Assert.Single(
-            (await FactionAsync(manager, "British")).Units,
-            u => string.Equals(u.Name, "RHA Troop A", StringComparison.Ordinal)
+        var troop = Assert.Single((await FactionAsync(manager, "British")).Units, u =>
+            string.Equals(u.Name, "RHA Troop A", StringComparison.Ordinal)
         );
         Assert.Equal((null, 2), (troop.Status, troop.ImportOrder));
     }
@@ -213,9 +211,8 @@ public sealed class LibraryImportTests : ApiTest
         Assert.Equal(
             40,
             Assert
-                .Single(
-                    after.Units,
-                    u => string.Equals(u.Name, "1/1st Foot Guards", StringComparison.Ordinal)
+                .Single(after.Units, u =>
+                    string.Equals(u.Name, "1/1st Foot Guards", StringComparison.Ordinal)
                 )
                 .Points
         );
@@ -281,9 +278,8 @@ public sealed class LibraryImportTests : ApiTest
     {
         using var manager = await CreateManagerClientAsync();
         await ImportAsync(manager, File(Row("1/1st Foot Guards"), Row("1/3rd Foot Guards")));
-        var gone = Assert.Single(
-            (await FactionAsync(manager, "British")).Units,
-            u => string.Equals(u.Name, "1/3rd Foot Guards", StringComparison.Ordinal)
+        var gone = Assert.Single((await FactionAsync(manager, "British")).Units, u =>
+            string.Equals(u.Name, "1/3rd Foot Guards", StringComparison.Ordinal)
         );
 
         var result = await ImportAsync(manager, File(Row("1/1st Foot Guards")));

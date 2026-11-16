@@ -31,8 +31,8 @@ public sealed class SignInRequiredTests : ApiTest
         var wrong = new List<string>();
         foreach (var endpoint in endpoints)
         {
-            var method =
-                endpoint.Metadata.GetMetadata<HttpMethodMetadata>()?.HttpMethods.Single() ?? "GET";
+            var method = endpoint.Metadata.GetMetadata<HttpMethodMetadata>()?.HttpMethods.Single()
+                ?? "GET";
             var path = PathFor(endpoint.RoutePattern.RawText ?? "");
             using var request = new HttpRequestMessage(new HttpMethod(method), path)
             {
