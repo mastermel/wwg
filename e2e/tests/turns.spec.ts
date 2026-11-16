@@ -313,7 +313,7 @@ test("a commander steps back through the turns; the Umpire picks out an army", a
     name: "1st Brigade, Light Infantry, Prussian I Corps",
   });
   await expect(brigadeMarker).toHaveCSS("opacity", "1");
-  await umpire.page.getByRole("button", { name: /^Armée du Nord:/ }).click();
+  await umpire.page.getByRole("button", { name: /^Armée du Nord, \d+ on the map/ }).click();
   await expect(brigadeMarker).toHaveCSS("opacity", "0.3");
   await expect(
     umpire.page.getByRole("button", { name: "Imperial Guard, Line Infantry, Armée du Nord" }),
@@ -358,7 +358,7 @@ test("the Umpire moves a unit past its limit, holds another, and submits for the
   expect(await scan(page, "map, the Umpire giving orders")).toEqual([]);
 
   const panel = page.getByRole("region", { name: "Turn 1" });
-  await panel.getByRole("button", { name: "Submit Armée du Nord's turn for it" }).click();
+  await panel.getByRole("button", { name: "Submit for them: Armée du Nord" }).click();
   await expect(page.getByText("Submitted Armée du Nord's turn 1.")).toBeVisible();
   await panel.getByRole("button", { name: "Approve Armée du Nord's turn" }).click();
   await expect(page.getByText("Approved Armée du Nord's turn 1.")).toBeVisible();

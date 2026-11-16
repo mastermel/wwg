@@ -76,7 +76,7 @@ export function TurnList({ turns, viewing, onView, manager, sighted }: TurnListP
                     {open && " (open)"}
                   </Text>
                   {sighted?.has(turn.number) && <IconEye size={14} aria-hidden />}
-                </Group>
+                </Group>{" "}
                 <Text size="xs" c={turn.number === viewing ? undefined : "dimmed"} component="span">
                   {detail}
                 </Text>

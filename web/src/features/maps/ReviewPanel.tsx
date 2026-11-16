@@ -229,7 +229,7 @@ function ArmyTurnReview({ entry: { army }, turn, review, onReview }: ArmyTurnRev
             size="compact-sm"
             variant="default"
             leftSection={<IconSend size={14} aria-hidden />}
-            aria-label={`Submit ${army.name}'s turn for it`}
+            aria-label={`Submit for them: ${army.name}`}
             disabled={!online || review.busy}
             onClick={() => void review.submit(turn, army.name)}
           >

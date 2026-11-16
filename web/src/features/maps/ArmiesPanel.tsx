@@ -23,14 +23,15 @@ export function ArmiesPanel({ armies, onMap, highlighted, onHighlight }: ArmiesP
       <Stack component="ul" gap={2} p={0} m={0} aria-label="Armies">
         {armies.map((army) => {
           const count = onMap.get(army.id) ?? 0;
+          // Its name starts with the row's visible text (WCAG 2.5.3), then adds the commander.
           const commander = army.commander
-            ? `${army.commander.firstName} ${army.commander.lastName}`
-            : "No commander";
+            ? `commanded by ${army.commander.firstName} ${army.commander.lastName}`
+            : "no commander";
           return (
             <li key={army.id} style={{ listStyle: "none" }}>
               <UnstyledButton
                 className={classes.row}
-                aria-label={`${army.name}: ${commander}, ${String(count)} on the map`}
+                aria-label={`${army.name}, ${String(count)} on the map, ${commander}`}
                 aria-pressed={army.id === highlighted}
                 onClick={() => {
                   onHighlight(army.id === highlighted ? null : army.id);
@@ -38,7 +39,7 @@ export function ArmiesPanel({ armies, onMap, highlighted, onHighlight }: ArmiesP
               >
                 <Text size="sm" component="span" miw={0}>
                   <ArmyBadge army={army} />
-                </Text>
+                </Text>{" "}
                 <Text size="xs" c={army.id === highlighted ? undefined : "dimmed"} component="span">
                   {count} on the map
                 </Text>

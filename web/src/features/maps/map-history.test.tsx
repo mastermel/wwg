@@ -163,9 +163,9 @@ describe("the turn list", () => {
     const list = await screen.findByRole("list", { name: "Turns" });
     const items = within(list).getAllByRole("button");
     expect(items.map((item) => item.textContent)).toEqual([
-      "Turn 2 (open)0 of 1 submitted",
-      "Turn 11 of 1 submitted",
-      "Turn 0Setup",
+      "Turn 2 (open) 0 of 1 submitted",
+      "Turn 1 1 of 1 submitted",
+      "Turn 0 Setup",
     ]);
     expect(items[0]).toHaveAttribute("aria-pressed", "true");
   });
@@ -230,7 +230,7 @@ describe("the turn list", () => {
     await openMap();
 
     const army = await screen.findByRole("button", {
-      name: "Armée du Nord: Bob Tester, 0 on the map",
+      name: "Armée du Nord, 0 on the map, commanded by Bob Tester",
     });
     expect(army).toHaveAttribute("aria-pressed", "false");
     await user.click(army);

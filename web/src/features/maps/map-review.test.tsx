@@ -227,7 +227,7 @@ describe("the Umpire's turn", () => {
       within(panel).getByText("No commander: give its orders on the map (0 so far)."),
     ).toBeInTheDocument();
     expect(
-      within(panel).getByRole("button", { name: "Submit Prussian I Corps's turn for it" }),
+      within(panel).getByRole("button", { name: "Submit for them: Prussian I Corps" }),
     ).toBeInTheDocument();
     expect(
       within(panel).getByText("Prussian I Corps has no commander: submit its turn for it."),
@@ -385,7 +385,7 @@ describe("the Umpire's turn", () => {
     await openMap();
 
     await user.click(
-      await screen.findByRole("button", { name: "Submit Prussian I Corps's turn for it" }),
+      await screen.findByRole("button", { name: "Submit for them: Prussian I Corps" }),
     );
 
     expect(await screen.findByText("Submitted Prussian I Corps's turn 1.")).toBeInTheDocument();
