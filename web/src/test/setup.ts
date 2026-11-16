@@ -14,7 +14,9 @@ window.matchMedia = (query: string) =>
     onchange: null,
     addEventListener: () => undefined,
     removeEventListener: () => undefined,
+    // eslint-disable-next-line @typescript-eslint/no-deprecated -- MediaQueryList still requires it
     addListener: () => undefined,
+    // eslint-disable-next-line @typescript-eslint/no-deprecated -- MediaQueryList still requires it
     removeListener: () => undefined,
     dispatchEvent: () => false,
   }) satisfies MediaQueryList;
