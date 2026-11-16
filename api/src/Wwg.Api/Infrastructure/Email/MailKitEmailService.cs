@@ -1,3 +1,4 @@
+using MailKit;
 using MailKit.Net.Smtp;
 using MailKit.Security;
 using Microsoft.Extensions.Options;
@@ -47,7 +48,7 @@ internal sealed class MailKitEmailService(IOptions<SmtpOptions> options) : IEmai
             await client.AuthenticateAsync(smtp.Username, smtp.Password ?? "", cancellationToken);
         }
 
-        await client.SendAsync(mime, cancellationToken);
+        await client.SendAsync(new SendRequest(mime), cancellationToken);
         await client.DisconnectAsync(quit: true, cancellationToken);
     }
 }
