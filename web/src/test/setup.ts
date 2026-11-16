@@ -47,7 +47,7 @@ HTMLCanvasElement.prototype.getContext = () => null;
 
 // Any request without a handler fails the test, so tests never reach a real network.
 beforeAll(() => {
-  server.listen({ onUnhandledRequest: "error" });
+  server.listen({ onUnhandledFrame: "error" });
 });
 
 afterEach(() => {
