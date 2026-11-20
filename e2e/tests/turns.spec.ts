@@ -186,6 +186,66 @@ test("the Umpire places a unit added since the start, and then the next turn can
   await expect(page.getByRole("button", { name: /Éclaireurs/ })).toBeVisible();
 });
 
+test("the Umpire makes a commander the Commander in Chief, which leads its stack", async ({
+  signUp,
+}) => {
+  test.slow();
+  const umpire = await signUp("Ada");
+  const commander = await signUp("Bob");
+  const { campaignUrl, armyId } = await startedCampaign(umpire, commander, "Ligny 1815");
+  // Two generals join the army once it's started (setup isn't what this is about), with the Guard.
+  const api = await apiAs(umpire.page);
+  const staff = await libraryFaction(browserOf(umpire.page), "Staff", "France", [
+    { name: "Napoleon", type: "Commander", fightingFactor: 1, points: 0 },
+    { name: "Soult", type: "Commander", fightingFactor: 1, points: 0 },
+  ]);
+  const army = await api.get<{
+    name: string;
+    side: { id: string };
+    color: string;
+    nation: string;
+    factions: { id: string }[];
+  }>(`/api/armies/${armyId}`);
+  await api.put(`/api/armies/${armyId}`, {
+    name: army.name,
+    sideId: army.side.id,
+    color: army.color,
+    nation: army.nation,
+    factionIds: [...army.factions.map((f) => f.id), staff.id],
+  });
+  const generals = await api.post<{ id: string }[]>(`/api/armies/${armyId}/units`, {
+    unitIds: staff.units.map((unit) => unit.id),
+  });
+  for (const general of generals) {
+    await api.put(`/api/army-units/${general.id}/placement`, { q: 0, r: 0 });
+  }
+
+  const page = umpire.page;
+  await page.goto(`${campaignUrl}/armies/${armyId}`);
+  const units = page.getByRole("region", { name: "Units" });
+  await units.getByRole("button", { name: "Make Napoleon Commander in Chief" }).click();
+  await expect(page.getByText("Napoleon is now Armée du Nord's Commander in Chief.")).toBeVisible();
+  await expect(units.getByTitle("Commander in Chief")).toHaveCount(1);
+
+  // The commander finds Napoleon on top of the Guard's hex, and named as such in it.
+  await commander.page.goto(`${campaignUrl}/map`);
+  const stack = commander.page.getByRole("button", {
+    name: /^\d units: Napoleon \(Commander in Chief\), /,
+  });
+  await expect(stack).toBeVisible();
+  await stack.click();
+  await expect(
+    commander.page
+      .getByRole("dialog")
+      .getByRole("button", { name: "Napoleon, Commander in Chief, Armée du Nord" }),
+  ).toBeVisible();
+  await expect(
+    commander.page
+      .getByRole("dialog")
+      .getByRole("button", { name: "Soult, Commander, Armée du Nord" }),
+  ).toBeVisible();
+});
+
 test("the Umpire is warned where the orders bring the two sides together", async ({ signUp }) => {
   const umpire = await signUp("Ada");
   const commander = await signUp("Bob");
