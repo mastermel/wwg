@@ -1373,7 +1373,9 @@ visibility); the data is in §5.1. Built in Phase 8 (§7).
   this turn are shaded (by the movement table, from its current hex); tapping one
   picks it as the destination, and the cheapest path there is drawn hex by hex,
   with what it costs; **Confirm** or **Cancel**. Each order saves straight away,
-  so a draft survives closing the tab. (Phase 8 measured a straight-line range
+  so a draft survives closing the tab. **Move all** (step 66, decision 0031), from a hex's
+  list of units, does the same for one army's units there without orders, at the slowest one's
+  pace, along one path; each unit's order is its own afterwards. (Phase 8 measured a straight-line range
   instead; decision 0014 replaced it.)
 - **History:** their army's turns, newest first; choosing one shows it as it was
   played, as the open turn is: the units where they started it, and its moves as ghosts
@@ -3027,3 +3029,20 @@ build on positions.
       checks one by one in a transaction, as `HoldUnits` (both go through `OrderEachAsync`); each
       unit must start in the first one's hex, afloat or ashore as it is, and get the whole way.
       A refusal rolls back the lot and names the unit.
+    - ✅ **66b. The stack's reach:** `stackReach` (`movement.ts`): Dijkstra over each step's
+      highest cost among the units, each as a share of its own budget (`stackMovers`:
+      time-of-day march, force march, by boat when on boats) less what it's done of a hex it's
+      part of the way into; no hexes part of the way in; anywhere for the Umpire, closed steps
+      last.
+    - ✅ **66c. Move all (UI):** the hex drawer's unit list offers **Move all 3** (or **Move the
+      2 without orders**; "… of Prussians" when the Umpire has several armies' units there) for
+      each army with two or more units without orders in that hex, in a turn the viewer can
+      change (`stackGroups`, `stack-moves.ts`); never a zoomed-out marker's units in the hexes
+      around. A mix of units on boats and ashore says they move separately. The move flow is a
+      single unit's with all of them: the stack's reach shaded, its path, force march only if
+      every unit can (`stackCanForceMarch`), the units it costs attrition named
+      (`stackMoveCost`), and for the Umpire the first closed step for any unit. Confirm sends
+      `MoveUnits`. Each unit's order is then its own, in the turn panel and the drawer.
+    - ✅ **66d. Shared ghost lines:** moves along the same path from the same hex are drawn as
+      one dashed line, wider the more units take it (`sharedLines`, `ghost-lines.ts`).
+    - Later, if wanted: taking back a stack's orders at once.

@@ -30,6 +30,8 @@ interface HexDrawerProps {
   onClose: () => void;
   /** What the viewer can do with the unit (placing it, its orders). */
   actions?: (unit: PlacedUnit) => ReactNode;
+  /** What the viewer can do with the hex's units together (step 66), under their list. */
+  listActions?: ReactNode;
   /** Whether the viewer follows the unit's moves, and so its forced marches (step 47). */
   showsMarches?: (unit: PlacedUnit) => boolean;
   /** The unit's supply in words (step 48), for those who see it. */
@@ -54,6 +56,7 @@ export function HexDrawer({
   onSelect,
   onClose,
   actions,
+  listActions,
   showsMarches,
   supplyOf,
   screeningOf,
@@ -125,6 +128,7 @@ export function HexDrawer({
                     </li>
                   ))}
                 </Stack>
+                {listActions}
               </Part>
             )
           )}

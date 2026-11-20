@@ -455,6 +455,91 @@ describe("a commander's turn", () => {
     expect(screen.queryByText(/to here\?/)).not.toBeInTheDocument();
   });
 
+  describe("moving a hex's units together", () => {
+    const lancersId = "0192f5c1-0000-7000-8000-00000000b098";
+    const hussarsId = "0192f5c1-0000-7000-8000-00000000b097";
+    /** The Guard, the Lancers and the Hussars, all in one hex; what's sent to move them. */
+    const serveStack = (turn: ArmyTurnDetails) => {
+      serveCommander(turn);
+      const sent: unknown[] = [];
+      server.use(
+        http.get(`*/api/campaigns/${campaignId}/units`, () =>
+          HttpResponse.json([
+            { id: unitId, armyId, name: "Imperial Guard", type: "LineInfantry" },
+            { id: lancersId, armyId, name: "Lancers", type: "LightCavalry" },
+            { id: hussarsId, armyId, name: "Hussars", type: "LightCavalry" },
+          ]),
+        ),
+        http.get(`*/api/campaigns/${campaignId}/positions`, () =>
+          HttpResponse.json(
+            [unitId, lancersId, hussarsId].map((id) => ({
+              ...hold,
+              unitId: id,
+              turn: 0,
+              status: "Completed",
+              kind: "Move",
+            })),
+          ),
+        ),
+        http.post(`*/api/army-turns/${turnId}/move`, async ({ request }) => {
+          sent.push(await request.json());
+          return HttpResponse.json([]);
+        }),
+      );
+      return sent;
+    };
+
+    it("moves them all from the hex's drawer, then confirms", async () => {
+      const sent = serveStack(draft());
+      const user = userEvent.setup();
+      await openMap();
+
+      await user.click(await screen.findByRole("button", { name: "Lancers" }));
+      const drawer = await screen.findByRole("dialog");
+      await user.click(within(drawer).getByRole("button", { name: "All 3 units here" }));
+      await user.click(within(drawer).getByRole("button", { name: "Move all 3" }));
+      expect(screen.getByText(/Tap a shaded hex/)).toHaveTextContent(
+        "Tap a shaded hex for where all 3 units move to, together.",
+      );
+      await user.click(screen.getByRole("button", { name: "Click the map" }));
+      expect(screen.getByText(/to here\?/)).toHaveTextContent("Move all 3 units 1 hex to here?");
+      await user.click(screen.getByRole("button", { name: "Confirm" }));
+
+      expect(await screen.findByText("The 3 units will move together.")).toBeInTheDocument();
+      expect(sent).toEqual([
+        { unitIds: [unitId, lancersId, hussarsId], path: [{ q: 0, r: -1 }], forceMarch: false },
+      ]);
+    });
+
+    it("moves only those without orders", async () => {
+      const sent = serveStack(draft({ orders: [hold] }));
+      const user = userEvent.setup();
+      await openMap();
+
+      await user.click(await screen.findByRole("button", { name: "Lancers" }));
+      const drawer = await screen.findByRole("dialog");
+      await user.click(within(drawer).getByRole("button", { name: "All 3 units here" }));
+      await user.click(within(drawer).getByRole("button", { name: "Move the 2 without orders" }));
+      await user.click(screen.getByRole("button", { name: "Click the map" }));
+      await user.click(screen.getByRole("button", { name: "Confirm" }));
+
+      expect(await screen.findByText("The 2 units will move together.")).toBeInTheDocument();
+      expect(sent).toEqual([expect.objectContaining({ unitIds: [lancersId, hussarsId] })]);
+    });
+
+    it("isn't offered for a single unit without an order", async () => {
+      serveStack(draft({ orders: [hold, { ...hold, unitId: lancersId }] }));
+      const user = userEvent.setup();
+      await openMap();
+
+      await user.click(await screen.findByRole("button", { name: "Lancers" }));
+      const drawer = await screen.findByRole("dialog");
+      await user.click(within(drawer).getByRole("button", { name: "All 3 units here" }));
+
+      expect(within(drawer).queryByRole("button", { name: /^Move / })).not.toBeInTheDocument();
+    });
+  });
+
   it("won't pick a hex further than the unit can move", async () => {
     const requests = serveCommander(draft());
     const user = userEvent.setup();

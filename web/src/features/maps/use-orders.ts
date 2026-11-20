@@ -6,10 +6,16 @@ import {
   getListMarchesQueryKey,
   useGiveOrder,
   useHoldUnits,
+  useMoveUnits,
   useSubmitTurn,
   useUndoOrder,
 } from "@/api/generated/endpoints/turns/turns";
-import type { ArmySummary, ArmyTurnDetails, GiveOrderRequest } from "@/api/generated/model";
+import type {
+  ArmySummary,
+  ArmyTurnDetails,
+  GiveOrderRequest,
+  MoveUnitsRequest,
+} from "@/api/generated/model";
 import { getGetSupplyQueryKey } from "@/api/generated/endpoints/supply/supply";
 import { refreshCampaign } from "@/features/campaigns/campaign-cache";
 import { errorMessage } from "@/lib/errors";
@@ -45,6 +51,7 @@ export function useOrders(campaignId: string) {
   const give = useGiveOrder();
   const undo = useUndoOrder();
   const hold = useHoldUnits();
+  const move = useMoveUnits();
   const submit = useSubmitTurn();
 
   const run = async (
@@ -73,7 +80,7 @@ export function useOrders(campaignId: string) {
   };
 
   return {
-    busy: give.isPending || undo.isPending || hold.isPending || submit.isPending,
+    busy: give.isPending || undo.isPending || hold.isPending || move.isPending || submit.isPending,
     give: (
       armyId: string,
       turnId: string,
@@ -110,6 +117,14 @@ export function useOrders(campaignId: string) {
           ? `The last unit in ${formation} will hold.`
           : `The other ${String(unitIds.length)} units in ${formation} will hold.`,
         `The rest of ${formation} couldn't be told to hold. Try again.`,
+      ),
+    /** Moves a hex's units without orders together (step 66), in one request: all or none. */
+    moveAll: (armyId: string, turnId: string, order: MoveUnitsRequest) =>
+      run(
+        armyId,
+        () => move.mutateAsync({ id: turnId, data: order }),
+        `The ${String(order.unitIds.length)} units will ${order.forceMarch ? "force march" : "move"} together.`,
+        "The units couldn't be moved together. Try again.",
       ),
     submit: (armyId: string, turn: ArmyTurnDetails, armyName: string, note?: string) =>
       run(

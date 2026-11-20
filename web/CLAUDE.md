@@ -85,6 +85,10 @@ The pre-commit hook runs `eslint --fix` and Prettier on staged files.
   (`shownTurn - 1`), and the turn's orders (`shownOrders`, from `useOpenTurns`' turns) as ghosts.
   A commander's turn changes go through `useOrders` (`use-orders.ts`), which also refetches the
   army's turns: they're keyed by the army, so `refreshCampaign` doesn't reach them.
+  Moving a hex's units together (step 66, decision 0031) is `stack-moves.ts` (who can:
+  `stackGroups`; each unit's budget: `stackMovers`) and `movement.ts`' `stackReach`; `MapPage`'s
+  `together` holds the units, `moving` the first of them. Ghost moves along one path share a
+  line (`ghost-lines.ts`).
   The hex grid (decision 0014) is `hex-grid.ts`: its arithmetic matches the API's `HexGrid.cs`,
   and both are tested against `testdata/hex-grid.json` (from an independent Python reference;
   the Dockerfile copies it into the web build). `HexGridLayer` draws it, and nothing past

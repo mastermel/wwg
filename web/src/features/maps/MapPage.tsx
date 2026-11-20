@@ -82,8 +82,16 @@ import {
   ratesOf,
   reach,
   shareOfTheWay,
+  stackReach,
   stepCost,
 } from "@/features/maps/movement";
+import {
+  movesAs,
+  stackCanForceMarch,
+  stackGroups,
+  stackMoveCost,
+  stackMovers,
+} from "@/features/maps/stack-moves";
 import { indexTerrain } from "@/features/maps/terrain";
 import { canForceMarch, forceMarchBonus, moveCost } from "@/features/maps/marches";
 import { OrderActions, type BoatOptions } from "@/features/maps/OrderActions";
@@ -315,6 +323,8 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
   const [forceMarch, setForceMarch] = useState(false);
   // Landing a unit from its boats (step 51): the moving unit chooses where it lands.
   const [landing, setLanding] = useState(false);
+  // Moving a hex's units together (step 66): all of them, `moving` the first.
+  const [together, setTogether] = useState<readonly PlacedUnit[] | null>(null);
   useEffect(() => {
     if (placing || moving) mapArea.current?.scrollIntoView({ block: "start" });
   }, [placing, moving]);
@@ -466,31 +476,39 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
   const movingType = moving && (moving.boats?.length ?? 0) > 0 ? "Boat" : moving?.unit.type;
   const withinTurn = useMemo(
     () =>
-      moving && movingType && !landing
-        ? reach(grid, moving.hex, movingType, {
-            ...costs,
-            carried: moving.headingInto,
-            // Further or less by the time of day, for some nations' infantry (step 45), and
-            // further by force march (step 47).
-            budget:
-              budgetFor(
-                costs.rates,
-                movingType,
-                moving.unit.nation,
-                openTurn?.part,
-                calendar.data,
-              ) + (forceMarch ? forceMarchBonus(costs.rates, movingType) : 0),
-          })
-        : null,
-    [grid, moving, movingType, landing, costs, openTurn?.part, calendar.data, forceMarch],
+      moving && together && !landing
+        ? stackReach(
+            grid,
+            moving.hex,
+            stackMovers(together, costs.rates, openTurn?.part, calendar.data, forceMarch),
+            costs,
+          )
+        : moving && movingType && !landing
+          ? reach(grid, moving.hex, movingType, {
+              ...costs,
+              carried: moving.headingInto,
+              // Further or less by the time of day, for some nations' infantry (step 45), and
+              // further by force march (step 47).
+              budget:
+                budgetFor(
+                  costs.rates,
+                  movingType,
+                  moving.unit.nation,
+                  openTurn?.part,
+                  calendar.data,
+                ) + (forceMarch ? forceMarchBonus(costs.rates, movingType) : 0),
+            })
+          : null,
+    [grid, moving, together, movingType, landing, costs, openTurn?.part, calendar.data, forceMarch],
   );
   // The moving unit's forced marches, for what the move costs: its commander's and the Umpire's.
   const marches = useListMarches(moving?.army.id ?? "", {
     query: { meta: { persist: false }, enabled: moving !== null },
   });
   // On boats, moving is rest (decision 0022): it costs nothing more.
-  const movingCost =
-    moving && (moving.boats?.length ?? 0) === 0
+  const movingCost = together
+    ? stackMoveCost(together, marches.data, forceMarch)
+    : moving && (moving.boats?.length ?? 0) === 0
       ? moveCost(
           marches.data?.find((m) => m.unitId === moving.unit.id),
           forceMarch,
@@ -499,9 +517,19 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
   const reachable = useMemo(
     () =>
       moving && movingType && manager && !landing
-        ? reach(grid, moving.hex, movingType, { ...costs, budget: Infinity })
+        ? together
+          ? stackReach(
+              grid,
+              moving.hex,
+              stackMovers(together, costs.rates, null, undefined, false),
+              {
+                ...costs,
+                budget: Infinity,
+              },
+            )
+          : reach(grid, moving.hex, movingType, { ...costs, budget: Infinity })
         : withinTurn,
-    [grid, moving, movingType, manager, landing, withinTurn, costs],
+    [grid, moving, together, movingType, manager, landing, withinTurn, costs],
   );
   // Where the shown turn's orders (as given, in the open turn) leave the units: the Umpire's
   // contact and concentration (step 46), depot threats and sightings.
@@ -576,17 +604,23 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
   const targetPath = target && reachable ? pathTo(reachable, target) : null;
   // Part of the way into it, when it takes more than a turn (the commander's moves only).
   const targetProgress = target && !manager ? withinTurn?.get(hexKey(target))?.progress : undefined;
-  // Why the Umpire's move breaks the rules, if it crosses a closed step: the first one's reason.
+  // The units being moved: the one, or a hex's together.
+  const movingUnits = together ?? (moving ? [moving] : []);
+  const movingIds = new Set(movingUnits.map((p) => p.unit.id));
+  // Why the Umpire's move breaks the rules, if it crosses a closed step (for any of the units):
+  // the first one's reason.
   const closedStep =
     moving && targetPath
       ? targetPath
-          .map((hex, i) =>
-            stepCost(
-              costs.rates,
-              costs.terrain,
-              classOf(movingType ?? moving.unit.type),
-              i === 0 ? moving.hex : (targetPath[i - 1] ?? hex),
-              hex,
+          .flatMap((hex, i) =>
+            movingUnits.map((placed) =>
+              stepCost(
+                costs.rates,
+                costs.terrain,
+                classOf(movesAs(placed)),
+                i === 0 ? moving.hex : (targetPath[i - 1] ?? hex),
+                hex,
+              ),
             ),
           )
           .find((step) => step.closedBecause !== null)?.closedBecause
@@ -604,7 +638,7 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
       return placed &&
         order.kind === "Move" &&
         !arrived.has(order.unitId) &&
-        placed.unit.id !== moving?.unit.id
+        !movingIds.has(placed.unit.id)
         ? [
             {
               placed,
@@ -619,15 +653,21 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
         : [];
     }),
     ...(moving && target && targetPath
-      ? [{ placed: moving, to: grid.centre(target), line: lineOf(moving.hex, targetPath) }]
+      ? movingUnits.map((placed) => ({
+          placed,
+          to: grid.centre(target),
+          line: lineOf(moving.hex, targetPath),
+        }))
       : []),
   ];
 
   // A picked-out army's or formation's moves only; the rest would clutter it.
   const moves = standingOut ? allMoves.filter((m) => standingOut(m.placed)) : allMoves;
 
+  const movingName = together ? `all ${String(together.length)} units` : moving?.unit.name;
   const stopMoving = () => {
     setMoving(null);
+    setTogether(null);
     setTarget(null);
     setForceMarch(false);
     setLanding(false);
@@ -665,9 +705,13 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
     const problem = !grid.contains(hex)
       ? "That's outside the campaign's area."
       : hexKey(hex) === hexKey(moving.hex)
-        ? `${moving.unit.name} is there already: choose another hex, or Hold.`
+        ? together
+          ? "They're there already: choose another hex, or Hold."
+          : `${moving.unit.name} is there already: choose another hex, or Hold.`
         : !reachable?.has(hexKey(hex))
-          ? `${moving.unit.name} can't get there this turn: it's too far, or the way is closed.`
+          ? together
+            ? "They can't all get there this turn: it's too far for one of them, or the way is closed."
+            : `${moving.unit.name} can't get there this turn: it's too far, or the way is closed.`
           : null;
     if (problem) {
       notifications.show({ color: "red", message: problem });
@@ -683,6 +727,11 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
   const confirmMove = async () => {
     const turn = moving && turnOf(moving.army.id);
     if (!moving || !turn || !targetPath) return;
+    if (together) {
+      const order = { unitIds: together.map((p) => p.unit.id), path: targetPath, forceMarch };
+      if (await orders.moveAll(moving.army.id, turn.id, order)) stopMoving();
+      return;
+    }
     const order = {
       kind: "Move",
       path: targetPath,
@@ -787,6 +836,45 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
       },
     };
   };
+  // The drawer's Move all (step 66): each army's units in the chosen hex (never a zoomed-out
+  // marker's others) without orders, two or more, on boats or ashore alike.
+  const chosenGroups =
+    chosen && past === null && !setup
+      ? stackGroups(unitsIn(chosen.hex, shownOnMap), turnOf, manager)
+      : [];
+  const moveAllActions = chosenGroups.length > 0 && (
+    <Stack gap="xs" align="flex-start">
+      {chosenGroups.map(({ army, units: group, mixed }) => {
+        const all = chosenUnits.filter((p) => p.army.id === army.id).length === group.length;
+        const label = `${all ? `Move all ${String(group.length)}` : `Move the ${String(group.length)} without orders`}${chosenGroups.length > 1 ? ` of ${army.name}` : ""}`;
+        return mixed ? (
+          <Text key={army.id} size="sm" c="dimmed">
+            {chosenGroups.length > 1 ? `${army.name}: units` : "Units"} on boats and units ashore
+            move separately.
+          </Text>
+        ) : (
+          <Button
+            key={army.id}
+            variant="light"
+            leftSection={<IconArrowMoveRight size={16} aria-hidden />}
+            onClick={() => {
+              setLanding(false);
+              setForceMarch(false);
+              setTogether(group);
+              setMoving(group[0] ?? null);
+              setTarget(null);
+              closeDrawer();
+            }}
+          >
+            {label}
+          </Button>
+        );
+      })}
+      <Text size="xs" c="dimmed">
+        Together, at the slowest one&apos;s pace; each still has its own order.
+      </Text>
+    </Stack>
+  );
   const view = (number: number) => {
     setViewing(number);
     stopMoving();
@@ -883,7 +971,7 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
                 <>
                   {targetProgress === undefined ? (
                     <>
-                      Move <strong>{moving.unit.name}</strong> {hexes(targetPath.length)} to here?
+                      Move <strong>{movingName}</strong> {hexes(targetPath.length)} to here?
                     </>
                   ) : (
                     <>
@@ -894,18 +982,25 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
                     </>
                   )}
                   {pastTurn &&
-                    (closedStep
-                      ? ` It can't go that way (${closedStep}), but you may take it there.`
-                      : " That's further than it can go in a turn.")}
+                    (together
+                      ? closedStep
+                        ? ` One of them can't go that way (${closedStep}), but you may take them there.`
+                        : " That's further than one of them can go in a turn."
+                      : closedStep
+                        ? ` It can't go that way (${closedStep}), but you may take it there.`
+                        : " That's further than it can go in a turn.")}
                 </>
               ) : (
                 <>
-                  Tap a shaded hex for where <strong>{moving.unit.name}</strong> moves to.
+                  Tap a shaded hex for where <strong>{movingName}</strong>{" "}
+                  {together ? "move to, together" : "moves to"}.
                 </>
               )}
               {movingCost && <> {movingCost}</>}
             </Text>
-            {canForceMarch(costs.rates, movingType ?? moving.unit.type, openTurn?.part) && (
+            {(together
+              ? stackCanForceMarch(together, costs.rates, openTurn?.part)
+              : canForceMarch(costs.rates, movingType ?? moving.unit.type, openTurn?.part)) && (
               <Switch
                 size="sm"
                 label="Force march (a hex further)"
@@ -1305,6 +1400,7 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
           const found = supply.data?.units.find((s) => s.unitId === unit.unit.id);
           return found && past === null ? describeSupply(found, depots.data ?? []) : undefined;
         }}
+        listActions={moveAllActions}
         actions={
           past !== null
             ? undefined
