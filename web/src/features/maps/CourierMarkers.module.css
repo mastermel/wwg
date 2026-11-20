@@ -1,0 +1,25 @@
+/* A courier, the Umpire's only: a horse on a white tile, framed in the sender's army's light
+   colour (3.2:1 or more against white, army-colors.ts); the icon is 14:1. Up and right of the
+   hex's centre, out from under units and depots. Among the enemy, an orange ring outside it. */
+.courier {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border-radius: 50%;
+  border: 3px solid;
+  background: #ffffff;
+  color: #1f2a30;
+  cursor: pointer;
+}
+
+.courier[data-among-the-enemy="true"] {
+  outline: 3px solid var(--mantine-color-orange-6);
+}
+
+.courier:focus-visible {
+  outline: 3px solid var(--mantine-primary-color-filled);
+  outline-offset: 2px;
+}

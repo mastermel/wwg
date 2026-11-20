@@ -66,6 +66,7 @@ import { canManage } from "@/features/campaigns/campaign-access";
 import { refreshCampaign } from "@/features/campaigns/campaign-cache";
 import { ArmiesPanel } from "@/features/maps/ArmiesPanel";
 import { DepotFormModal, type DepotDraft } from "@/features/maps/DepotFormModal";
+import { CourierMarkers } from "@/features/maps/CourierMarkers";
 import { DepotMarkers } from "@/features/maps/DepotMarkers";
 import { DepotsPanel } from "@/features/maps/DepotsPanel";
 import { describeSupply } from "@/features/maps/supply";
@@ -1124,6 +1125,13 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
             report={reports.data?.find((r) => r.id === shownReport)}
             armies={armies.data ?? []}
           />
+          {manager && past === null && (
+            <CourierMarkers
+              campaignId={campaignId}
+              couriers={couriers.data ?? []}
+              armies={armies.data ?? []}
+            />
+          )}
           {hoveredHex && hoverCard && (
             <HexInfoPopup
               at={grid.centre(hoveredHex)}
