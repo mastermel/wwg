@@ -52,7 +52,7 @@ export async function startedCampaign(
     { name: "Reserve Artillery", type: "FootArtillery" },
     // Couriers ride between Commanders in Chief (decision 0033): with an ally, both armies have one.
     ...(options.ally
-      ? [{ name: "Napoleon", type: "Commander", fightingFactor: 1, points: 0 } as const]
+      ? [{ name: "Napoleon", type: "Commander", fightingFactor: 0, points: 0 } as const]
       : []),
   ]);
   const army = await api.post<{ id: string }>(`/api/campaigns/${campaignId}/armies`, {
@@ -115,7 +115,7 @@ export async function startedCampaign(
     );
     const wing = await libraryFaction(browserOf(umpire.page), "Grouchy", "France", [
       { name: "IV Corps", type: "LineInfantry", fightingFactor: 5, points: 40 },
-      { name: "Grouchy", type: "Commander", fightingFactor: 1, points: 0 },
+      { name: "Grouchy", type: "Commander", fightingFactor: 0, points: 0 },
     ]);
     const ally = await api.post<{ id: string }>(`/api/campaigns/${campaignId}/armies`, {
       name: "Grouchy's Wing",
