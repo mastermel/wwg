@@ -1,0 +1,38 @@
+/* An army's units in their order of battle beside the map (step 62): no bullets, rows apart. */
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* A group's name, commander and progress, wrapping on a narrow panel. */
+.heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: var(--mantine-spacing-xs);
+}
+
+/*
+ * A group's rows: stepped in a little, with a line down the side to show what's in it. The side
+ * panel is narrow, so three levels of the table's wide indent wouldn't fit.
+ */
+.nested {
+  margin-top: 4px;
+  margin-inline-start: 4px;
+  padding-inline-start: var(--mantine-spacing-xs);
+  border-inline-start: 2px solid var(--mantine-color-default-border);
+}
+
+/* A corps or division stands out from the brigades in it. */
+.corps,
+.division {
+  border-inline-start-width: 3px;
+}
+
+.brigade {
+  border-inline-start-style: dashed;
+}

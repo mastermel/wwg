@@ -1360,7 +1360,8 @@ visibility); the data is in §5.1. Built in Phase 8 (§7).
   dashed line along its path (decision 0029; before step 59, an approved army's units showed at
   their destinations, without ghosts).
 - **Turn panel:** the turn number and its status; each unit Moved, Held or
-  without an order, with an **undo** button for those with one; the Umpire's
+  without an order, with an **undo** button for those with one, in the army's order of battle
+  (step 62: corps, divisions and brigades, each heading counting the units with orders); the Umpire's
   notes, if the turn was sent back or reverted; how far the turn has got
   ("4 of 6 armies submitted", no names); and **Submit** once every unit has an
   order. While Submitted, nothing can be changed.
@@ -1393,7 +1394,8 @@ visibility); the data is in §5.1. Built in Phase 8 (§7).
   army's unit while its turn is a Draft or Submitted (a move past the limit warns first), and
   **Submit for it** for a Draft. The commander's panel marks orders the Umpire set, and the
   history lists what the Umpire changed.
-- **Setup (turn 0):** the units not yet placed are listed; the Umpire places
+- **Setup (turn 0):** every army's units are listed in its order of battle (step 62), each
+  heading counting those placed; the Umpire places
   each one on the map, then presses **Start campaign** (every army needs a
   side, and every unit a position). Once running, a unit or army's unit added
   since the start is listed at the top of the open turn's panel, **Not on the
@@ -2949,3 +2951,30 @@ build on positions.
     one already in the campaign is disabled, saying which army has it. With commanders as units
     (step 60), a heading names its commander only when the group has no Commander unit of its
     own (not its divisions' or brigades'): an army given its brigades but not their general.
+62. **The map's units by order of battle:** the unit lists beside the map group each army's units
+    as the army page does (corps, divisions, brigades, commanders first, in the file's order),
+    with each group's progress in its heading, in parts:
+    - ✅ **62a. `FormationList`:** the order of battle as nested lists for the panels beside the map
+      (`features/maps`), built on `orderOfBattle()`; each heading names the group, its commander
+      (as `OrderOfBattleTable` does) and what the panel counts ("3 of 5 placed"); a step in and a
+      line down the side for each level, not the table's wide indent; units in no division under
+      **Not in a division** once there are divisions or corps; a plain list when there are none.
+      Rows keep their names, so the panels' tests and the e2e locators don't change.
+    - **62b. Setting up:** the Umpire's setup panel lists each army's units in it ("N of M
+      placed"), and the open turn's **Not on the map yet** groups them by army, then formation.
+    - **62c. The commander's turn:** the turn panel's orders in it ("N of M ordered"), so a
+      commander sees where the units still without orders are.
+63. **Folding formations:** each heading in `FormationList` folds its group away (a button with
+    `aria-expanded`), open to start with; a group whose units are all placed, or all ordered,
+    may start folded. Whether a fold is remembered (per viewer, in browser storage) is decided
+    then.
+64. **Formation actions:** from a group's heading on the map page:
+    - **Pick out on the map:** highlights the formation's units and fades the rest, as the
+      Armies list does for an army.
+    - **Orders for the rest:** "Hold the rest of 2nd Brigade" gives every unit in the group
+      without an order a Hold, in one request (a new endpoint, the same checks as `GiveOrder`,
+      one history event), for its commander and the Umpire.
+65. **The order of battle everywhere units are listed:** the review dialog's notes per unit
+    (sending a turn back or reverting it), the past turn's panel, the start-turn dialog's
+    sightings, and any other flat list of an army's units, grouped with `FormationList` or
+    `OrderOfBattleTable`; the hex drawer and stack lists stay as they are (a hex's few units).
