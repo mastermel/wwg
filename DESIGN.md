@@ -2960,7 +2960,7 @@ build on positions.
       line down the side for each level, not the table's wide indent; units in no division under
       **Not in a division** once there are divisions or corps; a plain list when there are none.
       Rows keep their names, so the panels' tests and the e2e locators don't change.
-    - **62b. Setting up:** the Umpire's setup panel lists each army's units in it ("N of M
+    - ✅ **62b. Setting up:** the Umpire's setup panel lists each army's units in it ("N of M
       placed"), and the open turn's **Not on the map yet** groups them by army, then formation.
     - **62c. The commander's turn:** the turn panel's orders in it ("N of M ordered"), so a
       commander sees where the units still without orders are.

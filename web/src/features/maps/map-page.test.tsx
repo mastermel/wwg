@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { describe, expect, it, vi } from "vitest";
 import type { CampaignMapResponse, CampaignResponse } from "@/api/generated/model";
-import { renderApp } from "@/test/render";
+import { expectNoAxeViolations, renderApp } from "@/test/render";
 import { server } from "@/test/server";
 
 // MapLibre needs WebGL, which jsdom lacks: the map is a stand-in that shows what it was given.
@@ -249,6 +249,41 @@ describe("the map page", () => {
         },
       ]);
       expect(screen.queryByText(/Click the map where/)).not.toBeInTheDocument();
+    });
+
+    it("lists each army's units in its order of battle, counting those placed", async () => {
+      serveCampaign("Umpire", settings(waterloo));
+      serveSetup(["Place 2 units on the map."]);
+      server.use(
+        http.get(`*/api/campaigns/${campaignId}/units`, () =>
+          HttpResponse.json([
+            { id: unitId, armyId, name: "Imperial Guard", type: "LineInfantry", division: null },
+            {
+              id: "0192f5c1-0000-7000-8000-00000000b002",
+              armyId,
+              name: "1er Grenadiers",
+              type: "LineInfantry",
+              division: "Guard",
+              brigade: "Old Guard",
+              brigadeCommander: "Friant",
+            },
+          ]),
+        ),
+      );
+      await renderApp(`/campaigns/${campaignId}/map`);
+
+      const army = await screen.findByRole("list", { name: "Armée du Nord's units" });
+      const brigade = within(army).getByRole("list", { name: "Old Guard" });
+      expect(brigade.previousElementSibling).toHaveTextContent("Old Guard Friant 0 of 1 placed");
+      expect(
+        within(brigade).getByRole("button", { name: "Place 1er Grenadiers" }),
+      ).toBeInTheDocument();
+      expect(
+        within(within(army).getByRole("list", { name: "Not in a division" })).getByRole("button", {
+          name: "Place Imperial Guard",
+        }),
+      ).toBeInTheDocument();
+      await expectNoAxeViolations(document.body);
     });
 
     it("starts the campaign after confirming, once nothing stops it", async () => {

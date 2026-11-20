@@ -9,6 +9,7 @@ import { ConfirmModal } from "@/components/ConfirmModal";
 import { Section } from "@/components/Section";
 import { ArmyBadge } from "@/features/armies/identity/ArmyBadge";
 import { refreshCampaign } from "@/features/campaigns/campaign-cache";
+import { FormationList } from "@/features/maps/FormationList";
 import type { PlacedUnit } from "@/features/maps/stacks";
 import { UnitPlacementRow } from "@/features/maps/UnitPlacementRow";
 import { errorMessage } from "@/lib/errors";
@@ -25,8 +26,8 @@ interface SetupPanelProps {
 }
 
 /**
- * The Umpire's setup (turn 0, DESIGN.md §3.13): every unit and whether it's on the map yet, what
- * stops the campaign starting, and Start campaign.
+ * The Umpire's setup (turn 0, DESIGN.md §3.13): every unit, in its army's order of battle, and
+ * whether it's on the map yet, what stops the campaign starting, and Start campaign.
  */
 export function SetupPanel({ campaignId, turns, units, placing, onPlace }: SetupPanelProps) {
   const online = useOnline();
@@ -66,18 +67,23 @@ export function SetupPanel({ campaignId, turns, units, placing, onPlace }: Setup
             <Text fw={600} size="sm">
               <ArmyBadge army={army} />
             </Text>
-            {units
-              .filter((u) => u.army.id === army.id)
-              .map(({ unit, placed }) => (
+            <FormationList
+              items={units.filter((u) => u.army.id === army.id)}
+              unitOf={(u) => u.unit}
+              label={`${army.name}'s units`}
+              progress={(group) =>
+                `${String(group.filter((u) => u.placed).length)} of ${String(group.length)} placed`
+              }
+              renderItem={({ unit, placed }) => (
                 <UnitPlacementRow
-                  key={unit.id}
                   unit={unit}
                   army={army}
                   placed={placed}
                   placing={placing}
                   onPlace={onPlace}
                 />
-              ))}
+              )}
+            />
           </Stack>
         ))}
         <Button

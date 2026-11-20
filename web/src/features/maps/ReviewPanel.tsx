@@ -12,6 +12,7 @@ import { Section } from "@/components/Section";
 import { ArmyBadge } from "@/features/armies/identity/ArmyBadge";
 import type { DepotThreat, HexWarning, UnitInHex } from "@/features/maps/contact";
 import type { PlacedUnit } from "@/features/maps/stacks";
+import { FormationList } from "@/features/maps/FormationList";
 import { HexWarningsList } from "@/features/maps/HexWarningsList";
 import type { TerrainIndex } from "@/features/maps/terrain";
 import { ReviewModal } from "@/features/maps/ReviewModal";
@@ -53,7 +54,7 @@ interface ReviewPanelProps {
 /**
  * The Umpire's open turn (DESIGN.md §3.13): each army's turn with its status and times; Submit
  * for it while it's a Draft (decision 0011), Approve or Send back once it's submitted, Reopen
- * once it's approved; a unit added since the start to place; and Start turn N+1 once every
+ * once it's approved; a unit added since the start to place (by army, in its order of battle); and Start turn N+1 once every
  * army's turn is approved and every unit is on the map.
  */
 export function ReviewPanel({
@@ -100,15 +101,26 @@ export function ReviewPanel({
               Added since the campaign started. Place each where it joins its army: from then on it
               moves by its orders.
             </Text>
-            {unplaced.map(({ unit, army }) => (
-              <UnitPlacementRow
-                key={unit.id}
-                unit={unit}
-                army={army}
-                placed={false}
-                placing={placing}
-                onPlace={onPlace}
-              />
+            {[...new Map(unplaced.map((u) => [u.army.id, u.army])).values()].map((army) => (
+              <Stack key={army.id} gap={6}>
+                <Text fw={600} size="sm">
+                  <ArmyBadge army={army} />
+                </Text>
+                <FormationList
+                  items={unplaced.filter((u) => u.army.id === army.id)}
+                  unitOf={(u) => u.unit}
+                  label={`${army.name}'s units not on the map yet`}
+                  renderItem={({ unit }) => (
+                    <UnitPlacementRow
+                      unit={unit}
+                      army={army}
+                      placed={false}
+                      placing={placing}
+                      onPlace={onPlace}
+                    />
+                  )}
+                />
+              </Stack>
             ))}
           </Stack>
         )}
