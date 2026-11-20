@@ -8,12 +8,49 @@
   list-style: none;
 }
 
-/* A group's name, commander and progress, wrapping on a narrow panel. */
+/*
+ * A group's heading (its name, commander and progress, wrapping on a narrow panel): a button that
+ * folds the group (step 63), full width like the rows beside the map (PanelList.module.css).
+ */
 .heading {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
   column-gap: var(--mantine-spacing-xs);
+  width: 100%;
+  padding: 2px var(--mantine-spacing-xs) 2px 2px;
+  border-radius: var(--mantine-radius-sm);
+}
+
+.heading:hover {
+  background: var(--mantine-color-default-hover);
+}
+
+.heading:focus-visible {
+  outline: 2px solid var(--mantine-primary-color-filled);
+  outline-offset: 1px;
+}
+
+/* Points right while folded, down while open. */
+.chevron {
+  align-self: center;
+  flex: none;
+  transition: transform 150ms ease;
+}
+
+.heading[aria-expanded="true"] .chevron {
+  transform: rotate(90deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chevron {
+    transition: none;
+  }
+}
+
+/* A folded group's rows: `hidden` would lose to the list's `display: flex` without this. */
+.list[hidden] {
+  display: none;
 }
 
 /*

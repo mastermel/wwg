@@ -169,6 +169,13 @@ function ArmyTurnOrders({
             ? "None on the map yet"
             : `${String(ordered)} of ${String(onMap.length)} ordered`;
         }}
+        // While giving orders, a group with every unit on the map ordered starts folded; once
+        // submitted, every group is open, to read the orders.
+        complete={(group) =>
+          draft &&
+          group.every((u) => u.placed) &&
+          group.every((u) => orderOf(u.unit.id) !== undefined)
+        }
         renderItem={({ unit, placed }) => {
           const order = orderOf(unit.id);
           const note = review?.unitNotes.find((n) => n.unitId === unit.id);

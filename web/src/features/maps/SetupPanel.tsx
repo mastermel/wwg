@@ -74,6 +74,7 @@ export function SetupPanel({ campaignId, turns, units, placing, onPlace }: Setup
               progress={(group) =>
                 `${String(group.filter((u) => u.placed).length)} of ${String(group.length)} placed`
               }
+              complete={(group) => group.every((u) => u.placed)}
               renderItem={({ unit, placed }) => (
                 <UnitPlacementRow
                   unit={unit}

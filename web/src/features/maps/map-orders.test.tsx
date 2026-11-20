@@ -234,6 +234,43 @@ describe("a commander's turn", () => {
     expect(within(cavalry).getByText("Lancers")).toBeInTheDocument();
   });
 
+  it("starts a brigade with every unit ordered folded, and keeps it open once one isn't", async () => {
+    serveCommander(draft({ orders: [hold] }));
+    server.use(
+      http.get(`*/api/campaigns/${campaignId}/units`, () =>
+        HttpResponse.json([
+          {
+            id: unitId,
+            armyId,
+            name: "Imperial Guard",
+            type: "LineInfantry",
+            brigade: "Old Guard",
+          },
+        ]),
+      ),
+      // Taken back, the army's turn has no orders.
+      http.delete(`*/api/army-turns/${turnId}/orders/${unitId}`, () => {
+        server.use(http.get(`*/api/armies/${armyId}/turns`, () => HttpResponse.json([draft()])));
+        return new HttpResponse(null, { status: 204 });
+      }),
+    );
+    const user = userEvent.setup();
+    await openMap();
+
+    const brigade = await screen.findByRole("button", { name: "Old Guard 1 of 1 ordered" });
+    expect(brigade).toHaveAttribute("aria-expanded", "false");
+    expect(screen.getByText("Holds")).not.toBeVisible();
+
+    await user.click(brigade);
+    await user.click(screen.getByRole("button", { name: "Undo Imperial Guard's order" }));
+
+    expect(await screen.findByRole("button", { name: "Old Guard 0 of 1 ordered" })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
+    expect(screen.getByText("No order yet")).toBeVisible();
+  });
+
   it("says when the turn falls, and marks a move by night", async () => {
     const night: CampaignTurnsResponse = {
       ...running,

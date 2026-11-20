@@ -1361,7 +1361,8 @@ visibility); the data is in §5.1. Built in Phase 8 (§7).
   their destinations, without ghosts).
 - **Turn panel:** the turn number and its status; each unit Moved, Held or
   without an order, with an **undo** button for those with one, in the army's order of battle
-  (step 62: corps, divisions and brigades, each heading counting the units with orders); the Umpire's
+  (step 62: corps, divisions and brigades, each heading counting the units with orders, and
+  folding its group away; step 63: one with every unit ordered starts folded); the Umpire's
   notes, if the turn was sent back or reverted; how far the turn has got
   ("4 of 6 armies submitted", no names); and **Submit** once every unit has an
   order. While Submitted, nothing can be changed.
@@ -1395,7 +1396,7 @@ visibility); the data is in §5.1. Built in Phase 8 (§7).
   **Submit for it** for a Draft. The commander's panel marks orders the Umpire set, and the
   history lists what the Umpire changed.
 - **Setup (turn 0):** every army's units are listed in its order of battle (step 62), each
-  heading counting those placed; the Umpire places
+  heading counting those placed (and folding its group; one fully placed starts folded); the Umpire places
   each one on the map, then presses **Start campaign** (every army needs a
   side, and every unit a position). Once running, a unit or army's unit added
   since the start is listed at the top of the open turn's panel, **Not on the
@@ -2965,10 +2966,15 @@ build on positions.
       placed"), and the open turn's **Not on the map yet** groups them by army, then formation.
     - ✅ **62c. The commander's turn:** the turn panel's orders in it ("N of M ordered"), so a
       commander sees where the units still without orders are.
-63. **Folding formations:** each heading in `FormationList` folds its group away (a button with
-    `aria-expanded`), open to start with; a group whose units are all placed, or all ordered,
-    may start folded. Whether a fold is remembered (per viewer, in browser storage) is decided
-    then.
+63. ✅ **Folding formations:** each heading in `FormationList` is a button (`aria-expanded`,
+    `aria-controls`, a chevron) that folds its group away; folded, it still shows the group's
+    progress. A group starts open, unless there's nothing left to do in it: every unit placed
+    while setting up, or every unit ordered (and on the map) in a Draft turn. A submitted turn's
+    groups all start open, to read the orders. A folded group opens again if it stops being
+    complete (an order taken back from the drawer), so nothing left to do is hidden.
+    - Folds aren't remembered: they last while the panel is shown. Starting complete groups
+      folded covers what remembering would, and a remembered fold could hide work that came
+      back (a unit added, a turn sent back).
 64. **Formation actions:** from a group's heading on the map page:
     - **Pick out on the map:** highlights the formation's units and fades the rest, as the
       Armies list does for an army.

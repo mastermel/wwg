@@ -1,4 +1,5 @@
 import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import type { UnitType } from "@/api/generated/model";
 import { AppProviders } from "@/app/AppProviders";
@@ -31,21 +32,23 @@ const row = (
   ...rest,
 });
 
-function renderList(rows: Row[]) {
-  return render(
-    <AppProviders queryClient={createQueryClient()}>
-      <FormationList
-        items={rows}
-        unitOf={(r) => r}
-        label="First Army's units"
-        progress={(group) =>
-          `${String(group.filter((r) => r.done).length)} of ${String(group.length)} placed`
-        }
-        renderItem={(r) => r.name}
-      />
-    </AppProviders>,
-  );
-}
+/** The list of `rows`, a group complete once every unit in it is done. */
+const list = (rows: Row[]) => (
+  <AppProviders queryClient={createQueryClient()}>
+    <FormationList
+      items={rows}
+      unitOf={(r) => r}
+      label="First Army's units"
+      progress={(group) =>
+        `${String(group.filter((r) => r.done).length)} of ${String(group.length)} placed`
+      }
+      complete={(group) => group.every((r) => r.done)}
+      renderItem={(r) => r.name}
+    />
+  </AppProviders>
+);
+
+const renderList = (rows: Row[]) => render(list(rows));
 
 /** The names in a list, its own rows and its groups' headings, in order. */
 const entries = (list: HTMLElement) =>
@@ -82,7 +85,11 @@ describe("the formation list", () => {
       "Reserve 0 of 1 placed",
       "I Corps 1 of 2 placed",
     ]);
-    expect(entries(screen.getByRole("list", { name: "Not in a division" }))).toEqual(["Napoleon"]);
+    // Napoleon is placed, so his group starts folded.
+    const loose = screen.getByRole("button", { name: "Not in a division 1 of 1 placed" });
+    expect(loose).toHaveAttribute("aria-expanded", "false");
+    const folded = document.getElementById(loose.getAttribute("aria-controls") ?? "");
+    expect(folded?.children[0]).toHaveTextContent("Napoleon");
     expect(entries(screen.getByRole("list", { name: "I Corps" }))).toEqual([
       "1st Division 1 of 2 placed",
     ]);
@@ -104,6 +111,46 @@ describe("the formation list", () => {
 
     const list = screen.getByRole("list", { name: "First Army's units" });
     expect(entries(list)).toEqual(["Napoleon", "Reserve 0 of 1 placed"]);
+  });
+
+  it("folds a group away by its heading, and opens it again", async () => {
+    renderList([row("1st Ligne", { brigade: "1st Brigade" }), row("Napoleon")]);
+    const user = userEvent.setup();
+
+    const heading = screen.getByRole("button", { name: "1st Brigade 0 of 1 placed" });
+    expect(heading).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByText("1st Ligne")).toBeVisible();
+
+    await user.click(heading);
+    expect(heading).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByRole("list", { name: "1st Brigade" })).not.toBeInTheDocument();
+    expect(screen.getByText("1st Ligne")).not.toBeVisible();
+    // Folded, the heading still says how far the group has got.
+    expect(heading).toHaveTextContent("0 of 1 placed");
+
+    await user.click(heading);
+    expect(screen.getByText("1st Ligne")).toBeVisible();
+  });
+
+  it("starts a complete group folded, and opens it once there's something to do again", () => {
+    const rows = [
+      row("1st Ligne", { brigade: "1st Brigade", done: true }),
+      row("Lancers", { brigade: "Cavalry" }),
+    ];
+    const { rerender } = renderList(rows);
+
+    expect(screen.getByRole("button", { name: /^1st Brigade/ })).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
+    expect(screen.getByText("1st Ligne")).not.toBeVisible();
+    expect(screen.getByRole("button", { name: /^Cavalry/ })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
+
+    rerender(list([{ ...rows[0], done: false }, rows[1]]));
+    expect(screen.getByText("1st Ligne")).toBeVisible();
   });
 
   it("has no detectable accessibility problems", async () => {

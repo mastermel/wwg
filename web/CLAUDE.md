@@ -107,7 +107,8 @@ The pre-commit hook runs `eslint --fix` and Prettier on staged files.
   (`features/units`) groups them (a pure function; corps, division, brigade, in the imported
   file's order where units have one, step 55), `OrderOfBattleTable` draws them for both. Beside the map (step 62),
   `FormationList` (`features/maps`) lists an army's units the same way, as nested lists named
-  for each group, with what the panel counts in each heading ("3 of 5 placed").
+  for each group, with what the panel counts in each heading ("3 of 5 placed"); each heading
+  folds its group (step 63), and a `complete` group starts folded.
   Managers and Admins import the club's CSV from the library page (`ImportLibraryModal`,
   decision 0025): the file's text is previewed, then imported. Its file field is a native
   `<input type="file">` in an `Input.Wrapper`, so tests upload to it by its label.
