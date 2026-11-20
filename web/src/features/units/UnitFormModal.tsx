@@ -25,13 +25,14 @@ import {
   createUnitBodyPointsMax,
   createUnitBodyPointsMin,
 } from "@/api/generated/zod/library/library.zod";
-import { fights, unitTypeOptions } from "@/features/units/unit-types";
+import { fights, hasStats, unitTypeOptions } from "@/features/units/unit-types";
 import { applyServerErrors } from "@/lib/form-errors";
 import { useOnline } from "@/lib/use-online";
 
-// Orval writes a minimum of 1 inline (.min(1)), with no constant as it has for the others.
+// The lowest FF for a unit that has one: the API takes 0, for a Commander (decision 0034).
 const ffMin = 1;
 const ffError = `Enter an FF from ${String(ffMin)} to ${String(createUnitBodyFightingFactorMax)}.`;
+const pointsError = `Enter points from ${String(createUnitBodyPointsMin)} to ${String(createUnitBodyPointsMax)}.`;
 
 /** Free text up to `max` characters, or none. */
 const upTo = (max: number) =>
@@ -43,14 +44,14 @@ const upTo = (max: number) =>
 // The generated schema, with messages people can act on.
 const UnitForm = CreateUnitBody.extend({
   type: z.enum(Object.values(UnitType), { error: "Choose a type." }),
-  // 0 for a scout, which doesn't fight (decision 0028); checked below.
-  fightingFactor: z.int({ error: ffError }).min(0).max(createUnitBodyFightingFactorMax),
+  // None for a scout (decision 0028) or a Commander (decision 0034), whose fields are hidden;
+  // required for the rest below.
+  fightingFactor: z.int({ error: ffError }).min(0).max(createUnitBodyFightingFactorMax).optional(),
   points: z
-    .int({
-      error: `Enter points from ${String(createUnitBodyPointsMin)} to ${String(createUnitBodyPointsMax)}.`,
-    })
+    .int({ error: pointsError })
     .min(createUnitBodyPointsMin)
-    .max(createUnitBodyPointsMax),
+    .max(createUnitBodyPointsMax)
+    .optional(),
   division: z
     .string()
     .max(createUnitBodyDivisionMax, `Keep it to ${String(createUnitBodyDivisionMax)} characters.`)
@@ -67,12 +68,34 @@ const UnitForm = CreateUnitBody.extend({
   brigadeCommander: upTo(createUnitBodyDivisionMax),
   notes: upTo(createUnitBodyNotesMax),
   status: z.enum(Object.values(UnitStatus)).nullable(),
-}).refine((values) => !fights(values.type) || values.fightingFactor >= ffMin, {
-  path: ["fightingFactor"],
-  message: ffError,
-});
+})
+  // These run even while other fields are wrong (no type chosen yet, say), as the type's own
+  // message doesn't say the FF is missing too; not while the field has a message of its own.
+  .refine((values) => !hasStats(values.type) || (values.fightingFactor ?? 0) >= ffMin, {
+    path: ["fightingFactor"],
+    message: ffError,
+    when: ({ issues }) => !issues.some((issue) => issue.path?.[0] === "fightingFactor"),
+  })
+  .refine((values) => !hasStats(values.type) || values.points !== undefined, {
+    path: ["points"],
+    message: pointsError,
+    when: ({ issues }) => !issues.some((issue) => issue.path?.[0] === "points"),
+  })
+  // A unit without them sends 0 for both, whatever the hidden fields held.
+  .transform((values) => {
+    const stats = hasStats(values.type);
+    return {
+      ...values,
+      fightingFactor: stats ? (values.fightingFactor ?? 0) : 0,
+      points: stats ? (values.points ?? 0) : 0,
+    };
+  });
 
-export type UnitValues = z.infer<typeof UnitForm>;
+/** What the form holds while it's filled in. */
+type UnitInput = z.input<typeof UnitForm>;
+
+/** What it gives once checked: a unit without an FF or points has 0 for both. */
+export type UnitValues = z.output<typeof UnitForm>;
 
 const fields = [
   "name",
@@ -154,7 +177,7 @@ const toNumber = (value: number | string) => (typeof value === "number" ? value 
 interface UnitFormModalProps {
   title: string;
   submitLabel: string;
-  defaultValues?: DefaultValues<UnitValues>;
+  defaultValues?: DefaultValues<UnitInput>;
   /**
    * The units beside it (its faction's, or its army's): their corps, divisions and brigades are
    * suggested, so a slip of the keyboard doesn't start a new one, and choosing one fills in its
@@ -171,6 +194,7 @@ interface UnitFormModalProps {
  * A unit's name, type, Fighting Factor, points, and its corps, division and brigade with their
  * commanders (a library unit, with its notes and status, or an army's copy of one), in a modal.
  * A scout (decision 0028) stays a scout, with no FF or points: only its name and place change.
+ * A Commander (decision 0034) has no FF or points either: their fields hide while it's chosen.
  * Mount it only while open.
  */
 export function UnitFormModal({
@@ -184,7 +208,7 @@ export function UnitFormModal({
 }: UnitFormModalProps) {
   const online = useOnline();
   const [formError, setFormError] = useState<string | null>(null);
-  const form = useForm<UnitValues>({
+  const form = useForm<UnitInput, unknown, UnitValues>({
     resolver: zodResolver(UnitForm),
     defaultValues: { ...noDetails, ...defaultValues },
   });
@@ -192,6 +216,8 @@ export function UnitFormModal({
   const scout = defaultValues.type !== undefined && !fights(defaultValues.type);
   const corps = useWatch({ control: form.control, name: "corps" });
   const division = useWatch({ control: form.control, name: "division" });
+  const type = useWatch({ control: form.control, name: "type" });
+  const commander = type === UnitType.Commander;
   // Each level's names: the chosen corps' divisions, and the chosen division's brigades (all of
   // them while it has none, or none is chosen yet).
   const suggestions = useMemo(
@@ -298,7 +324,12 @@ export function UnitFormModal({
               />
             </Group>
           ))}
-          {!scout && (
+          {commander && (
+            <Text size="sm" c="dimmed">
+              A Commander leads: it has no FF or points.
+            </Text>
+          )}
+          {!scout && !commander && (
             <Group grow align="flex-start">
               <Controller
                 control={form.control}

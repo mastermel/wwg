@@ -295,6 +295,34 @@ describe("the library", () => {
     expect(await suggestions(brigade)).toEqual(["Light Cavalry Brigade"]);
   });
 
+  it("adds a Commander without asking for its FF or points", async () => {
+    serveLibrary([]);
+    const sent: unknown[] = [];
+    server.use(
+      http.post(`*/api/factions/${factionId}/units`, async ({ request }) => {
+        const body = (await request.json()) as Omit<UnitResponse, "id" | "factionId">;
+        sent.push(body);
+        return HttpResponse.json({ ...body, id: guard.id, factionId }, { status: 201 });
+      }),
+    );
+    const user = userEvent.setup();
+    await renderApp(`/library/${factionId}`, { user: manager });
+
+    await user.click(await screen.findByRole("button", { name: "Add unit" }));
+    const dialog = within(await screen.findByRole("dialog", { name: "Add unit" }));
+    await user.type(dialog.getByRole("textbox", { name: "Name" }), "Ney");
+    await user.click(dialog.getByRole("combobox", { name: "Type" }));
+    await user.click(await screen.findByRole("option", { name: "Commander", hidden: true }));
+    expect(dialog.queryByRole("textbox", { name: "Fighting Factor (FF)" })).not.toBeInTheDocument();
+    expect(dialog.queryByRole("textbox", { name: "Points" })).not.toBeInTheDocument();
+    await user.click(dialog.getByRole("button", { name: "Add unit" }));
+
+    expect(await screen.findByText("Added Ney.")).toBeInTheDocument();
+    expect(sent).toEqual([
+      expect.objectContaining({ name: "Ney", type: "Commander", fightingFactor: 0, points: 0 }),
+    ]);
+  });
+
   it("asks for the type and FF before sending", async () => {
     const calls = serveLibrary([]);
     const user = userEvent.setup();

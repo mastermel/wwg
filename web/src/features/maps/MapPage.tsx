@@ -368,8 +368,12 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
                       ? { hex: position.path.at(-1) ?? position, progress: position.progress }
                       : undefined,
                   livesOffTheLand: position.livesOffTheLand,
-                  // At 0 points it has lost its boats: they're free (decision 0022).
-                  boats: known.unit.points === 0 ? [] : aboardAfter(position),
+                  // Worn down to 0 points it has lost its boats: they're free (decision 0022). A
+                  // Commander's points are always 0 (decision 0034): it keeps them.
+                  boats:
+                    known.unit.points === 0 && known.unit.type !== "Commander"
+                      ? []
+                      : aboardAfter(position),
                 },
               ]
             : [];

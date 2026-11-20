@@ -24,6 +24,12 @@ export const unitTypeLabels: Record<UnitType, string> = {
 export const fights = (type: UnitType) => type !== UnitType.Scouts;
 
 /**
+ * Whether a unit of this type has an FF and points: not a scout (decision 0028), nor a
+ * Commander (decision 0034), whose are always 0.
+ */
+export const hasStats = (type: UnitType) => fights(type) && type !== UnitType.Commander;
+
+/**
  * The types a unit can be given, or a setting can choose, in the API's order, for a Select: not
  * scouts, which only the army's Add a scout makes, and which no setting counts (decision 0028).
  */

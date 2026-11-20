@@ -447,6 +447,58 @@ describe("units", () => {
     expect(requests).toEqual([]);
   });
 
+  it("hides the FF and points of a unit made a Commander, and saves them as 0", async () => {
+    const requests = serveArmy("Umpire", [unit("1", "1st Division", "LineInfantry", 5, 20)]);
+    const user = userEvent.setup();
+    await renderApp(`/campaigns/${campaignId}/armies/${armyId}`);
+
+    await user.click((await unitsSection()).getByRole("button", { name: "Edit 1st Division" }));
+    const dialog = within(await screen.findByRole("dialog"));
+    await user.click(dialog.getByRole("combobox", { name: "Type" }));
+    await user.click(await screen.findByRole("option", { name: "Commander", hidden: true }));
+    expect(dialog.queryByRole("textbox", { name: "Fighting Factor (FF)" })).not.toBeInTheDocument();
+    expect(dialog.queryByRole("textbox", { name: "Points" })).not.toBeInTheDocument();
+    expect(dialog.getByText("A Commander leads: it has no FF or points.")).toBeInTheDocument();
+    await user.click(dialog.getByRole("button", { name: "Save" }));
+
+    await waitFor(() => {
+      expect(requests).toEqual([
+        {
+          method: "PUT",
+          path: unit("1", "").id,
+          body: {
+            name: "1st Division",
+            type: "Commander",
+            fightingFactor: 0,
+            points: 0,
+            division: null,
+            brigade: null,
+            corps: null,
+            corpsCommander: null,
+            divisionCommander: null,
+            brigadeCommander: null,
+          },
+        },
+      ]);
+    });
+  });
+
+  it("shows a Commander's FF and points as none", async () => {
+    serveArmy("Umpire", [unit("1", "Ney", "Commander", 0, 0)]);
+    await renderApp(`/campaigns/${campaignId}/armies/${armyId}`);
+    await unitsSection();
+
+    await waitFor(() => {
+      expect(rows().find((cells) => cells.length > 0)).toEqual([
+        "NeyCommander",
+        "Commander",
+        "–None",
+        "–None",
+        "",
+      ]);
+    });
+  });
+
   it("asks the Umpire to choose the army's factions first", async () => {
     serveArmy("Umpire", [], []);
     const user = userEvent.setup();

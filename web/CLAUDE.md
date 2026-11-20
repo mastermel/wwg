@@ -177,6 +177,9 @@ The pre-commit hook runs `eslint --fix` and Prettier on staged files.
   `fights(type)` (`unit-types.ts`) is false for them, and they have no FF or points (`UnitStat`
   shows "–"). `unitTypeOptions` leaves them out, so no form or setting offers the type. The map's
   rules skip them: `canForceMarch`, `buildsBoats`, `hexWarnings`.
+- Commanders (decision 0034) have no FF or points either, but otherwise fight: `hasStats(type)`
+  (`unit-types.ts`) is false for them and scouts, so `UnitStat` shows "–" and `UnitFormModal`
+  hides the fields while the type is Commander, sending 0. At 0 points a Commander keeps its boats.
 - The Commander in Chief (step 67, decision 0032): `isCommanderInChief` on a unit; pass it to
   `UnitSymbol`'s `commanderInChief` (the star in a ring) wherever a unit's symbol is drawn, and put
   `CommanderInChiefBadge` beside its name in lists. It leads its marker's stack (`stackUnits`).

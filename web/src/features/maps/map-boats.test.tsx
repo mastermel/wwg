@@ -148,6 +148,7 @@ function serve({
   turn = draft,
   artillery = false,
   guardPoints = 30,
+  guardType = "LineInfantry",
 }: {
   boats?: number;
   positions?: UnitPosition[];
@@ -156,6 +157,7 @@ function serve({
   /** The Reserve Artillery too, ashore in the hex south-west. */
   artillery?: boolean;
   guardPoints?: number;
+  guardType?: ArmyUnitResponse["type"];
 } = {}) {
   const sent: unknown[] = [];
   server.use(
@@ -193,7 +195,7 @@ function serve({
     http.get(`*/api/campaigns/${campaignId}/units`, () =>
       HttpResponse.json([
         unit(guardId, "Imperial Guard", {
-          type: "LineInfantry",
+          type: guardType,
           fightingFactor: 6,
           points: guardPoints,
           division: null,
@@ -300,6 +302,15 @@ describe("boats on the map", () => {
     // Its boats are its army's, free again: listed as units of their own.
     const panel = screen.getByRole("region", { name: "Turn 1" });
     expect(within(panel).getByText("Boat 1")).toBeInTheDocument();
+  });
+
+  it("keeps a Commander's boats, though its points are 0", async () => {
+    serve({ positions: aboard, guardPoints: 0, guardType: "Commander" });
+    const { drawer } = await openGuard();
+
+    expect(drawer.getByText(/On 3 boats/)).toBeInTheDocument();
+    const panel = screen.getByRole("region", { name: "Turn 1" });
+    expect(within(panel).queryByText("Boat 1")).not.toBeInTheDocument();
   });
 
   it("lets a unit landing live off the land, keeping its landing", async () => {
