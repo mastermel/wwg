@@ -1815,6 +1815,14 @@ ArmyUnit (new field)                      ScreeningTurn (a turn a unit closed sc
              cavalry only)
 ```
 
+**Step 67** (decision 0032) adds each army's Commander in Chief:
+
+```
+ArmyUnit (new field)
+  IsCommanderInChief  bool (the Umpire's choice; a Commander unit only; at most one per army,
+                      a partial unique index on ArmyId)
+```
+
 - What a sighting or report records is **copied in**, as it was then, so later changes don't
   rewrite it. Deleting an army deletes its depots, its sightings and the reports it sent or got;
   a holding or holding change whose army goes is kept, with no one in its place.
@@ -1976,6 +1984,7 @@ make users Managers (`PUT /api/admin/users/{id}/manager`).
 | Step 50: set who holds a settlement | ✅ | ✅ | 403 | 403 | 404 |
 | Step 56: view a unit's screening; turn it on or off | ✅ | ✅ | own army | 403 | 404 |
 | Step 58: add a scout to an army | ✅ | ✅ | 403 | 403 | 404 |
+| Step 67: choose an army's Commander in Chief | ✅ | ✅ | 403 | 403 | 404 |
 
 - **The visibility rule** is one server-side check, "can this user see army
   A's positions in turn N?", that every read of positions or orders goes
@@ -2156,6 +2165,7 @@ one, as a campaign is made with both)
 | GET / PUT | `/api/campaigns/{id}/boat-settings` | `{ capacity }`: the points a boat carries, 1–100 (step 51a) |
 | GET / PUT | `/api/army-units/{id}/screening` | A unit's screening `{ canScreen, screening, turns }` / turn it on or off `{ screening }` (a type that can't screen: 409) (step 56) |
 | POST | `/api/armies/{id}/scouts` | Add a scout to the army `{ name }`: an army unit with no library unit, FF and points (step 58) |
+| PUT | `/api/armies/{id}/commander-in-chief` | Make one of the army's Commander units its Commander in Chief `{ unitId }`, the last one no longer (null: none; 204; another type: 409; not the army's: 400) (step 67) |
 
 Status changes that aren't allowed now (submitting a Submitted turn, reverting
 in a closed turn) are **409**s, as is losing a race for the same change; a Move
@@ -3046,3 +3056,15 @@ build on positions.
     - ✅ **66d. Shared ghost lines:** moves along the same path from the same hex are drawn as
       one dashed line, wider the more units take it (`sharedLines`, `ghost-lines.ts`).
     - Later, if wanted: taking back a stack's orders at once.
+67. **The Commander in Chief** (decision 0032): the Umpire marks one Commander unit in each army
+    as its Commander in Chief, where the player is on the map; choosing another replaces it, at
+    any time, setting up or started.
+    - **67a. The API:** `ArmyUnit.IsCommanderInChief` (a partial unique index: one per army);
+      `PUT /api/armies/{id}/commander-in-chief { unitId }` (Umpire; null for none), clearing the
+      last in the same transaction; a Commander only (409), of that army (400); a unit changed
+      to another type stops being one; `isCommanderInChief` on `ArmyUnitResponse`.
+    - **67b. Shown:** the star in a ring for its symbol (`UnitSymbol`'s `commanderInChief`; on
+      the map, its ghost, the drawer, the panels and the legend), and a "C-in-C" badge beside its
+      name in the unit lists (`CommanderInChiefBadge`).
+    - **67c. Choosing (UI):** the army page's units, for the Umpire: **Make Commander in Chief**
+      by each Commander unit (and **No longer Commander in Chief** by the one that is).

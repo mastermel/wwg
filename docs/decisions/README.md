@@ -72,3 +72,4 @@ A reversal gets a new entry.
 | [0029](0029-turns-shown-as-played.md) | Every turn is shown as it was played: where the units started, and their moves | 2026-10-04 |
 | [0030](0030-imported-formation-commanders.md) | Formation commanders imported as Commander units | 2026-10-04 |
 | [0031](0031-moving-a-hex-together.md) | A hex's units move together along one path, at the pace of the slowest | 2026-11-20 |
+| [0032](0032-commander-in-chief.md) | Each army's Commander in Chief, chosen by the Umpire | 2026-11-20 |
