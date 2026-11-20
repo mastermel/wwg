@@ -879,7 +879,7 @@
         "tags": [
           "Intelligence"
         ],
-        "summary": "Sends an ally a report (the army's commander, or the Umpire on its behalf): any of a\nsnapshot of the army's units, every sighting it has received so far, and a note. A courier\nsets out from the army's unit nearest the ally; within two turns' ride, it arrives as the\nnext turn starts.",
+        "summary": "Sends an ally a report (the army's commander, or the Umpire on its behalf): any of a\nsnapshot of the army's units, every sighting it has received so far, and a note. A courier\nsets out from the army's Commander in Chief for the ally's (both armies need one); within\ntwo turns' ride, it arrives as the next turn starts.",
         "operationId": "SendReport",
         "parameters": [
           {

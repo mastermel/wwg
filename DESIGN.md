@@ -3083,7 +3083,7 @@ build on positions.
 68. **Couriers between Commanders in Chief** (decision 0033): a report's courier rides from the
     sender's C-in-C to the recipient's, and the Umpire sees every courier and cancels one with a
     note.
-    - **68a. Riding (API):** `Couriers.Ends` from the sender's C-in-C to the recipient's
+    - ✅ **68a. Riding (API):** `Couriers.Ends` from the sender's C-in-C to the recipient's
       (`UnitPlace.IsCommanderInChief`), re-aimed each turn; sending without a C-in-C either side:
       409; a courier with no C-in-C to ride to, or no way to it, waits.
     - **68b. Every courier, and cancelling with a note (API):** `IntelReport.StoppedTurn`,

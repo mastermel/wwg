@@ -12,25 +12,37 @@ using Wwg.Api.IntegrationTests.Support;
 namespace Wwg.Api.IntegrationTests.Features;
 
 /// <summary>
-/// Reports between allies, by courier (step 49c, decision 0020). The scenario's unit is at (0, 0);
-/// an ally army of the same side, commanded by the scenario's Player, has a unit where each test
-/// says, from the start.
+/// Reports between allies, by courier (step 49c, decisions 0020 and 0033). The scenario's unit is
+/// at (0, 0); an ally army of the same side, commanded by the scenario's Player, has a unit where
+/// each test says, from the start. Unless a test says otherwise, each army's Commander in Chief is
+/// in its unit's hex.
 /// </summary>
 public sealed class IntelTests : ApiTest
 {
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
-    /// <summary>Started, with the ally (and, if given, an enemy) placed; hexes of the size given.</summary>
+    /// <summary>
+    /// Started, with the ally (and, if given, an enemy) placed; hexes of the size given. Each
+    /// side's Commander in Chief is where given (by default, in its unit's hex), or there's none.
+    /// </summary>
     private async Task<(CampaignScenario Scenario, Guid Ally)> StartedAsync(
         Hex allyAt,
         int hexSize = CampaignMap.DefaultHexSize,
-        Hex? enemyAt = null
+        Hex? enemyAt = null,
+        Hex? chiefAt = null,
+        Hex? allyChiefAt = null,
+        bool withChief = true,
+        bool allyWithChief = true
     )
     {
         var scenario = await CreateCampaignScenarioAsync();
         await TurnSteps.SetCalendarAsync(scenario);
         await TurnSteps.SetAreaAsync(scenario, hexSize);
         using var placed = await TurnSteps.PlaceAsync(scenario, scenario.UnitId);
+        if (withChief)
+        {
+            await ChiefAsync(scenario, scenario.ArmyId, "Marshal Ney", chiefAt ?? TurnSteps.Start);
+        }
         var ally = await ArmyAsync(
             scenario,
             "Allies",
@@ -38,6 +50,10 @@ public sealed class IntelTests : ApiTest
             scenario.PlayerMemberId,
             allyAt
         );
+        if (allyWithChief)
+        {
+            await ChiefAsync(scenario, ally, "Marshal Grouchy", allyChiefAt ?? allyAt);
+        }
         if (enemyAt is { } at)
         {
             await ArmyAsync(scenario, "Enemy", scenario.OtherSideId, null, at);
@@ -68,6 +84,40 @@ public sealed class IntelTests : ApiTest
         placed.EnsureSuccessStatusCode();
         return army;
     }
+
+    /// <summary>A Commander unit for the army, placed, and made its Commander in Chief.</summary>
+    private static async Task<Guid> ChiefAsync(
+        CampaignScenario scenario,
+        Guid army,
+        string name,
+        Hex at
+    )
+    {
+        var unit = await LibrarySteps.AddUnitAsync(
+            scenario,
+            name,
+            UnitType.Commander,
+            armyId: army
+        );
+        using var placed = await TurnSteps.PlaceAsync(scenario, unit, at);
+        placed.EnsureSuccessStatusCode();
+        using var chosen = await ChooseChiefAsync(scenario, army, unit);
+        chosen.EnsureSuccessStatusCode();
+        return unit;
+    }
+
+    private static Task<HttpResponseMessage> ChooseChiefAsync(
+        CampaignScenario scenario,
+        Guid army,
+        Guid? unit
+    ) =>
+        scenario
+            .As(Role.Umpire)
+            .PutAsJsonAsync(
+                new Uri($"/api/armies/{army}/commander-in-chief", UriKind.Relative),
+                new UpdateCommanderInChiefRequest(unit),
+                Token
+            );
 
     private static Task<HttpResponseMessage> SendAsync(
         CampaignScenario scenario,
@@ -164,8 +214,10 @@ public sealed class IntelTests : ApiTest
             (received.SentTurn, received.ArrivedTurn, received.Status)
         );
         Assert.Equal("Hold the bridge at Wavre.", received.Note);
-        var unit = Assert.Single(received.Snapshot!);
-        Assert.Equal(("1st Division", 0, 0, 20), (unit.Name, unit.Q, unit.R, unit.Points));
+        var unit = Assert.Single(received.Snapshot!, u =>
+            string.Equals(u.Name, "1st Division", StringComparison.Ordinal)
+        );
+        Assert.Equal((0, 0, 20), (unit.Q, unit.R, unit.Points));
     }
 
     [Fact]
@@ -250,6 +302,82 @@ public sealed class IntelTests : ApiTest
         Assert.Equal((0, 0, false), (setOut.Q, setOut.R, setOut.ArrivesNext));
         Assert.Equal(5, new Hex(riding.Q, riding.R).Distance(new Hex(9, -4)));
         Assert.Empty(await ReportsAsync(scenario, Role.Player));
+    }
+
+    [Fact]
+    public async Task SendReport_ChiefsApartFromTheirArmies_RidesFromOneChiefToTheOther()
+    {
+        // 1 km hexes: the ally's unit next to ours, but the Commanders in Chief 9 hexes apart,
+        // more than two turns' ride for light cavalry (4 a turn).
+        var (scenario, ally) = await StartedAsync(
+            new Hex(1, 0),
+            hexSize: 1000,
+            chiefAt: new Hex(-3, 0),
+            allyChiefAt: new Hex(6, 0)
+        );
+        using var _ = scenario;
+
+        using var sent = await SendAsync(scenario, Everything(ally));
+        var setOut = Assert.Single(await CouriersAsync(scenario));
+        await NextTurnAsync(scenario);
+        var riding = Assert.Single(await CouriersAsync(scenario));
+
+        Assert.Equal((-3, 0, false), (setOut.Q, setOut.R, setOut.ArrivesNext));
+        Assert.Equal(5, new Hex(riding.Q, riding.R).Distance(new Hex(6, 0)));
+    }
+
+    [Fact]
+    public async Task SendReport_WithoutOurCommanderInChief_IsAConflict()
+    {
+        var (scenario, ally) = await StartedAsync(new Hex(1, 0), withChief: false);
+        using var _ = scenario;
+
+        using var sent = await SendAsync(scenario, Everything(ally));
+
+        await sent.AssertProblemAsync(HttpStatusCode.Conflict);
+    }
+
+    [Fact]
+    public async Task SendReport_WithoutTheAllysCommanderInChief_IsAConflict()
+    {
+        var (scenario, ally) = await StartedAsync(new Hex(1, 0), allyWithChief: false);
+        using var _ = scenario;
+
+        using var sent = await SendAsync(scenario, Everything(ally));
+
+        await sent.AssertProblemAsync(HttpStatusCode.Conflict);
+    }
+
+    [Fact]
+    public async Task StartNextTurn_TheAllysCommanderInChiefGone_TheCourierWaits()
+    {
+        var (scenario, ally) = await StartedAsync(new Hex(9, -4), hexSize: 1000);
+        using var _ = scenario;
+        using var sent = await SendAsync(scenario, Everything(ally));
+        sent.EnsureSuccessStatusCode();
+        using var cleared = await ChooseChiefAsync(scenario, ally, null);
+        cleared.EnsureSuccessStatusCode();
+
+        await NextTurnAsync(scenario);
+
+        var waiting = Assert.Single(await CouriersAsync(scenario));
+        Assert.Equal((0, 0), (waiting.Q, waiting.R));
+    }
+
+    [Fact]
+    public async Task StartNextTurn_CloseByButTheAllysCommanderInChiefGone_ItDoesntArrive()
+    {
+        var (scenario, ally) = await StartedAsync(new Hex(1, 0));
+        using var _ = scenario;
+        using var sent = await SendAsync(scenario, Everything(ally));
+        sent.EnsureSuccessStatusCode();
+        using var cleared = await ChooseChiefAsync(scenario, ally, null);
+        cleared.EnsureSuccessStatusCode();
+
+        await NextTurnAsync(scenario);
+
+        Assert.Empty(await ReportsAsync(scenario, Role.Player));
+        Assert.Single(await CouriersAsync(scenario));
     }
 
     [Fact]

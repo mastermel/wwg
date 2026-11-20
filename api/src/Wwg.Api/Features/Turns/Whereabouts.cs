@@ -9,7 +9,8 @@ namespace Wwg.Api.Features.Turns;
 /// <summary>
 /// A unit where a turn leaves it, with what the rules on it need: whether it's afloat, too (on
 /// boats, or a boat tied to a unit on them; decision 0022), and whether it's screening (decision
-/// 0026; as it is now, whichever turn).
+/// 0026; as it is now, whichever turn), and whether it's its army's Commander in Chief (decision
+/// 0032; as it is now).
 /// </summary>
 internal sealed record UnitPlace(
     Guid UnitId,
@@ -21,7 +22,8 @@ internal sealed record UnitPlace(
     Hex At,
     bool LivesOffTheLand,
     bool Afloat = false,
-    bool Screening = false
+    bool Screening = false,
+    bool IsCommanderInChief = false
 );
 
 /// <summary>
@@ -59,7 +61,8 @@ internal static class Whereabouts
                 new Hex(0, 0),
                 false,
                 false,
-                u.Screening
+                u.Screening,
+                u.IsCommanderInChief
             ))
             .ToListAsync(cancellationToken);
         var orders = await db

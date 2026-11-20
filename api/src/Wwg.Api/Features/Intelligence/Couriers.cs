@@ -16,34 +16,9 @@ internal static class Couriers
     /// <summary>Within this many turns' ride, a report arrives as the next turn starts (§L: "two moves").</summary>
     public const double CloseByTurns = 2;
 
-    /// <summary>
-    /// The sender's unit and the recipient's nearest each other: where a courier sets out from and
-    /// rides to. Null if either army has no units on the map.
-    /// </summary>
-    public static (Hex From, Hex To)? Ends(
-        IReadOnlyList<UnitPlace> places,
-        Guid fromArmyId,
-        Guid toArmyId,
-        Hex? courier = null
-    )
-    {
-        var to = places.Where(p => p.ArmyId == toArmyId).ToList();
-        if (to.Count == 0)
-        {
-            return null;
-        }
-        if (courier is { } at)
-        {
-            // `to` has units: checked just above.
-            return (at, to.MinBy(p => p.At.Distance(at))!.At);
-        }
-
-        var from = places.Where(p => p.ArmyId == fromArmyId).ToList();
-        return from.Count == 0
-            ? null
-            : from.SelectMany(f => to.Select(t => (From: f.At, To: t.At)))
-                .MinBy(pair => pair.From.Distance(pair.To));
-    }
+    /// <summary>Where the army's Commander in Chief is (decision 0033), or null: none, or not on the map.</summary>
+    public static Hex? CommanderInChiefOf(IReadOnlyList<UnitPlace> places, Guid armyId) =>
+        places.FirstOrDefault(p => p.ArmyId == armyId && p.IsCommanderInChief)?.At;
 
     /// <summary>A report as it sets out, with what it carries copied in (not added).</summary>
     public static IntelReport NewReport(
@@ -84,10 +59,10 @@ internal static class Couriers
         JsonSerializer.Deserialize<List<SnapshotUnit>>(snapshot) ?? [];
 
     /// <summary>
-    /// Rides every courier on its way a turn on, towards the recipient's unit nearest it where
-    /// the closing turn leaves the units (not saved); one that gets next to it (or was close by
-    /// when sent) arrives for the turn starting, and the sightings it carries become the
-    /// recipient's.
+    /// Rides every courier on its way a turn on, towards the recipient's Commander in Chief where
+    /// the closing turn leaves it (not saved); one that gets next to it (or was close by when
+    /// sent) arrives for the turn starting, and the sightings it carries become the recipient's.
+    /// With no Commander in Chief to ride to, a courier waits.
     /// </summary>
     public static async Task RideAsync(
         WwgDbContext db,
@@ -114,20 +89,17 @@ internal static class Couriers
             : await CourierRides.LoadAsync(db, grid, campaignId, cancellationToken);
         foreach (var report in reports)
         {
-            var courier = new Hex(report.CourierQ, report.CourierR);
-            if (
-                !report.ArrivesNext
-                && rides is not null
-                && Ends(next, report.FromArmyId, report.ToArmyId, courier) is var (_, to)
-            )
+            if (CommanderInChiefOf(next, report.ToArmyId) is not { } to)
             {
-                courier = rides.Ride(courier, to);
+                // No one to deliver it to (removed, or another type now): it waits.
+                continue;
+            }
+
+            if (!report.ArrivesNext && rides is not null)
+            {
+                var courier = rides.Ride(new Hex(report.CourierQ, report.CourierR), to);
                 (report.CourierQ, report.CourierR) = (courier.Q, courier.R);
                 report.ArrivesNext = courier.Distance(to) <= 1;
-                if (!report.ArrivesNext)
-                {
-                    continue;
-                }
             }
 
             if (report.ArrivesNext)

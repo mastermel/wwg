@@ -37,8 +37,8 @@ internal static class IntelEndpoints
     /// <summary>
     /// Sends an ally a report (the army's commander, or the Umpire on its behalf): any of a
     /// snapshot of the army's units, every sighting it has received so far, and a note. A courier
-    /// sets out from the army's unit nearest the ally; within two turns' ride, it arrives as the
-    /// next turn starts.
+    /// sets out from the army's Commander in Chief for the ally's (both armies need one); within
+    /// two turns' ride, it arrives as the next turn starts.
     /// </summary>
     internal static async Task<
         Results<Created<ReportResponse>, ValidationProblem, ProblemHttpResult>
@@ -62,16 +62,25 @@ internal static class IntelEndpoints
         var open = await TurnRules.OpenTurnAsync(db, campaignId, cancellationToken);
         var (now, _) = await Whereabouts.LoadAsync(db, campaignId, cancellationToken);
         var grid = await CampaignMaps.GridAsync(db, campaignId, cancellationToken);
-        if (
-            open is not { Number: > 0 }
-            || grid is null
-            || Couriers.Ends(now, id, request.ToArmyId) is not var (from, to)
-        )
+        if (open is not { Number: > 0 } || grid is null)
         {
             return TypedResults.Problem(
                 statusCode: StatusCodes.Status409Conflict,
                 title: "No way to send it",
-                detail: "A courier needs the campaign under way, and both armies' units on the map."
+                detail: "A courier needs the campaign under way."
+            );
+        }
+
+        if (
+            Couriers.CommanderInChiefOf(now, id) is not { } from
+            || Couriers.CommanderInChiefOf(now, request.ToArmyId) is not { } to
+        )
+        {
+            return TypedResults.Problem(
+                statusCode: StatusCodes.Status409Conflict,
+                title: "No Commander in Chief",
+                detail: "A courier rides from your Commander in Chief to theirs: both armies "
+                    + "need one on the map, which the Umpire chooses."
             );
         }
 
