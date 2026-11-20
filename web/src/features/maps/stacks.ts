@@ -27,10 +27,16 @@ export interface UnitStack {
   longitude: number;
 }
 
+/** The Commander in Chief first (decision 0032), so a stack's marker shows where the player is. */
+const chiefFirst = (units: PlacedUnit[]) => [
+  ...units.filter((placed) => placed.unit.isCommanderInChief),
+  ...units.filter((placed) => !placed.unit.isCommanderInChief),
+];
+
 /**
  * Groups units whose markers would overlap (within `radius` pixels at the current zoom) into
  * stacks, each at its first unit's position. Greedy, in the given order, which is enough for the
- * few dozen units of a campaign.
+ * few dozen units of a campaign. A Commander in Chief leads its stack, which keeps its key and place.
  */
 export function stackUnits(
   units: readonly PlacedUnit[],
@@ -56,7 +62,7 @@ export function stackUnits(
   }
   return stacks.map(({ key, units: members, latitude, longitude }) => ({
     key,
-    units: members,
+    units: chiefFirst(members),
     latitude,
     longitude,
   }));
@@ -68,4 +74,8 @@ export const unitsIn = (hex: Hex, units: readonly PlacedUnit[]) =>
 
 /** What a screen reader hears for a unit. */
 export const describeUnit = ({ unit, army }: PlacedUnit) =>
-  `${unit.name}, ${unitTypeLabels[unit.type]}, ${army.name}`;
+  `${unit.name}, ${unit.isCommanderInChief ? "Commander in Chief" : unitTypeLabels[unit.type]}, ${army.name}`;
+
+/** A unit's name, saying when it's its army's Commander in Chief (decision 0032). */
+export const nameWithRank = ({ unit }: PlacedUnit) =>
+  unit.isCommanderInChief ? `${unit.name} (Commander in Chief)` : unit.name;

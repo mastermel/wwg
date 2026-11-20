@@ -20,11 +20,13 @@ describe("unit symbols", () => {
     renderLegend();
 
     const items = screen.getAllByRole("listitem");
-    expect(items).toHaveLength(Object.values(UnitType).length);
+    // Every type, then the Commander in Chief's (decision 0032).
+    expect(items).toHaveLength(Object.values(UnitType).length + 1);
     // In the API's order, each with its name (the symbol itself is hidden from screen readers).
     Object.values(UnitType).forEach((type, index) => {
       expect(within(items[index] ?? document.body).getByText(unitTypeLabels[type])).toBeVisible();
     });
+    expect(within(items.at(-1) ?? document.body).getByText("Commander in Chief")).toBeVisible();
   });
 
   it("has no detectable accessibility problems", async () => {

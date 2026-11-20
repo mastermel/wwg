@@ -20,6 +20,15 @@ export function UnitLegend() {
           <Text size="sm">{unitTypeLabels[type]}</Text>
         </Group>
       ))}
+      <Group component="li" gap="xs" wrap="nowrap" style={{ listStyle: "none" }}>
+        <UnitSymbol
+          type="Commander"
+          commanderInChief
+          color="var(--mantine-color-silver-3)"
+          width={28}
+        />
+        <Text size="sm">Commander in Chief</Text>
+      </Group>
     </SimpleGrid>
   );
 }

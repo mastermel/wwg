@@ -2,6 +2,7 @@ import { Button, Group, Text } from "@mantine/core";
 import { IconMapPin } from "@tabler/icons-react";
 import { armyColorVar } from "@/features/armies/identity/army-colors";
 import type { PlacedUnit } from "@/features/maps/stacks";
+import { CommanderInChiefBadge } from "@/features/units/CommanderInChiefBadge";
 import { UnitSymbol } from "@/features/units/UnitSymbol";
 import { useOnline } from "@/lib/use-online";
 
@@ -20,11 +21,19 @@ export function UnitPlacementRow({ unit, army, placed, placing, onPlace }: UnitP
   return (
     <Group justify="space-between" wrap="nowrap" gap="xs">
       <Group gap="xs" wrap="nowrap" miw={0}>
-        <UnitSymbol type={unit.type} color={armyColorVar(army.color)} width={26} />
+        <UnitSymbol
+          type={unit.type}
+          commanderInChief={unit.isCommanderInChief}
+          color={armyColorVar(army.color)}
+          width={26}
+        />
         <div style={{ minWidth: 0 }}>
-          <Text size="sm" truncate>
-            {unit.name}
-          </Text>
+          <Group gap={6} wrap="nowrap">
+            <Text size="sm" truncate>
+              {unit.name}
+            </Text>
+            {unit.isCommanderInChief && <CommanderInChiefBadge />}
+          </Group>
           <Text size="xs" c="dimmed">
             {placed ? "On the map" : "Not placed yet"}
           </Text>

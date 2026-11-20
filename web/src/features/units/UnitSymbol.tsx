@@ -8,8 +8,9 @@ import type { UnitType } from "@/api/generated/model";
  * standard's bridge, a supply train a bar across the foot, siege artillery two dots. Letters
  * mark the rest: L light infantry, G partisans (guerrillas) and M medium cavalry (on the slash);
  * an oval (armour) is heavy cavalry, and a slash (mounted) with the dot horse artillery; a boat is
- * a hull under a mast, a commander a star, and a scout binoculars. A black frame and a white halo
- * keep it clear on any map, light or dark.
+ * a hull under a mast, a commander a star, and a scout binoculars. An army's Commander in Chief
+ * (decision 0032) is its star in a ring. A black frame and a white halo keep it clear on any map,
+ * light or dark.
  */
 
 const W = 36;
@@ -92,8 +93,13 @@ const glyphs: Record<UnitType, ReactNode> = {
   ),
 };
 
+// The Commander in Chief's ring (decision 0032), round the star, inside the frame.
+const ring = <circle cx={W / 2} cy={H / 2} r={10.5} strokeWidth={2} />;
+
 interface UnitSymbolProps {
   type: UnitType;
+  /** Its army's Commander in Chief (decision 0032): the star gets a ring. */
+  commanderInChief?: boolean;
   /** The frame's fill: the army's colour, e.g. `armyColorVar(color)`. */
   color: string;
   /** Width in pixels; the height follows (3:2). */
@@ -101,7 +107,7 @@ interface UnitSymbolProps {
 }
 
 /** A unit's symbol. Decorative: say what the unit is in text (or an aria-label) beside it. */
-export function UnitSymbol({ type, color, width = 30 }: UnitSymbolProps) {
+export function UnitSymbol({ type, commanderInChief = false, color, width = 30 }: UnitSymbolProps) {
   const pad = 3;
   return (
     <svg
@@ -133,6 +139,7 @@ export function UnitSymbol({ type, color, width = 30 }: UnitSymbolProps) {
       >
         <g stroke={ink} strokeWidth={1.5} fill="none">
           {glyphs[type]}
+          {commanderInChief && type === "Commander" && ring}
         </g>
       </svg>
     </svg>

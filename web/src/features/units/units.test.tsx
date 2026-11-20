@@ -224,6 +224,22 @@ describe("units", () => {
     expect(section.queryByRole("button")).not.toBeInTheDocument();
   });
 
+  it("marks the army's Commander in Chief beside its name", async () => {
+    serveArmy("Player", [
+      { ...unit("1", "Napoleon", "Commander", 1, 0), isCommanderInChief: true },
+      unit("2", "Ney", "Commander", 1, 0),
+    ]);
+    await renderApp(`/campaigns/${campaignId}/armies/${armyId}`);
+    const section = await unitsSection();
+
+    const chief = (await section.findByText("Napoleon")).closest("tr");
+    const other = section.getByText("Ney").closest("tr");
+    expect(within(chief ?? document.body).getByTitle("Commander in Chief")).toHaveTextContent(
+      "C-in-C",
+    );
+    expect(within(other ?? document.body).queryByTitle("Commander in Chief")).toBeNull();
+  });
+
   it("shows the army's units in their order of battle, with its totals", async () => {
     serveArmy("Player", [
       { ...unit("1", "1st Ligne"), division: "1st Division", brigade: "Quiot" },

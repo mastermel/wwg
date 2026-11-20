@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import type { ArmySummary, ArmyUnitResponse } from "@/api/generated/model";
-import { describeUnit, stackUnits, unitsIn, type PlacedUnit } from "@/features/maps/stacks";
+import {
+  describeUnit,
+  nameWithRank,
+  stackUnits,
+  unitsIn,
+  type PlacedUnit,
+} from "@/features/maps/stacks";
 
 const army: ArmySummary = {
   id: "a",
@@ -50,6 +56,27 @@ describe("stacking units", () => {
 
   it("keeps apart units further than the radius", () => {
     expect(stackUnits([placed("a", 0), placed("b", 3)], project, 26)).toHaveLength(2);
+  });
+
+  it("puts an army's Commander in Chief at the top of its stack, which keeps its place", () => {
+    const chief = placed("Napoleon", 1);
+    chief.unit.type = "Commander";
+    chief.unit.isCommanderInChief = true;
+
+    const stacks = stackUnits([placed("a", 0), chief, placed("b", 2)], project);
+
+    expect(stacks.map((s) => s.units.map((u) => u.unit.id))).toEqual([["Napoleon", "a", "b"]]);
+    expect(stacks[0]).toMatchObject({ key: "a", longitude: 0 });
+  });
+
+  it("describes a Commander in Chief as such", () => {
+    const chief = placed("Napoleon", 0);
+    chief.unit.type = "Commander";
+    chief.unit.isCommanderInChief = true;
+
+    expect(describeUnit(chief)).toBe("Napoleon, Commander in Chief, Armée du Nord");
+    expect(nameWithRank(chief)).toBe("Napoleon (Commander in Chief)");
+    expect(nameWithRank(placed("Ney", 0))).toBe("Ney");
   });
 
   it("describes a unit for a screen reader", () => {

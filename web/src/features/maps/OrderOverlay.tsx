@@ -78,6 +78,7 @@ export function OrderOverlay({ moves, reachable = [] }: OrderOverlayProps) {
           <span className={classes.ghost} aria-hidden>
             <UnitSymbol
               type={placed.unit.type}
+              commanderInChief={placed.unit.isCommanderInChief}
               color={armyColorVar(placed.army.color)}
               width={30}
             />

@@ -10,6 +10,7 @@ import {
   type Division,
   type Placed,
 } from "@/features/units/order-of-battle";
+import { CommanderInChiefBadge } from "@/features/units/CommanderInChiefBadge";
 import { UnitStat } from "@/features/units/UnitStat";
 import { unitTypeLabels } from "@/features/units/unit-types";
 
@@ -21,6 +22,8 @@ interface Row extends Placed {
   points: number;
   /** A library unit's notes (decision 0025); an army's copy has none. */
   notes?: string | null;
+  /** Its army's Commander in Chief (decision 0032); a library unit is no one's. */
+  isCommanderInChief?: boolean;
 }
 
 /** Units to choose from, each with a checkbox by its name (Add units). */
@@ -82,7 +85,16 @@ export function OrderOfBattleTable<T extends Row>({
 
   /** A unit's name: with a checkbox when choosing, saying why if it can't be chosen. */
   const nameOf = (unit: T) => {
-    if (!selection) return unit.name;
+    if (!selection) {
+      return unit.isCommanderInChief ? (
+        <Group gap={6} wrap="nowrap" component="span">
+          {unit.name}
+          <CommanderInChiefBadge />
+        </Group>
+      ) : (
+        unit.name
+      );
+    }
     const unavailable = selection.unavailable?.(unit);
     return (
       <Checkbox

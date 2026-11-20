@@ -7,6 +7,7 @@ import { armyColorVar } from "@/features/armies/identity/army-colors";
 import { hexKey, hexName, type Hex } from "@/features/maps/hex-grid";
 import type { HexInfo } from "@/features/maps/hex-info";
 import { describeUnit, type PlacedUnit } from "@/features/maps/stacks";
+import { CommanderInChiefBadge } from "@/features/units/CommanderInChiefBadge";
 import { UnitSymbol } from "@/features/units/UnitSymbol";
 import { UnitStat } from "@/features/units/UnitStat";
 import { unitTypeLabels } from "@/features/units/unit-types";
@@ -106,7 +107,16 @@ export function HexDrawer({
                     <li key={placed.unit.id} style={{ listStyle: "none" }}>
                       <NavLink
                         component="button"
-                        label={placed.unit.name}
+                        label={
+                          placed.unit.isCommanderInChief ? (
+                            <Group gap={6} wrap="nowrap">
+                              {placed.unit.name}
+                              <CommanderInChiefBadge />
+                            </Group>
+                          ) : (
+                            placed.unit.name
+                          )
+                        }
                         description={[
                           unitTypeLabels[placed.unit.type],
                           placed.army.name,
@@ -117,6 +127,7 @@ export function HexDrawer({
                         leftSection={
                           <UnitSymbol
                             type={placed.unit.type}
+                            commanderInChief={placed.unit.isCommanderInChief}
                             color={armyColorVar(placed.army.color)}
                             width={30}
                           />
@@ -179,8 +190,15 @@ function UnitDetails({ shown, actions, showsMarches, supplyOf, screeningOf }: Un
   return (
     <>
       <Group gap="sm" wrap="nowrap">
-        <UnitSymbol type={shown.unit.type} color={armyColorVar(shown.army.color)} width={40} />
-        <Text fw={500}>{unitTypeLabels[shown.unit.type]}</Text>
+        <UnitSymbol
+          type={shown.unit.type}
+          commanderInChief={shown.unit.isCommanderInChief}
+          color={armyColorVar(shown.army.color)}
+          width={40}
+        />
+        <Text fw={500}>
+          {shown.unit.isCommanderInChief ? "Commander in Chief" : unitTypeLabels[shown.unit.type]}
+        </Text>
       </Group>
       <Table variant="vertical" layout="fixed" withTableBorder>
         <Table.Tbody>

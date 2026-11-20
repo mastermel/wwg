@@ -2,7 +2,13 @@ import { IconSailboat } from "@tabler/icons-react";
 import { useEffect, useState } from "react";
 import { Marker, useMap } from "react-map-gl/maplibre";
 import { armyColorVar } from "@/features/armies/identity/army-colors";
-import { describeUnit, stackUnits, type PlacedUnit, type UnitStack } from "@/features/maps/stacks";
+import {
+  describeUnit,
+  nameWithRank,
+  stackUnits,
+  type PlacedUnit,
+  type UnitStack,
+} from "@/features/maps/stacks";
 import classes from "@/features/maps/UnitMarkers.module.css";
 import { UnitSymbol } from "@/features/units/UnitSymbol";
 
@@ -50,7 +56,7 @@ export function UnitMarkers({ units, onSelect, highlight, outOfSupply }: UnitMar
     const label =
       (under.length === 0
         ? describeUnit(top)
-        : `${String(stack.units.length)} units: ${stack.units.map((u) => u.unit.name).join(", ")}`) +
+        : `${String(stack.units.length)} units: ${stack.units.map(nameWithRank).join(", ")}`) +
       (cutOff.length === 0
         ? ""
         : under.length === 0
@@ -82,11 +88,21 @@ export function UnitMarkers({ units, onSelect, highlight, outOfSupply }: UnitMar
         >
           {next && (
             <span className={classes.under} aria-hidden>
-              <UnitSymbol type={next.unit.type} color={armyColorVar(next.army.color)} width={30} />
+              <UnitSymbol
+                type={next.unit.type}
+                commanderInChief={next.unit.isCommanderInChief}
+                color={armyColorVar(next.army.color)}
+                width={30}
+              />
             </span>
           )}
           <span style={{ position: "relative", display: "block" }}>
-            <UnitSymbol type={top.unit.type} color={armyColorVar(top.army.color)} width={30} />
+            <UnitSymbol
+              type={top.unit.type}
+              commanderInChief={top.unit.isCommanderInChief}
+              color={armyColorVar(top.army.color)}
+              width={30}
+            />
           </span>
           {cutOff.length > 0 && (
             <span className={classes.supply} aria-hidden>

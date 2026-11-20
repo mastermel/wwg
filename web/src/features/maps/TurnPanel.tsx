@@ -12,6 +12,7 @@ import { formationActions, type PickedOut } from "@/features/maps/pick-out";
 import { SubmitTurnModal } from "@/features/maps/SubmitTurnModal";
 import type { PlacedUnit } from "@/features/maps/stacks";
 import { reviewOf, type OpenArmyTurn, type useOrders } from "@/features/maps/use-orders";
+import { CommanderInChiefBadge } from "@/features/units/CommanderInChiefBadge";
 import { UnitSymbol } from "@/features/units/UnitSymbol";
 import { useOnline } from "@/lib/use-online";
 import { turnPartHours, turnWhen } from "@/features/campaigns/calendar";
@@ -222,24 +223,32 @@ function ArmyTurnOrders({
           return (
             <Group justify="space-between" wrap="nowrap" gap="xs">
               <Group gap="xs" wrap="nowrap" miw={0}>
-                <UnitSymbol type={unit.type} color={armyColorVar(army.color)} width={26} />
+                <UnitSymbol
+                  type={unit.type}
+                  commanderInChief={unit.isCommanderInChief}
+                  color={armyColorVar(army.color)}
+                  width={26}
+                />
                 <div style={{ minWidth: 0 }}>
-                  {placed && draft ? (
-                    <Button
-                      variant="transparent"
-                      size="compact-sm"
-                      px={0}
-                      onClick={() => {
-                        onChoose(placed);
-                      }}
-                    >
-                      {unit.name}
-                    </Button>
-                  ) : (
-                    <Text size="sm" truncate>
-                      {unit.name}
-                    </Text>
-                  )}
+                  <Group gap={6} wrap="nowrap">
+                    {placed && draft ? (
+                      <Button
+                        variant="transparent"
+                        size="compact-sm"
+                        px={0}
+                        onClick={() => {
+                          onChoose(placed);
+                        }}
+                      >
+                        {unit.name}
+                      </Button>
+                    ) : (
+                      <Text size="sm" truncate>
+                        {unit.name}
+                      </Text>
+                    )}
+                    {unit.isCommanderInChief && <CommanderInChiefBadge />}
+                  </Group>
                   <Text size="xs" c="dimmed">
                     {describeOrder(order, placed, night)}
                     {order?.byUmpire && " · set by the Umpire"}
