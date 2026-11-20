@@ -134,6 +134,18 @@ public sealed record HoldUnitsRequest(
     [property: JsonRequired, MinLength(1), MaxLength(500)] IReadOnlyList<Guid> UnitIds
 );
 
+/// <summary>The units in a hex to move together (step 66).</summary>
+/// <param name="UnitIds">
+/// The army's units in the hex: those with an order this turn keep it; the rest move.
+/// </param>
+/// <param name="Path">The hexes the units move through, each next to the last, to where they stop.</param>
+/// <param name="ForceMarch">Whether they force march (decision 0018), every one of them.</param>
+public sealed record MoveUnitsRequest(
+    [property: JsonRequired, MinLength(1), MaxLength(500)] IReadOnlyList<Guid> UnitIds,
+    [property: JsonRequired, MinLength(1), MaxLength(Movement.MaxSteps)] IReadOnlyList<Hex> Path,
+    bool ForceMarch = false
+);
+
 /// <summary>The Umpire's note on one unit's order.</summary>
 /// <param name="UnitId">The unit.</param>
 /// <param name="Text">The note.</param>

@@ -12,6 +12,9 @@ namespace Wwg.Api.Features.Turns;
 
 internal static class OrderEndpoints
 {
+    private const string StopsPartWay =
+        "It would stop part of the way into the last hex: choose one every unit gets into.";
+
     public static IEndpointRouteBuilder MapOrderEndpoints(this IEndpointRouteBuilder app)
     {
         app.MapGet("/api/armies/{id:guid}/turns", ListArmyTurnsAsync)
@@ -34,6 +37,13 @@ internal static class OrderEndpoints
 
         app.MapPost("/api/army-turns/{id:guid}/hold", HoldUnitsAsync)
             .WithName("HoldUnits")
+            .WithTags("Turns")
+            .RequireCampaignAccess(CampaignAccess.Commander, CampaignRouteId.ArmyTurn)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict);
+
+        app.MapPost("/api/army-turns/{id:guid}/move", MoveUnitsAsync)
+            .WithName("MoveUnits")
             .WithTags("Turns")
             .RequireCampaignAccess(CampaignAccess.Commander, CampaignRouteId.ArmyTurn)
             .ProducesProblem(StatusCodes.Status404NotFound)
@@ -238,7 +248,8 @@ internal static class OrderEndpoints
     /// <summary>
     /// Stages a unit's order (not saved), and for the Umpire notes it in the turn's history: where
     /// it leaves the unit, or why it won't do. <see cref="GiveOrderAsync"/>'s checks, for one
-    /// unit or a batch (<see cref="HoldUnitsAsync"/>).
+    /// unit or a batch (<see cref="OrderEachAsync"/>); a unit moving with others passes
+    /// <paramref name="together"/>'s check too, and gets the <paramref name="wholeWay"/> if asked.
     /// </summary>
     private static async Task<
         Results<Ok<UnitPosition>, ValidationProblem, ProblemHttpResult>
@@ -249,7 +260,9 @@ internal static class OrderEndpoints
         EditableTurn turn,
         Guid unitId,
         GiveOrderRequest request,
-        CancellationToken cancellationToken
+        CancellationToken cancellationToken,
+        Func<MoveRequest, string?>? together = null,
+        bool wholeWay = false
     )
     {
         var byUmpire = httpContext.CampaignContext().CanManage;
@@ -265,13 +278,21 @@ internal static class OrderEndpoints
         var grid = (await CampaignMaps.GridAsync(db, unit.CampaignId, cancellationToken))!;
         var aboard = embarked.AboardNow(unitId);
         var move = MoveFor(grid, unit, turn, state, request, byUmpire, aboard);
+        if (together?.Invoke(move) is { } notWithTheRest)
+        {
+            return Invalid("unitIds", notWithTheRest);
+        }
+
         if (await OrderProblemAsync(db, move, cancellationToken) is { } why)
         {
             return Invalid(why.Field, why.Message);
         }
 
         var plan = await PlanAsync(db, move, cancellationToken);
-        if (plan.Problem is { } problem)
+        if (
+            (plan.Problem ?? (wholeWay && plan.Progress is not null ? StopsPartWay : null)) is
+            { } problem
+        )
         {
             return Invalid("path", problem);
         }
@@ -330,15 +351,103 @@ internal static class OrderEndpoints
             return NotEditable(byUmpire);
         }
 
+        return await OrderEachAsync(
+            db,
+            time,
+            httpContext,
+            turn,
+            request.UnitIds,
+            (unitId, lived) =>
+                new GiveOrderRequest(OrderKind.Hold, null, LivesOffTheLand: lived.Contains(unitId)),
+            cancellationToken
+        );
+    }
+
+    /// <summary>
+    /// Moves the units in a hex together (step 66): each of the units given that has no order yet
+    /// this turn moves along the path, as a Move from <c>GiveOrder</c> would, living off the land if
+    /// it did last turn; units with an order keep it. They must all start in the same hex, all on
+    /// boats or none, and each must get all the way to the path's end (none stopping part of the
+    /// way into a hex). All or nothing: if one of them can't go, nothing changes, and the problem
+    /// names it. The Umpire's moves are one Edited event in the turn's history, with a note per
+    /// unit. The same access, and turns, as <c>GiveOrder</c>.
+    /// </summary>
+    internal static async Task<
+        Results<Ok<List<UnitPosition>>, ValidationProblem, ProblemHttpResult>
+    > MoveUnitsAsync(
+        Guid id,
+        MoveUnitsRequest request,
+        WwgDbContext db,
+        TimeProvider time,
+        HttpContext httpContext,
+        CancellationToken cancellationToken
+    )
+    {
+        var byUmpire = httpContext.CampaignContext().CanManage;
+        var turn = await EditableTurnAsync(db, id, byUmpire, cancellationToken);
+        if (turn is null)
+        {
+            return NotEditable(byUmpire);
+        }
+
+        // The first unit's hex, and whether it's afloat, are the stack's.
+        (Hex At, bool Afloat)? stack = null;
+        string? WithTheRest(MoveRequest move)
+        {
+            var afloat = move.Class == MovementClass.Boat;
+            stack ??= (move.State.At, afloat);
+            return move.State.At != stack.Value.At ? "It isn't in the same hex as the others."
+                : afloat != stack.Value.Afloat
+                    ? "Units on boats (or boats) and units ashore can't move together."
+                : null;
+        }
+
+        return await OrderEachAsync(
+            db,
+            time,
+            httpContext,
+            turn,
+            request.UnitIds,
+            (unitId, lived) =>
+                new GiveOrderRequest(
+                    OrderKind.Move,
+                    request.Path,
+                    request.ForceMarch,
+                    lived.Contains(unitId)
+                ),
+            cancellationToken,
+            WithTheRest
+        );
+    }
+
+    /// <summary>
+    /// Gives each of the units without an order this turn the order <paramref name="orderFor"/>
+    /// says (given the units that lived off the land last turn), through <c>GiveOrder</c>'s checks;
+    /// units with an order keep it. Units moving <paramref name="together"/> pass that check too,
+    /// and each must get the whole way. All or nothing, naming the unit that can't have it.
+    /// </summary>
+    private static async Task<
+        Results<Ok<List<UnitPosition>>, ValidationProblem, ProblemHttpResult>
+    > OrderEachAsync(
+        WwgDbContext db,
+        TimeProvider time,
+        HttpContext httpContext,
+        EditableTurn turn,
+        IReadOnlyList<Guid> unitIds,
+        Func<Guid, HashSet<Guid>, GiveOrderRequest> orderFor,
+        CancellationToken cancellationToken,
+        Func<MoveRequest, string?>? together = null
+    )
+    {
         // One by one, saving each: the Umpire's next note joins the Edited event the last one
         // saved, and a refusal rolls back the lot.
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
         var ordered = await db
             .UnitOrders.AsNoTracking()
-            .Where(o => o.ArmyTurnId == id)
+            .Where(o => o.ArmyTurnId == turn.Id)
             .Select(o => o.UnitId)
             .ToListAsync(cancellationToken);
-        var rest = request.UnitIds.Distinct().Except(ordered).ToList();
+        var rest = unitIds.Distinct().Except(ordered).ToList();
         var names = await db
             .ArmyUnits.AsNoTracking()
             .Where(u => rest.Contains(u.Id))
@@ -347,19 +456,16 @@ internal static class OrderEndpoints
         var saved = new List<UnitPosition>();
         foreach (var unitId in rest)
         {
-            var hold = new GiveOrderRequest(
-                OrderKind.Hold,
-                null,
-                LivesOffTheLand: lived.Contains(unitId)
-            );
             var result = await StageUnitOrderAsync(
                 db,
                 time,
                 httpContext,
                 turn,
                 unitId,
-                hold,
-                cancellationToken
+                orderFor(unitId, lived),
+                cancellationToken,
+                together,
+                wholeWay: together is not null
             );
             if (result.Result is not Ok<UnitPosition> { Value: { } position })
             {

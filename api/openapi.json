@@ -430,6 +430,86 @@
         ]
       }
     },
+    "/api/army-turns/{id}/move": {
+      "post": {
+        "tags": [
+          "Turns"
+        ],
+        "summary": "Moves the units in a hex together (step 66): each of the units given that has no order yet\nthis turn moves along the path, as a Move from `GiveOrder` would, living off the land if\nit did last turn; units with an order keep it. They must all start in the same hex, all on\nboats or none, and each must get all the way to the path's end (none stopping part of the\nway into a hex). All or nothing: if one of them can't go, nothing changes, and the problem\nnames it. The Umpire's moves are one Edited event in the turn's history, with a note per\nunit. The same access, and turns, as `GiveOrder`.",
+        "operationId": "MoveUnits",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MoveUnitsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UnitPosition"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      }
+    },
     "/api/armies/{id}/marches": {
       "get": {
         "tags": [
@@ -8391,6 +8471,40 @@
           }
         },
         "description": "A campaign's movement table (step 44)."
+      },
+      "MoveUnitsRequest": {
+        "required": [
+          "unitIds",
+          "path"
+        ],
+        "type": "object",
+        "properties": {
+          "unitIds": {
+            "maxItems": 500,
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "The army's units in the hex: those with an order this turn keep it; the rest move."
+          },
+          "path": {
+            "maxItems": 50,
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Hex"
+            },
+            "description": "The hexes the units move through, each next to the last, to where they stop."
+          },
+          "forceMarch": {
+            "type": "boolean",
+            "description": "Whether they force march (decision 0018), every one of them.",
+            "default": false
+          }
+        },
+        "description": "The units in a hex to move together (step 66)."
       },
       "Nation": {
         "enum": [

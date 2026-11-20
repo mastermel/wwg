@@ -1955,7 +1955,7 @@ make users Managers (`PUT /api/admin/users/{id}/manager`).
 | Edit the map settings; search for places | ✅ | ✅ | 403 | 403 | 404 |
 | View turn progress (numbers, statuses, counts) | ✅ | ✅ | ✅ | ✅ | 404 |
 | View **positions and orders** (the visibility rule) | ✅ all | ✅ all | own army | 403 | 404 |
-| Give orders, undo, submit (the open turn; a Draft, or for the Umpire a Draft or Submitted); from step 64, hold the rest of a formation | ✅ | ✅ | own army | 403 | 404 |
+| Give orders, undo, submit (the open turn; a Draft, or for the Umpire a Draft or Submitted); from step 64, hold the rest of a formation; from step 66, move a hex's units together | ✅ | ✅ | own army | 403 | 404 |
 | Place units (turn 0, and units added later) | ✅ | ✅ | 403 | 403 | 404 |
 | Approve / send back / revert an army's turn | ✅ | ✅ | 403 | 403 | 404 |
 | Start the campaign; start the next turn | ✅ | ✅ | 403 | 403 | 404 |
@@ -2095,6 +2095,7 @@ each step)
 | GET | `/api/armies/{id}/turns` | An army's turns, with their orders, notes and history (visibility rule) |
 | PUT / DELETE | `/api/army-turns/{id}/orders/{unitId}` | Give a unit's order `{ kind, path?, forceMarch, livesOffTheLand }` (Move: the hexes it passes through, in order; kinds and flags from steps 47, 48 and 51) / undo it |
 | POST | `/api/army-turns/{id}/hold` | Step 64: hold the rest of a formation `{ unitIds }` (1–500): each without an order this turn holds, as a Hold from the drawer would (living off the land if it did last turn); those with one keep it. All or nothing, the problem naming the unit; the Umpire's holds are one Edited event. Returns the new orders |
+| POST | `/api/army-turns/{id}/move` | Step 66: move a hex's units together `{ unitIds, path, forceMarch }` (1–500; a path of 1–50 steps): each without an order this turn moves along the path, as a Move from the drawer would (living off the land if it did last turn); those with one keep it. They must start in one hex, all on boats or all ashore, and each get the whole way (none part of the way into the last hex). All or nothing, the problem naming the unit; the Umpire's moves are one Edited event. Returns the new orders |
 | POST | `/api/army-turns/{id}/submit` | Submit (every unit on the map has an order; emails the Umpire). Optional body `{ note? }` (≤2000), a note to the Umpire kept on the Submitted event |
 | POST | `/api/army-turns/{id}/approve` | Approve: Completed (this and the next two email the commander) |
 | POST | `/api/army-turns/{id}/send-back` | Back to Draft `{ note?, unitNotes? }` |
@@ -3010,3 +3011,19 @@ build on positions.
     by hex), and the supply warnings (a few units, by what's wrong). The Umpire's "Hold the
     rest" (64c) still has no menu: no panel lists units for the Umpire during a turn, and
     holding unit by unit from the drawer will do for now (deferred, 2026-11-20).
+66. **Moving a hex's units together** (decision 0031): when the hex drawer lists two or more of
+    one army's units without orders this turn, its commander (or the Umpire) can **Move all**: one
+    move for all of them, each unit still with its own order.
+    - Only one army's units: allies in the hex are their own armies' to move. Units with an
+      order this turn keep it; loose boats (not carrying a unit) are left out, and units on boats
+      move together only with units on boats.
+    - The reach is the stack's: a step costs the most any of its units pays for it, as a share
+      of that unit's turn (its class, its time-of-day march, a force march, and what it's already
+      done of a hex it was part of the way into), so one path suits every unit. Only hexes the
+      whole stack gets into are shaded: none stops part of the way.
+    - Force march only if every unit can; the confirmation names those who'd owe attrition.
+    - ✅ **66a. Moving together (API):** `POST /api/army-turns/{id}/move { unitIds, path,
+      forceMarch }` (`MoveUnits`, `Commander` access as `GiveOrder`), through `GiveOrder`'s own
+      checks one by one in a transaction, as `HoldUnits` (both go through `OrderEachAsync`); each
+      unit must start in the first one's hex, afloat or ashore as it is, and get the whole way.
+      A refusal rolls back the lot and names the unit.
