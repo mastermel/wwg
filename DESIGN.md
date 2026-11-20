@@ -3080,7 +3080,7 @@ build on positions.
     - ✅ **67c. Choosing (UI):** the army page's units, for the Umpire: a star by each Commander
       unit makes it the Commander in Chief (filled by the one that is, which clears it); no
       confirmation, as choosing again undoes it. A marker's stack shows its C-in-C on top.
-68. **Couriers between Commanders in Chief** (decision 0033): a report's courier rides from the
+68. ✅ **Couriers between Commanders in Chief** (decision 0033): a report's courier rides from the
     sender's C-in-C to the recipient's, and the Umpire sees every courier and cancels one with a
     note.
     - ✅ **68a. Riding (API):** `Couriers.Ends` from the sender's C-in-C to the recipient's
@@ -3097,5 +3097,5 @@ build on positions.
       ours has none), and says the courier rides from our C-in-C to theirs.
     - ✅ **68d. On the Umpire's map:** a courier marker for each on its way (`CourierMarkers`), its
       popover with the panel's details and a Cancel button.
-    - **68e. End to end:** `intelligence.spec.ts` chooses each army's C-in-C, and cancels a
+    - ✅ **68e. End to end:** `intelligence.spec.ts` chooses each army's C-in-C, and cancels a
       courier with a note.

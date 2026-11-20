@@ -50,6 +50,10 @@ export async function startedCampaign(
   const faction = await libraryFaction(browserOf(umpire.page), "French", "France", [
     { name: "Imperial Guard", type: "LineInfantry" },
     { name: "Reserve Artillery", type: "FootArtillery" },
+    // Couriers ride between Commanders in Chief (decision 0033): with an ally, both armies have one.
+    ...(options.ally
+      ? [{ name: "Napoleon", type: "Commander", fightingFactor: 1, points: 0 } as const]
+      : []),
   ]);
   const army = await api.post<{ id: string }>(`/api/campaigns/${campaignId}/armies`, {
     name: "Armée du Nord",
@@ -58,11 +62,17 @@ export async function startedCampaign(
     nation: "France",
     factionIds: [faction.id],
   });
-  const units = await api.post<{ id: string; name: keyof typeof startingPlaces }[]>(
+  const units = await api.post<{ id: string; name: keyof typeof startingPlaces | "Napoleon" }[]>(
     `/api/armies/${army.id}/units`,
     { unitIds: faction.units.map((unit) => unit.id) },
   );
   for (const unit of units) {
+    if (unit.name === "Napoleon") {
+      // With the Guard.
+      await api.put(`/api/army-units/${unit.id}/placement`, startingPlaces["Imperial Guard"]);
+      await api.put(`/api/armies/${army.id}/commander-in-chief`, { unitId: unit.id });
+      continue;
+    }
     await api.put(
       `/api/army-units/${unit.id}/placement`,
       options.stacked ? startingPlaces["Imperial Guard"] : startingPlaces[unit.name],
@@ -105,6 +115,7 @@ export async function startedCampaign(
     );
     const wing = await libraryFaction(browserOf(umpire.page), "Grouchy", "France", [
       { name: "IV Corps", type: "LineInfantry", fightingFactor: 5, points: 40 },
+      { name: "Grouchy", type: "Commander", fightingFactor: 1, points: 0 },
     ]);
     const ally = await api.post<{ id: string }>(`/api/campaigns/${campaignId}/armies`, {
       name: "Grouchy's Wing",
@@ -114,10 +125,16 @@ export async function startedCampaign(
       nation: "France",
       factionIds: [wing.id],
     });
-    const [corps] = await api.post<{ id: string }[]>(`/api/armies/${ally.id}/units`, {
-      unitIds: wing.units.map((unit) => unit.id),
-    });
-    await api.put(`/api/army-units/${corps.id}/placement`, options.ally.at);
+    const wingUnits = await api.post<{ id: string; name: string }[]>(
+      `/api/armies/${ally.id}/units`,
+      { unitIds: wing.units.map((unit) => unit.id) },
+    );
+    for (const unit of wingUnits) {
+      await api.put(`/api/army-units/${unit.id}/placement`, options.ally.at);
+      if (unit.name === "Grouchy") {
+        await api.put(`/api/armies/${ally.id}/commander-in-chief`, { unitId: unit.id });
+      }
+    }
     allyArmyId = ally.id;
   }
   await api.post(`/api/campaigns/${campaignId}/start`, null);

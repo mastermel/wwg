@@ -1,5 +1,6 @@
 import { scan } from "./support/axe.ts";
-import { expect, test } from "./support/fixtures.ts";
+import { desktopOnly, expect, test } from "./support/fixtures.ts";
+import { apiAs } from "./support/api.ts";
 import {
   approveAndStartNext,
   holdAndSubmit,
@@ -54,4 +55,65 @@ test("a commander sends an ally a report, which a courier brings the next turn",
   // await received.getByRole("button", { name: "Show their 2 units" }).click();
   // await expect(received.getByRole("button", { name: "Hide their units" })).toBeVisible();
   expect(await scan(cy.page, "map, a report")).toEqual([]);
+});
+
+test("the Umpire sees a courier on the map and cancels it, saying why", async ({
+  signUp,
+  isMobile,
+}) => {
+  test.skip(isMobile, desktopOnly);
+  test.slow();
+  const umpire = await signUp("Ada");
+  const bob = await signUp("Bob");
+  const cy = await signUp("Cy");
+  const { campaignUrl, campaignId, armyId, allyArmyId } = await startedCampaign(
+    umpire,
+    bob,
+    "Mont-Saint-Jean",
+    4828,
+    { ally: { commander: cy, at: { q: 1, r: 0 } } },
+  );
+  await (
+    await apiAs(bob.page)
+  ).post(`/api/armies/${armyId}/reports`, {
+    toArmyId: allyArmyId,
+    includesSnapshot: false,
+    includesSightings: false,
+    note: "The Guard attacks at seven.",
+  });
+
+  const page = umpire.page;
+  await page.goto(`${campaignUrl}/map`);
+  const route = "Armée du Nord (Napoleon) to Grouchy's Wing (Grouchy)";
+  const couriers = page.getByRole("region", { name: "Couriers" });
+  await expect(couriers.getByRole("list", { name: "Couriers" })).toContainText(
+    `${route}: Hex (0, 0), arriving next turn.`,
+  );
+  await page
+    .getByRole("region", { name: "Map", exact: true })
+    .getByRole("button", { name: `Courier from ${route}` })
+    .click();
+  const popover = page.getByRole("dialog").filter({ hasText: `Courier from ${route}` });
+  await expect(popover).toContainText("“The Guard attacks at seven.”");
+  await popover.getByRole("button", { name: "Cancel the courier" }).click();
+
+  const dialog = page.getByRole("dialog", { name: "Cancel the courier?" });
+  await dialog.getByRole("textbox", { name: "Why" }).fill("Taken by Prussian hussars at Lasne.");
+  expect(await scan(page, "cancel a courier")).toEqual([]);
+  await dialog.getByRole("button", { name: "Cancel the courier" }).click();
+  await expect(page.getByText(`Cancelled the courier from ${route}.`)).toBeVisible();
+  await expect(couriers).toContainText("None on their way.");
+  await couriers.getByRole("button", { name: "History (1)" }).click();
+  const history = couriers.getByRole("list", { name: "Couriers arrived or cancelled" });
+  await expect(history).toContainText("Sent turn 1, cancelled turn 1 by Ada");
+  await expect(history).toContainText("Why: Taken by Prussian hussars at Lasne.");
+
+  // It never arrives, and nobody is told.
+  await holdAndSubmit(bob, campaignId, armyId);
+  await holdForArmy(umpire, campaignId, allyArmyId ?? "");
+  await approveAndStartNext(umpire, campaignId, armyId);
+  await cy.page.goto(`${campaignUrl}/map`);
+  await expect(cy.page.getByRole("region", { name: "Intelligence" })).toContainText(
+    "No reports yet.",
+  );
 });

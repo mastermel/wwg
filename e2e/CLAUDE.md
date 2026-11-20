@@ -58,7 +58,8 @@ npm run lint && npm run typecheck && npm run format:check
   campaign at turn 1, with the commander's army and two units placed in hexes (both move two a
   turn), and with `enemyAt`, a commanderless Prussian army of the other side with one unit there
   (armies get turns only as they open, so it's made before the start), and with `ally`, an army
-  of the same side commanded by another user, likewise; `holdForArmy` plays such an army's turn
+  of the same side commanded by another user, likewise, with each army's Commander in Chief
+  (Napoleon with the Guard, Grouchy with IV Corps: couriers ride between them, decision 0033); `holdForArmy` plays such an army's turn
   as the Umpire.
   Pass small hexes when a test needs several in view on a phone. Army units come from the
   library: `libraryFaction(browserOf(page), name, nation, units)` (tests/support/library.ts)
