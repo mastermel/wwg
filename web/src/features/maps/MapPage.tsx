@@ -133,6 +133,7 @@ import {
 import { MapLayersControl } from "@/features/maps/MapLayersControl";
 import { TerrainLayer } from "@/features/maps/TerrainLayer";
 import { TurnPanel } from "@/features/maps/TurnPanel";
+import { standsOut, type PickedOut } from "@/features/maps/pick-out";
 import { unitsIn, type PlacedUnit } from "@/features/maps/stacks";
 import { HexDrawer } from "@/features/maps/HexDrawer";
 import { UnitMarkers } from "@/features/maps/UnitMarkers";
@@ -259,8 +260,19 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
   const setup = turns.data?.stage === "Setup";
   // A past turn chosen from the turn list; null for now (the open turn).
   const [viewing, setViewing] = useState<number | null>(null);
-  // The army the Umpire picked out on the map, if any.
+  // The army the Umpire picked out on the map, if any; or a formation anyone picked out from its
+  // heading beside the map (step 64). Picking one out lets the other go.
   const [highlighted, setHighlighted] = useState<string | null>(null);
+  const [pickedOut, setPickedOut] = useState<PickedOut | null>(null);
+  const highlightArmy = (armyId: string | null) => {
+    setHighlighted(armyId);
+    setPickedOut(null);
+  };
+  const pickOut = (formation: PickedOut | null) => {
+    setPickedOut(formation);
+    setHighlighted(null);
+  };
+  const standingOut = standsOut(pickedOut, manager ? highlighted : null);
   const past = !setup && viewing !== null && viewing !== turns.data?.openTurn ? viewing : null;
   // Once running, the open turn of every army the viewer can see: the Umpire's, all of them; a
   // commander's, their own.
@@ -611,8 +623,8 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
       : []),
   ];
 
-  // A picked-out army's moves only; the rest would clutter it.
-  const moves = highlighted ? allMoves.filter((m) => m.placed.army.id === highlighted) : allMoves;
+  // A picked-out army's or formation's moves only; the rest would clutter it.
+  const moves = standingOut ? allMoves.filter((m) => standingOut(m.placed)) : allMoves;
 
   const stopMoving = () => {
     setMoving(null);
@@ -1027,7 +1039,7 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
           <UnitMarkers
             units={shownOnMap}
             outOfSupply={past === null ? outOfSupply : undefined}
-            highlight={manager ? highlighted : null}
+            highlight={standingOut}
             onSelect={(stack) => {
               // While placing, choosing a unit (or stack) puts the new one there too.
               if (placingUnit) {
@@ -1084,6 +1096,8 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
         }))}
         placing={placing}
         onPlace={setPlacing}
+        pickedOut={pickedOut}
+        onPickOut={pickOut}
       />
     ) : !setup && manager && openTurn ? (
       <ReviewPanel
@@ -1112,6 +1126,8 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
         onChoose={(placed) => {
           openHex(placed.hex, undefined, placed);
         }}
+        pickedOut={pickedOut}
+        onPickOut={pickOut}
       />
     ) : (
       <Section title={setup ? "Setting up" : `Turn ${String(turns.data.openTurn)}`}>
@@ -1133,7 +1149,7 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
             new Map<string, number>(),
           )}
           highlighted={highlighted}
-          onHighlight={setHighlighted}
+          onHighlight={highlightArmy}
         />
       )}
       {turns.data?.stage === "Running" && past === null && (

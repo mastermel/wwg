@@ -10,6 +10,7 @@ import { Section } from "@/components/Section";
 import { ArmyBadge } from "@/features/armies/identity/ArmyBadge";
 import { refreshCampaign } from "@/features/campaigns/campaign-cache";
 import { FormationList } from "@/features/maps/FormationList";
+import { pickingOut, type PickedOut } from "@/features/maps/pick-out";
 import type { PlacedUnit } from "@/features/maps/stacks";
 import { UnitPlacementRow } from "@/features/maps/UnitPlacementRow";
 import { errorMessage } from "@/lib/errors";
@@ -23,13 +24,24 @@ interface SetupPanelProps {
   /** The unit being placed, if one is. */
   placing: string | null;
   onPlace: (unitId: string) => void;
+  /** The formation picked out on the map, if one is (step 64). */
+  pickedOut: PickedOut | null;
+  onPickOut: (formation: PickedOut | null) => void;
 }
 
 /**
  * The Umpire's setup (turn 0, DESIGN.md §3.13): every unit, in its army's order of battle, and
  * whether it's on the map yet, what stops the campaign starting, and Start campaign.
  */
-export function SetupPanel({ campaignId, turns, units, placing, onPlace }: SetupPanelProps) {
+export function SetupPanel({
+  campaignId,
+  turns,
+  units,
+  placing,
+  onPlace,
+  pickedOut,
+  onPickOut,
+}: SetupPanelProps) {
   const online = useOnline();
   const queryClient = useQueryClient();
   const start = useStartCampaign();
@@ -75,6 +87,7 @@ export function SetupPanel({ campaignId, turns, units, placing, onPlace }: Setup
                 `${String(group.filter((u) => u.placed).length)} of ${String(group.length)} placed`
               }
               complete={(group) => group.every((u) => u.placed)}
+              {...pickingOut(pickedOut, onPickOut, (u: { unit: { id: string } }) => u.unit.id)}
               renderItem={({ unit, placed }) => (
                 <UnitPlacementRow
                   unit={unit}

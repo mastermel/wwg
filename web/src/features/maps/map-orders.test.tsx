@@ -271,6 +271,40 @@ describe("a commander's turn", () => {
     expect(screen.getByText("No order yet")).toBeVisible();
   });
 
+  it("picks a brigade out on the map from its heading, and lets it go", async () => {
+    serveCommander(draft());
+    server.use(
+      http.get(`*/api/campaigns/${campaignId}/units`, () =>
+        HttpResponse.json([
+          {
+            id: unitId,
+            armyId,
+            name: "Imperial Guard",
+            type: "LineInfantry",
+            brigade: "Old Guard",
+          },
+        ]),
+      ),
+    );
+    const user = userEvent.setup();
+    await openMap();
+
+    await user.click(await screen.findByRole("button", { name: "Old Guard: actions" }));
+    await user.click(
+      await screen.findByRole("menuitem", { name: "Pick out on the map", hidden: true }),
+    );
+
+    const heading = screen.getByRole("button", { name: /^Old Guard \d/ });
+    expect(heading).toHaveTextContent("Picked out on the map");
+    await expectNoAxeViolations(document.body);
+
+    await user.click(screen.getByRole("button", { name: "Old Guard: actions" }));
+    await user.click(
+      await screen.findByRole("menuitem", { name: "Show every unit", hidden: true }),
+    );
+    expect(heading).not.toHaveTextContent("Picked out on the map");
+  });
+
   it("says when the turn falls, and marks a move by night", async () => {
     const night: CampaignTurnsResponse = {
       ...running,

@@ -1382,7 +1382,8 @@ visibility); the data is in §5.1. Built in Phase 8 (§7).
 **The Umpire's view** (Admins see the same)
 - Every army's units where they started the open turn, with its moves as ghosts, in the
   armies' colours.
-- **Armies list:** choosing one highlights its units and fades the rest.
+- **Armies list:** choosing one highlights its units and fades the rest. A formation can be
+  picked out the same way from its heading beside the map (step 64), by commanders too.
 - **Turn list**, from 0 to the open turn, each with its progress ("Turn 4 – 5
   of 6"). Choosing a turn shows it as it was played (where everyone started it, and
   its moves as ghosts; decision 0029), and each army's turn
@@ -2988,6 +2989,12 @@ build on positions.
       in their last Completed order; those with an order keep it. One by one in a transaction,
       saving each, so the Umpire's notes join one Edited event; a refusal rolls back the lot
       and names the unit ("Reserve Artillery: The Umpire hasn't placed …").
+    - ✅ **64b. Picking out (UI):** each heading in the setup and turn panels has a menu
+      (`FormationMenu`, "2nd Brigade: actions") with **Pick out on the map**: the formation's
+      units stand out and the rest fade, its moves alone are drawn, and its heading is marked
+      "Picked out on the map" until **Show every unit**. For commanders too (their own
+      formations); picking out a formation lets an army picked out go, and the other way round
+      (`standsOut`, `pick-out.tsx`).
 65. **The order of battle everywhere units are listed:** the review dialog's notes per unit
     (sending a turn back or reverting it), the past turn's panel, the start-turn dialog's
     sightings, and any other flat list of an army's units, grouped with `FormationList` or

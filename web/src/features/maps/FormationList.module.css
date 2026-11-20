@@ -22,6 +22,25 @@
   border-radius: var(--mantine-radius-sm);
 }
 
+/* The heading and its actions (step 64), side by side; the heading takes the room. */
+.headingRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  border-radius: var(--mantine-radius-sm);
+}
+
+.headingRow .heading {
+  flex: 1;
+  min-width: 0;
+}
+
+/* The formation picked out on the map: marked as the Armies list marks its army. */
+.headingRow[data-picked="true"] {
+  background: var(--mantine-primary-color-light);
+  box-shadow: inset 3px 0 0 var(--mantine-primary-color-filled);
+}
+
 .heading:hover {
   background: var(--mantine-color-default-hover);
 }

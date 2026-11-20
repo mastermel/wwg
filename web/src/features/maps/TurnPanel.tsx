@@ -8,6 +8,7 @@ import { ArmyBadge } from "@/features/armies/identity/ArmyBadge";
 import { armyColorVar } from "@/features/armies/identity/army-colors";
 import { FormationList } from "@/features/maps/FormationList";
 import { describeOrder } from "@/features/maps/orders";
+import { pickingOut, type PickedOut } from "@/features/maps/pick-out";
 import { SubmitTurnModal } from "@/features/maps/SubmitTurnModal";
 import type { PlacedUnit } from "@/features/maps/stacks";
 import { reviewOf, type OpenArmyTurn, type useOrders } from "@/features/maps/use-orders";
@@ -36,6 +37,9 @@ interface TurnPanelProps {
   orders: ReturnType<typeof useOrders>;
   /** Opens a unit on the map (its drawer, with Move and Hold). */
   onChoose: (placed: PlacedUnit) => void;
+  /** The formation picked out on the map, if one is (step 64). */
+  pickedOut: PickedOut | null;
+  onPickOut: (formation: PickedOut | null) => void;
 }
 
 /**
@@ -43,7 +47,15 @@ interface TurnPanelProps {
  * its status, the Umpire's notes, each unit's order (with undo) in the army's order of battle, and
  * Submit.
  */
-export function TurnPanel({ open, commanded, units, orders, onChoose }: TurnPanelProps) {
+export function TurnPanel({
+  open,
+  commanded,
+  units,
+  orders,
+  onChoose,
+  pickedOut,
+  onPickOut,
+}: TurnPanelProps) {
   const [submitting, setSubmitting] = useState<OpenArmyTurn | null>(null);
   const [confirming, { open: ask, close }] = useDisclosure(false);
   const [note, setNote] = useState("");
@@ -75,6 +87,8 @@ export function TurnPanel({ open, commanded, units, orders, onChoose }: TurnPane
               orders={orders}
               night={open.part === "Night"}
               onChoose={onChoose}
+              pickedOut={pickedOut}
+              onPickOut={onPickOut}
               onSubmit={() => {
                 setSubmitting(entry);
                 ask();
@@ -114,6 +128,8 @@ interface ArmyTurnOrdersProps {
   units: readonly CommandedUnit[];
   orders: ReturnType<typeof useOrders>;
   onChoose: (placed: PlacedUnit) => void;
+  pickedOut: PickedOut | null;
+  onPickOut: (formation: PickedOut | null) => void;
   onSubmit: () => void;
   /** The turn is a Night: its moves are night moves. */
   night: boolean;
@@ -125,6 +141,8 @@ function ArmyTurnOrders({
   units,
   orders,
   onChoose,
+  pickedOut,
+  onPickOut,
   onSubmit,
   night,
 }: ArmyTurnOrdersProps) {
@@ -176,6 +194,7 @@ function ArmyTurnOrders({
           group.every((u) => u.placed) &&
           group.every((u) => orderOf(u.unit.id) !== undefined)
         }
+        {...pickingOut(pickedOut, onPickOut, (u: { unit: { id: string } }) => u.unit.id)}
         renderItem={({ unit, placed }) => {
           const order = orderOf(unit.id);
           const note = review?.unitNotes.find((n) => n.unitId === unit.id);

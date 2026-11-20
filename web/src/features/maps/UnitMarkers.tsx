@@ -9,8 +9,11 @@ import { UnitSymbol } from "@/features/units/UnitSymbol";
 interface UnitMarkersProps {
   units: readonly PlacedUnit[];
   onSelect: (stack: UnitStack) => void;
-  /** An army to pick out: stacks without any of its units are faded. */
-  highlight?: string | null;
+  /**
+   * Which units stand out (an army or a formation picked out; `standsOut`): stacks without any of
+   * them are faded. Null or missing: every unit alike.
+   */
+  highlight?: ((placed: PlacedUnit) => boolean) | null;
   /** Units out of supply (step 48d), marked as such, for those who see their supply. */
   outOfSupply?: ReadonlySet<string>;
 }
@@ -71,7 +74,7 @@ export function UnitMarkers({ units, onSelect, highlight, outOfSupply }: UnitMar
         <button
           type="button"
           className={classes.marker}
-          data-faded={highlight ? !stack.units.some((u) => u.army.id === highlight) : undefined}
+          data-faded={highlight ? !stack.units.some(highlight) : undefined}
           aria-label={label}
           onClick={() => {
             onSelect(stack);

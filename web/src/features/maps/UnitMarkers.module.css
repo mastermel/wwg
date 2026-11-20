@@ -9,7 +9,7 @@
   border: 0;
 }
 
-/* Not in the army the Umpire picked out. */
+/* Not in the army or formation picked out (step 64). */
 .marker[data-faded="true"] {
   opacity: 0.3;
 }

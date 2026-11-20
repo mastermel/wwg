@@ -29,6 +29,10 @@ interface FormationListProps<T> {
    * folded (step 63). By default, none is.
    */
   complete?: (items: T[]) => boolean;
+  /** Whether a group is the formation picked out on the map (step 64), marked as such. */
+  picked?: (items: T[]) => boolean;
+  /** What can be done with a group, beside its heading (`FormationMenu`; step 64). */
+  actions?: (name: string, items: T[]) => ReactNode;
   renderItem: (item: T) => ReactNode;
 }
 
@@ -50,6 +54,8 @@ export function FormationList<T>({
   label,
   progress = (rows) => unitCount(rows.length),
   complete = () => false,
+  picked = () => false,
+  actions,
   renderItem,
 }: FormationListProps<T>) {
   const oob = orderOfBattle<Entry<T>>(items.map((item) => ({ ...unitOf(item), item })));
@@ -73,6 +79,8 @@ export function FormationList<T>({
         commander={commander}
         progress={progress(groupItems)}
         complete={complete(groupItems)}
+        picked={picked(groupItems)}
+        actions={actions?.(name, groupItems)}
       >
         {children}
       </FormationGroup>
@@ -129,12 +137,16 @@ interface FormationGroupProps {
   progress: string;
   /** Nothing left to do in it: it starts folded. */
   complete: boolean;
+  /** It's picked out on the map. */
+  picked: boolean;
+  actions: ReactNode;
   children: ReactNode;
 }
 
 /**
- * A group's heading, a button that folds it, and its rows as a list named for the group, stepped
- * in with a line beside it. Folded, its heading still shows its progress.
+ * A group's heading, a button that folds it (with its actions beside it, not in it: a button
+ * can't hold another), and its rows as a list named for the group, stepped in with a line beside
+ * it. Folded, its heading still shows its progress; picked out on the map, it says so.
  */
 function FormationGroup({
   kind,
@@ -142,6 +154,8 @@ function FormationGroup({
   commander,
   progress,
   complete,
+  picked,
+  actions,
   children,
 }: FormationGroupProps) {
   const nameId = useId();
@@ -157,30 +171,42 @@ function FormationGroup({
 
   return (
     <li>
-      {/* The spaces keep the words apart for screen readers; the flex gap spaces them on screen. */}
-      <UnstyledButton
-        className={classes.heading}
-        aria-expanded={open}
-        aria-controls={listId}
-        onClick={() => {
-          setOpen(!open);
-        }}
-      >
-        <IconChevronRight size={14} aria-hidden className={classes.chevron} />
-        <Text id={nameId} span size="sm" fw={kind === "brigade" ? 600 : 700}>
-          {name}
-        </Text>{" "}
-        {commander && (
-          <>
-            <Text span size="sm">
-              {commander}
-            </Text>{" "}
-          </>
-        )}
-        <Text span size="xs" c="dimmed">
-          {progress}
-        </Text>
-      </UnstyledButton>
+      <div className={classes.headingRow} data-picked={picked || undefined}>
+        {/* The spaces keep the words apart for screen readers; the flex gap spaces them on screen. */}
+        <UnstyledButton
+          className={classes.heading}
+          aria-expanded={open}
+          aria-controls={listId}
+          onClick={() => {
+            setOpen(!open);
+          }}
+        >
+          <IconChevronRight size={14} aria-hidden className={classes.chevron} />
+          <Text id={nameId} span size="sm" fw={kind === "brigade" ? 600 : 700}>
+            {name}
+          </Text>{" "}
+          {commander && (
+            <>
+              <Text span size="sm">
+                {commander}
+              </Text>{" "}
+            </>
+          )}
+          {/* Not dimmed on the picked-out tint, where dimmed text fails contrast. */}
+          <Text span size="xs" c={picked ? undefined : "dimmed"}>
+            {progress}
+          </Text>
+          {picked && (
+            <>
+              {" "}
+              <Text span size="xs" fw={600}>
+                Picked out on the map
+              </Text>
+            </>
+          )}
+        </UnstyledButton>
+        {actions}
+      </div>
       <ul
         id={listId}
         hidden={!open}
