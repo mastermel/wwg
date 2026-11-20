@@ -15,7 +15,8 @@ export const startingPlaces = {
 /**
  * A campaign the Umpire has set up and started through the API (the tests aren't about that):
  * the map's area, a side, and the commander's army "Armée du Nord" with the Imperial Guard
- * and the Reserve Artillery (from a library faction of its own) placed apart, in hexes `hexSize` metres across (3 miles unless given;
+ * and the Reserve Artillery (from a library faction of its own) placed apart (or both in the
+ * middle hex, `stacked`), in hexes `hexSize` metres across (3 miles unless given;
  * both units are line infantry and foot artillery, which move two hexes a turn). Turn 1 is open.
  * Leaves the Umpire on the campaign.
  */
@@ -27,6 +28,8 @@ export async function startedCampaign(
   options: {
     enemyAt?: { q: number; r: number };
     ally?: { commander: User; at: { q: number; r: number } };
+    /** Both units in the middle hex (step 66): a stack to move together. */
+    stacked?: boolean;
   } = {},
 ) {
   await createCampaign(umpire.page, name);
@@ -60,7 +63,10 @@ export async function startedCampaign(
     { unitIds: faction.units.map((unit) => unit.id) },
   );
   for (const unit of units) {
-    await api.put(`/api/army-units/${unit.id}/placement`, startingPlaces[unit.name]);
+    await api.put(
+      `/api/army-units/${unit.id}/placement`,
+      options.stacked ? startingPlaces["Imperial Guard"] : startingPlaces[unit.name],
+    );
   }
   // French infantry would march a hex further in turn 1's Morning (step 45): not in these tests,
   // which are about the moves themselves.

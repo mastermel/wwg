@@ -59,6 +59,34 @@ test("a commander moves one unit, holds another and submits the turn", async ({ 
     .toContain("The army has submitted turn 1 of");
 });
 
+test("a commander moves both units in a hex together", async ({ signUp }) => {
+  test.slow();
+  const umpire = await signUp("Ada");
+  const commander = await signUp("Bob");
+  const { campaignUrl } = await startedCampaign(umpire, commander, "Quatre Bras 1815", 4828, {
+    stacked: true,
+  });
+
+  const page = commander.page;
+  await page.goto(`${campaignUrl}/map`);
+  const panel = page.getByRole("region", { name: "Turn 1" });
+
+  // The hex's drawer lists both, and offers to move them together.
+  await page.getByRole("button", { name: "2 units: Imperial Guard, Reserve Artillery" }).click();
+  const drawer = page.getByRole("dialog");
+  await expect(drawer.getByRole("region", { name: "2 units" })).toBeVisible();
+  await drawer.getByRole("button", { name: "Move all 2" }).click();
+  await expect(page.getByText(/Tap a shaded hex for where all 2 units/)).toBeInViewport();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  // The next hex north, as in the single unit's move.
+  await clickMapPart(page, 0, -0.22);
+  await expect(page.getByText("Move all 2 units 1 hex to here?")).toBeVisible();
+  await page.getByRole("button", { name: "Confirm" }).click();
+  await expect(page.getByText("The 2 units will move together.")).toBeVisible();
+  await expect(panel.getByText("Moves 1 hex")).toHaveCount(2);
+  await expect(panel.getByRole("button", { name: "Submit turn 1" })).toBeEnabled();
+});
+
 test("the Umpire sends a turn back, approves it resubmitted, and starts the next", async ({
   signUp,
 }) => {
