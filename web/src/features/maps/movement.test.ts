@@ -11,6 +11,7 @@ import {
   reach,
   rulesTable,
   shareOfTheWay,
+  stackReach,
   stepCost,
 } from "@/features/maps/movement";
 import { indexTerrain, noSettlement } from "@/features/maps/terrain";
@@ -216,6 +217,100 @@ describe("reach, into a hex that takes more than a turn", () => {
       budget: Infinity,
     });
     expect(umpire.get(hexKey({ q: 0, r: -1 }))?.progress).toBeUndefined();
+  });
+});
+
+describe("stackReach", () => {
+  const cell = (q: number, r: number, terrain: "Mountain" | "HighHill") => ({
+    q,
+    r,
+    terrain,
+    forest: false,
+    settlement: noSettlement,
+    setByUmpire: true,
+  });
+  const north = { q: 0, r: -1 };
+  const mountain = indexTerrain({ cells: [cell(0, -1, "Mountain")], edges: [] });
+  const hills = indexTerrain({ cells: [cell(0, -1, "HighHill")], edges: [] });
+
+  it("goes at the slowest unit's pace", () => {
+    const found = stackReach(
+      grid,
+      centre,
+      [
+        { type: "LightCavalry", budget: 1 },
+        { type: "SupplyTrain", budget: 1 },
+      ],
+      { rates: rules, terrain: open },
+    );
+
+    // Supply trains go one flat hex a turn: the start and its six neighbours.
+    expect(found.size).toBe(7);
+  });
+
+  it("is closed where any unit's step is", () => {
+    const cavalry = { type: "LightCavalry", budget: 1 } as const;
+    const alone = stackReach(grid, centre, [cavalry], { rates: rules, terrain: mountain });
+    const together = stackReach(grid, centre, [cavalry, { type: "LineInfantry", budget: 1 }], {
+      rates: rules,
+      terrain: mountain,
+    });
+
+    expect(alone.has(hexKey(north))).toBe(true);
+    expect(together.has(hexKey(north))).toBe(false);
+  });
+
+  it("measures each step against each unit's own budget", () => {
+    // Afternoon infantry with half a turn: a flat hex takes all of it.
+    const found = stackReach(
+      grid,
+      centre,
+      [
+        { type: "LineInfantry", budget: 0.5 },
+        { type: "LightCavalry", budget: 1 },
+      ],
+      { rates: rules, terrain: open },
+    );
+
+    expect(found.get(hexKey(north))?.cost).toBe(1);
+    expect(found.size).toBe(7);
+  });
+
+  it("only goes where every unit gets all the way in", () => {
+    const infantry = { type: "LineInfantry", budget: 1 } as const;
+    const found = stackReach(grid, centre, [infantry, infantry], { rates: rules, terrain: hills });
+
+    expect(found.has(hexKey(north))).toBe(false);
+  });
+
+  it("counts off what each unit has already done of the hex it's heading into", () => {
+    const halfway = {
+      type: "LineInfantry",
+      budget: 1,
+      carried: { hex: north, progress: 0.5 },
+    } as const;
+    const both = stackReach(grid, centre, [halfway, halfway], { rates: rules, terrain: hills });
+    const one = stackReach(grid, centre, [halfway, { type: "LineInfantry", budget: 1 }], {
+      rates: rules,
+      terrain: hills,
+    });
+
+    expect(both.get(hexKey(north))?.cost).toBe(1);
+    expect(one.has(hexKey(north))).toBe(false);
+  });
+
+  it("goes anywhere without a budget, for the Umpire, closed steps and all", () => {
+    const found = stackReach(
+      grid,
+      centre,
+      [
+        { type: "LightCavalry", budget: 1 },
+        { type: "LineInfantry", budget: 1 },
+      ],
+      { rates: rules, terrain: mountain, budget: Infinity },
+    );
+
+    expect(found.size).toBe(grid.hexes().length);
   });
 });
 

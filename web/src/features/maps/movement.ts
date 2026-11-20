@@ -303,6 +303,66 @@ export function reach(
   return found;
 }
 
+/** A unit in a stack moving together (step 66, decision 0031): how it moves, and how far. */
+export interface StackMover {
+  /** Its type, or "Boat" while it's on boats. */
+  type: UnitType;
+  /** Its turn's movement: time of day and force march included. */
+  budget: number;
+  /** Where its last move left it part of the way into. */
+  carried?: HeadingInto;
+}
+
+/**
+ * Where a hex's units can go together (decision 0031): a step costs the stack the most any of
+ * them pays for it, as a share of that unit's own budget (what it's already done of a hex it's
+ * part of the way into counted off), so a path within the stack's turn of 1 is within each
+ * unit's own. Only hexes every unit gets all the way into: none stops part of the way. With an
+ * Infinity `budget` (the Umpire's), anywhere, a closed step at the last resort.
+ */
+export function stackReach(
+  grid: HexGrid,
+  start: Hex,
+  movers: readonly StackMover[],
+  { rates, terrain, budget = 1 }: Omit<ReachOptions, "carried">,
+): Reach {
+  const startKey = hexKey(start);
+  const moving = movers.map((m) => ({ ...m, movementClass: classOf(m.type) }));
+  const stepFor = (from: Hex, to: Hex) => {
+    let cost = 0;
+    for (const m of moving) {
+      const step = stepCost(rates, terrain, m.movementClass, from, to);
+      if (step.closedBecause !== null) return budget === Infinity ? closedForUmpire : Infinity;
+      const already =
+        m.carried && hexKey(from) === startKey && hexKey(to) === hexKey(m.carried.hex)
+          ? m.carried.progress
+          : 0;
+      cost = Math.max(cost, (step.cost * (1 - already)) / m.budget);
+    }
+    return cost;
+  };
+  const found = new Map<string, { hex: Hex; cost: number; from: string | null }>([
+    [startKey, { hex: start, cost: 0, from: null }],
+  ]);
+  const queue: { hex: Hex; cost: number }[] = [{ hex: start, cost: 0 }];
+  while (queue.length > 0) {
+    queue.sort((a, b) => a.cost - b.cost);
+    const { hex, cost } = queue.shift() ?? { hex: start, cost: 0 };
+    if (cost > (found.get(hexKey(hex))?.cost ?? Infinity)) continue;
+    for (const next of neighbours(hex)) {
+      if (!grid.contains(next)) continue;
+      const nextCost = cost + stepFor(hex, next);
+      const key = hexKey(next);
+      if (nextCost > budget + tolerance) continue;
+      if (nextCost < (found.get(key)?.cost ?? Infinity) - tolerance) {
+        found.set(key, { hex: next, cost: nextCost, from: hexKey(hex) });
+        queue.push({ hex: next, cost: nextCost });
+      }
+    }
+  }
+  return found;
+}
+
 /** A share of the way, for reading: "half", "a quarter", "two thirds", "40%". */
 export function shareOfTheWay(progress: number) {
   const words: [number, string][] = [
