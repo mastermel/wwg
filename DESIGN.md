@@ -3099,12 +3099,12 @@ build on positions.
       popover with the panel's details and a Cancel button.
     - ✅ **68e. End to end:** `intelligence.spec.ts` chooses each army's C-in-C, and cancels a
       courier with a note.
-69. **Commanders have no FF or points** (decision 0034): a Commander's FF and points are 0, as a
+69. ✅ **Commanders have no FF or points** (decision 0034): a Commander's FF and points are 0, as a
     scout's are.
-    - **69a. The API:** the library's create, edit and import, and an army unit's edit, store 0 for
+    - ✅ **69a. The API:** the library's create, edit and import, and an army unit's edit, store 0 for
       a Commander's FF and points whatever they're sent; every other unit but a scout needs an FF
       of 1 or more (`UnitStats.HasStats`). A migration zeroes every Commander's. A Commander at 0
       points keeps its boats (`Embarkation`).
-    - **69b. In the app:** `UnitFormModal` hides FF and points while the type is Commander and
+    - ✅ **69b. In the app:** `UnitFormModal` hides FF and points while the type is Commander and
       sends 0; `hasStats` (`unit-types.ts`) is false for Commanders and scouts, so `UnitStat`
       shows "–"; a Commander at 0 points keeps its boats on the map.
