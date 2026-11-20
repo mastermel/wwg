@@ -16,11 +16,14 @@ generated from the API's OpenAPI document.
 - [Conventional Commits](https://www.conventionalcommits.org/): `feat:`, `fix:`, `chore:`,
   `docs:`, `build:`, `ci:`, `test:`, `refactor:`.
 - One commit per task or step, each under ~500 changed lines; split larger work.
-- Run the full checks before every commit and only commit when they pass:
+- Every commit must build and pass the API and web checks. Run these before every commit and only
+  commit when they pass:
   - API: `dotnet test --solution api/Wwg.slnx` (builds too, and refreshes `api/openapi.json`).
   - Web (from `web/`): `npm run lint`, `npm run typecheck` and `npm test`.
-  - End-to-end (from `e2e/`): `npm run lint` and `npm run typecheck` for changes to `e2e/`; and
-    `./stack.sh up && npm run test:docker` for changes to a flow the suite covers.
+  - End-to-end (from `e2e/`): `npm run lint` and `npm run typecheck` for changes to `e2e/`.
+- Run the end-to-end suite (from `e2e/`: `./stack.sh up && npm run test:docker`) once, after the
+  last commit of a task that changes a flow the suite covers. Fix any failures in further commits
+  before calling the task done.
 - Never push. The maintainer pushes.
 - The pre-commit hook (Husky.Net, `.husky/`) formats staged C# with CSharpier, and runs
   `eslint --fix` and Prettier on staged `web/` and `e2e/` files. Don't bypass it with `--no-verify`.
