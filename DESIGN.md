@@ -3001,7 +3001,11 @@ build on positions.
       `holdTheRest`). No confirmation: each hold can be undone like any other. The Umpire's
       review panel lists no units (orders are the drawer's, step 36), so the Umpire has the
       endpoint but no menu yet; step 65 can add one where units are listed.
-65. **The order of battle everywhere units are listed:** the review dialog's notes per unit
-    (sending a turn back or reverting it), the past turn's panel, the start-turn dialog's
-    sightings, and any other flat list of an army's units, grouped with `FormationList` or
-    `OrderOfBattleTable`; the hex drawer and stack lists stay as they are (a hex's few units).
+65. ✅ **The order of battle everywhere units are listed:** the review dialog's notes per unit
+    (sending a turn back or reopening it) are a `FormationList`, each note still sent for its own
+    unit; the notes in a turn's history (`PastTurnPanel`) come one after another in the order of
+    battle (`inOrderOfBattle`), as headings would outweigh a few notes. The library, the army's
+    units and **Add units** already had `OrderOfBattleTable`. What stays as it was: a hex's few
+    units (the drawer, the stack lists, a sighting's units and **Add a sighting**'s hexes, all
+    by hex), and the supply warnings (a few units, by what's wrong). The Umpire's "Hold the
+    rest" (64c) still has no menu: no panel lists units for the Umpire during a turn.

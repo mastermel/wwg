@@ -20,6 +20,7 @@ vi.mock("@/features/maps/CampaignMap", () => ({
 
 const campaignId = "0192f5c1-0000-7000-8000-00000000c001";
 const guardId = "0192f5c1-0000-7000-8000-00000000b001";
+const lancersId = "0192f5c1-0000-7000-8000-00000000b002";
 const nord: ArmySummary = {
   id: "0192f5c1-0000-7000-8000-00000000a001",
   name: "Armée du Nord",
@@ -117,6 +118,15 @@ function serveHistory() {
           fightingFactor: 6,
           points: 30,
         },
+        {
+          id: lancersId,
+          armyId: nord.id,
+          name: "Lancers",
+          type: "LightCavalry",
+          fightingFactor: 4,
+          points: 20,
+          division: "Cavalry Division",
+        },
       ]),
     ),
     http.get(`*/api/campaigns/${campaignId}/turns`, () => HttpResponse.json(turns)),
@@ -141,7 +151,11 @@ function serveHistory() {
               at: "2026-09-02T15:00:00Z",
               byName: "Ada Tester",
               note: "Too cautious.",
-              unitNotes: [{ unitId: guardId, text: "Advance on the ridge." }],
+              // As the API keeps them; shown in the order of battle, the Guard (in no division) first.
+              unitNotes: [
+                { unitId: lancersId, text: "Scout the woods." },
+                { unitId: guardId, text: "Advance on the ridge." },
+              ],
             },
           ],
         }),
@@ -190,7 +204,11 @@ describe("the turn list", () => {
     expect(
       within(history).getByText(/^Sent back by Ada Tester, .*: Too cautious\.$/),
     ).toBeInTheDocument();
-    expect(within(history).getByText("Imperial Guard: Advance on the ridge.")).toBeInTheDocument();
+    expect(
+      within(history)
+        .getAllByText(/^(Imperial Guard|Lancers): /)
+        .map((note) => note.textContent),
+    ).toEqual(["Imperial Guard: Advance on the ridge.", "Lancers: Scout the woods."]);
     expect(screen.queryByRole("button", { name: /Start turn/ })).not.toBeInTheDocument();
     await expectNoAxeViolations(document.body);
 

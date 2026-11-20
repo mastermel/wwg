@@ -110,7 +110,9 @@ The pre-commit hook runs `eslint --fix` and Prettier on staged files.
   for each group, with what the panel counts in each heading ("3 of 5 placed"); each heading
   folds its group (step 63), and a `complete` group starts folded. Its `actions` sit beside
   each heading: `FormationMenu`, through `formationActions` (`pick-out.tsx`), picks a formation out on
-  the map (step 64); what stands out there is `standsOut`, a test of each unit.
+  the map (step 64); what stands out there is `standsOut`, a test of each unit. The review
+  dialog's unit notes are a `FormationList` too (step 65); a few units named apart (a history's
+  notes) are sorted with `inOrderOfBattle` instead.
   Managers and Admins import the club's CSV from the library page (`ImportLibraryModal`,
   decision 0025): the file's text is previewed, then imported. Its file field is a native
   `<input type="file">` in an `Input.Wrapper`, so tests upload to it by its label.

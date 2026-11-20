@@ -166,3 +166,13 @@ export function unitsIn<T>(group: Division<T> & { divisions?: Division<T>[] }): 
     ...(group.divisions ?? []).flatMap((division) => unitsIn(division)),
   ];
 }
+
+/**
+ * Units one after another in their order of battle, as its table and lists show them: those in
+ * no corps first, then each corps'. For a few units named apart from their groups (notes in a
+ * turn's history, say), where headings would outweigh them.
+ */
+export function inOrderOfBattle<T extends Placed>(units: readonly T[]): T[] {
+  const oob = orderOfBattle(units);
+  return [...unitsIn(oob), ...oob.corps.flatMap((corps) => unitsIn(corps))];
+}

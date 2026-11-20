@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import type { ArmySummary, ArmyUnitResponse } from "@/api/generated/model";
 import { SendBackTurnBody } from "@/api/generated/zod/turns/turns.zod";
+import { FormationList } from "@/features/maps/FormationList";
 import { applyServerErrors } from "@/lib/form-errors";
 import { useOnline } from "@/lib/use-online";
 
@@ -37,7 +38,8 @@ interface ReviewModalProps {
 
 /**
  * Sending back a Submitted turn, or reopening an approved one, with the Umpire's note on the turn
- * and on units' orders (DESIGN.md §3.13). Both optional. Mount it only while open.
+ * and on units' orders (DESIGN.md §3.13), the units in their order of battle (step 65). Both
+ * optional. Mount it only while open.
  */
 export function ReviewModal({ kind, army, turn, units, onSubmit, onClose }: ReviewModalProps) {
   const online = useOnline();
@@ -48,6 +50,8 @@ export function ReviewModal({ kind, army, turn, units, onSubmit, onClose }: Revi
   });
   const { errors, isSubmitting } = form.formState;
   const sendBack = kind === "send-back";
+  // Each unit's note keeps its place in the form whichever group it's shown in.
+  const fieldOf = new Map(units.map((unit, index) => [unit.id, index]));
 
   const submit = form.handleSubmit(async (values) => {
     setFormError(null);
@@ -96,18 +100,25 @@ export function ReviewModal({ kind, army, turn, units, onSubmit, onClose }: Revi
               <Text size="sm" fw={500}>
                 Notes on units&apos; orders (optional)
               </Text>
-              {units.map((unit, index) => (
-                <Textarea
-                  key={unit.id}
-                  label={unit.name}
-                  autosize
-                  minRows={1}
-                  error={errors.unitNotes?.[index]?.text?.message}
-                  {...form.register(noteField(index), {
-                    setValueAs: (value: string) => value.trim(),
-                  })}
-                />
-              ))}
+              <FormationList
+                items={units}
+                unitOf={(unit) => unit}
+                label="Notes on units' orders"
+                renderItem={(unit) => {
+                  const index = fieldOf.get(unit.id) ?? 0;
+                  return (
+                    <Textarea
+                      label={unit.name}
+                      autosize
+                      minRows={1}
+                      error={errors.unitNotes?.[index]?.text?.message}
+                      {...form.register(noteField(index), {
+                        setValueAs: (value: string) => value.trim(),
+                      })}
+                    />
+                  );
+                }}
+              />
             </Stack>
           )}
           <Group justify="flex-end">

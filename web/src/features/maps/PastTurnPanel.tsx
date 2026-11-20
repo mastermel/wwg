@@ -13,6 +13,7 @@ import type { DepotThreat, HexWarning } from "@/features/maps/contact";
 import { HexWarningsList } from "@/features/maps/HexWarningsList";
 import type { TerrainIndex } from "@/features/maps/terrain";
 import type { OpenArmyTurn } from "@/features/maps/use-orders";
+import { inOrderOfBattle } from "@/features/units/order-of-battle";
 import { formatDateTime } from "@/lib/format";
 import { turnWhen } from "@/features/campaigns/calendar";
 
@@ -61,6 +62,13 @@ export function PastTurnPanel({
   terrain,
 }: PastTurnPanelProps) {
   const unitName = (id: string) => units.find((u) => u.id === id)?.name ?? "A unit";
+  // A unit's notes in its order of battle (step 65), as the turn panel lists its orders; a unit
+  // no longer in the army last.
+  const place = new Map(inOrderOfBattle(units).map((unit, index) => [unit.id, index]));
+  const inOrder = <N extends { unitId: string }>(notes: readonly N[]) =>
+    notes.toSorted(
+      (a, b) => (place.get(a.unitId) ?? units.length) - (place.get(b.unitId) ?? units.length),
+    );
 
   return (
     <Section
@@ -101,7 +109,7 @@ export function PastTurnPanel({
                           Note to the Umpire: {event.note}
                         </Text>
                       )}
-                      {event.unitNotes.map((note) => (
+                      {inOrder(event.unitNotes).map((note) => (
                         <Text key={note.unitId} size="xs" c="dimmed">
                           {unitName(note.unitId)}: {note.text}
                         </Text>

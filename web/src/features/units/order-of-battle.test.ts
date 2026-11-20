@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { UnitType } from "@/api/generated/model";
-import { orderOfBattle, unitsIn } from "@/features/units/order-of-battle";
+import { inOrderOfBattle, orderOfBattle, unitsIn } from "@/features/units/order-of-battle";
 
 const unit = (
   name: string,
@@ -120,6 +120,22 @@ describe("the order of battle", () => {
     ]);
     expect(corps.divisions.map((d) => d.name)).toEqual(["Division of Grenadiers"]);
     expect(names(unitsIn(corps))).toEqual(["Guard Battery", "Grenadiers"]);
+  });
+
+  it("lists every unit one after another in its order of battle", () => {
+    const units = [
+      { ...unit("Grenadiers", "Division of Grenadiers"), corps: "Old Guard" },
+      unit("Lancers", "Cavalry Division"),
+      unit("Engineers"),
+      unit("Sappers", null, "Reserve"),
+    ];
+
+    expect(names(inOrderOfBattle(units))).toEqual([
+      "Engineers",
+      "Sappers",
+      "Lancers",
+      "Grenadiers",
+    ]);
   });
 
   it("names each group's commander from its units", () => {
