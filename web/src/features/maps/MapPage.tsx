@@ -838,14 +838,15 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
   };
   // The drawer's Move all (step 66): each army's units in the chosen hex (never a zoomed-out
   // marker's others) without orders, two or more, on boats or ashore alike.
-  const chosenGroups =
-    chosen && past === null && !setup
-      ? stackGroups(unitsIn(chosen.hex, shownOnMap), turnOf, manager)
-      : [];
+  const inChosenHex = chosen && past === null && !setup ? unitsIn(chosen.hex, shownOnMap) : [];
+  const chosenGroups = stackGroups(inChosenHex, turnOf, manager);
   const moveAllActions = chosenGroups.length > 0 && (
     <Stack gap="xs" align="flex-start">
       {chosenGroups.map(({ army, units: group, mixed }) => {
-        const all = chosenUnits.filter((p) => p.army.id === army.id).length === group.length;
+        // Every one of its units there (loose boats aside), or some have orders already.
+        const all =
+          inChosenHex.filter((p) => p.army.id === army.id && p.unit.type !== "Boat").length ===
+          group.length;
         const label = `${all ? `Move all ${String(group.length)}` : `Move the ${String(group.length)} without orders`}${chosenGroups.length > 1 ? ` of ${army.name}` : ""}`;
         return mixed ? (
           <Text key={army.id} size="sm" c="dimmed">
