@@ -1,9 +1,10 @@
 import { useComputedColorScheme } from "@mantine/core";
-import type { FeatureCollection, LineString, Polygon } from "geojson";
+import type { FeatureCollection, Polygon } from "geojson";
 import { Layer, Marker, Source } from "react-map-gl/maplibre";
 import { armyColorVar } from "@/features/armies/identity/army-colors";
 import type { Point } from "@/features/maps/geo";
 import { mapPalettes } from "@/features/maps/map-style";
+import { sharedLines } from "@/features/maps/ghost-lines";
 import classes from "@/features/maps/OrderOverlay.module.css";
 import type { PlacedUnit } from "@/features/maps/stacks";
 import { UnitSymbol } from "@/features/units/UnitSymbol";
@@ -24,19 +25,13 @@ interface OrderOverlayProps {
 
 /**
  * Moves not yet approved (DESIGN.md §3.13): a ghost of each unit where it's going, with a dashed
- * line along its path; and while moving one, the hexes it can reach, shaded. Inside a CampaignMap. Drawn for sight
- * only: the turn panel lists the same orders for screen readers and keyboards.
+ * line along its path (one for units going together, the wider the more of them); and while
+ * moving, the hexes within reach, shaded. Inside a CampaignMap. Drawn for sight only: the turn
+ * panel lists the same orders for screen readers and keyboards.
  */
 export function OrderOverlay({ moves, reachable = [] }: OrderOverlayProps) {
   const ink = mapPalettes[useComputedColorScheme("light")].label;
-  const lines: FeatureCollection<LineString> = {
-    type: "FeatureCollection",
-    features: moves.map(({ line }) => ({
-      type: "Feature",
-      properties: {},
-      geometry: { type: "LineString", coordinates: line },
-    })),
-  };
+  const lines = sharedLines(moves);
   const area: FeatureCollection<Polygon> = {
     type: "FeatureCollection",
     features: reachable.map((corners) => ({
@@ -64,7 +59,12 @@ export function OrderOverlay({ moves, reachable = [] }: OrderOverlayProps) {
         <Layer
           id="unit-moves"
           type="line"
-          paint={{ "line-color": ink, "line-width": 2, "line-dasharray": [2, 1.5] }}
+          paint={{
+            "line-color": ink,
+            // 2 pixels for a unit, 3 for two, 4 for three or more.
+            "line-width": ["min", 4, ["+", 1, ["get", "units"]]],
+            "line-dasharray": [2, 1.5],
+          }}
         />
       </Source>
       {moves.map(({ placed, to }) => (
