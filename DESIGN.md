@@ -3093,7 +3093,7 @@ build on positions.
       cancelled or when it arrived. In the app, the Couriers panel lists those on their way with
       these details and, folded, the history (arrived, cancelled with the note); cancelling asks
       for the note (`CancelCourierModal`, worded by `couriers.ts`).
-    - **68c. In the app:** `SendReportModal` greys out an ally without a C-in-C (and says so when
+    - ✅ **68c. In the app:** `SendReportModal` greys out an ally without a C-in-C (and says so when
       ours has none), and says the courier rides from our C-in-C to theirs.
     - **68d. On the Umpire's map:** a courier marker for each on its way (`CourierMarkers`), its
       popover with the panel's details and a Cancel button.

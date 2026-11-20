@@ -12,6 +12,8 @@ interface IntelligencePanelProps {
   /** The viewer's armies (a commander's own). */
   mine: readonly ArmySummary[];
   armies: readonly ArmySummary[];
+  /** The armies with a Commander in Chief, whom couriers ride between (decision 0033). */
+  chiefs: ReadonlySet<string>;
   /** The report shown on the map, if any. */
   shown: string | null;
   onShow: (reportId: string | null) => void;
@@ -29,6 +31,7 @@ export function IntelligencePanel({
   reports,
   mine,
   armies,
+  chiefs,
   shown,
   onShow,
 }: IntelligencePanelProps) {
@@ -124,6 +127,7 @@ export function IntelligencePanel({
           campaignId={campaignId}
           from={mine}
           armies={armies}
+          chiefs={chiefs}
           onClose={() => {
             setSending(false);
           }}

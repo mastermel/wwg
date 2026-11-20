@@ -777,9 +777,18 @@ describe("a commander's turn", () => {
     expect(drawer.getByRole("button", { name: "Hold" })).toBeInTheDocument();
   });
 
-  it("keeps reports from allies, shows one on the map, and sends one by courier", async () => {
-    const requests = serveCommander(draft());
-    const allyId = "0192f5c1-0000-7000-8000-00000000a002";
+  const allyId = "0192f5c1-0000-7000-8000-00000000a002";
+  const chief = (armyOf: string, name: string) => ({
+    id: `0192f5c1-0000-7000-8000-0000000c${armyOf.slice(-4)}`,
+    armyId: armyOf,
+    name,
+    type: "Commander",
+    fightingFactor: 0,
+    points: 0,
+    isCommanderInChief: true,
+  });
+  /** The commander's army and an ally, each with a Commander in Chief if given. */
+  const serveAlly = (chiefs: { ours: boolean; theirs: boolean }) => {
     server.use(
       http.get(`*/api/campaigns/${campaignId}/armies`, () =>
         HttpResponse.json([
@@ -787,6 +796,60 @@ describe("a commander's turn", () => {
           { ...army, id: allyId, name: "Grouchy's Wing", commander: null, color: "Green" },
         ]),
       ),
+      http.get(`*/api/campaigns/${campaignId}/units`, () =>
+        HttpResponse.json([
+          {
+            id: unitId,
+            armyId,
+            name: "Imperial Guard",
+            type: "LineInfantry",
+            fightingFactor: 6,
+            points: 30,
+            isCommanderInChief: false,
+          },
+          ...(chiefs.ours ? [chief(armyId, "Napoleon")] : []),
+          ...(chiefs.theirs ? [chief(allyId, "Grouchy")] : []),
+        ]),
+      ),
+    );
+  };
+
+  it("won't send a report to an ally without a Commander in Chief", async () => {
+    serveCommander(draft());
+    serveAlly({ ours: true, theirs: false });
+    const user = userEvent.setup();
+    await openMap();
+
+    await user.click(await screen.findByRole("button", { name: "Send a report" }));
+    const dialog = await screen.findByRole("dialog", { name: "Send a report" });
+    await user.click(within(dialog).getByRole("combobox", { name: "To" }));
+
+    expect(
+      screen.getByRole("option", { name: "Grouchy's Wing (no Commander in Chief)", hidden: true }),
+    ).toHaveAttribute("data-combobox-disabled", "true");
+    expect(within(dialog).getByRole("button", { name: "Send by courier" })).toBeDisabled();
+  });
+
+  it("won't send a report without our own Commander in Chief, and says why", async () => {
+    serveCommander(draft());
+    serveAlly({ ours: false, theirs: true });
+    const user = userEvent.setup();
+    await openMap();
+
+    await user.click(await screen.findByRole("button", { name: "Send a report" }));
+    const dialog = await screen.findByRole("dialog", { name: "Send a report" });
+    await user.type(within(dialog).getByRole("textbox", { name: "Message" }), "Come to Ligny.");
+
+    expect(within(dialog).getByRole("status")).toHaveTextContent(
+      "Armée du Nord has no Commander in Chief, whom a courier rides from.",
+    );
+    expect(within(dialog).getByRole("button", { name: "Send by courier" })).toBeDisabled();
+  });
+
+  it("keeps reports from allies, shows one on the map, and sends one by courier", async () => {
+    const requests = serveCommander(draft());
+    serveAlly({ ours: true, theirs: true });
+    server.use(
       http.get(`*/api/campaigns/${campaignId}/reports`, () =>
         HttpResponse.json([
           {

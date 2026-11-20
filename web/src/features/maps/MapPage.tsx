@@ -422,6 +422,11 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
     query: { meta: { persist: false }, enabled: running && manager },
   });
   const [shownReport, setShownReport] = useState<string | null>(null);
+  // Couriers ride between Commanders in Chief (step 68): the armies with one.
+  const chiefs = useMemo(
+    () => new Set((units.data ?? []).filter((u) => u.isCommanderInChief).map((u) => u.armyId)),
+    [units.data],
+  );
   // Victory points (step 50): the totals, and the holders the viewer may know.
   const scoreboard = useGetScoreboard(campaignId, live);
   const victorySettings = useGetVictorySettings(campaignId, live);
@@ -1262,6 +1267,7 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
           reports={reports.data ?? []}
           mine={myArmies}
           armies={armies.data ?? []}
+          chiefs={chiefs}
           shown={shownReport}
           onShow={setShownReport}
         />
