@@ -73,6 +73,7 @@ const unit = (id: string, name: string, changes: Partial<ArmyUnitResponse> = {})
     divisionCommander: null,
     brigadeCommander: null,
     importOrder: null,
+    isCommanderInChief: false,
     ...changes,
   }) satisfies ArmyUnitResponse;
 

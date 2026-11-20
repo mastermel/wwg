@@ -33,6 +33,7 @@ const unit = (id: string, name: string, division: string | null): ArmyUnitRespon
   divisionCommander: null,
   brigadeCommander: null,
   importOrder: null,
+  isCommanderInChief: false,
 });
 
 // The division's unit first, as the API might list them: the dialog shows it after the loose one.

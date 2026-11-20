@@ -95,6 +95,7 @@ const unit = (
   divisionCommander: null,
   brigadeCommander: null,
   importOrder: null,
+  isCommanderInChief: false,
 });
 
 /** Serves a campaign and its army, with units that change as the test adds and removes them. */
@@ -155,6 +156,7 @@ function serveArmy(
         .map((u, i): ArmyUnitResponse => ({
           ...u,
           nation: "France",
+          isCommanderInChief: false,
           id: unit(String(units.length + i + 1), "").id,
           armyId,
           unitId: u.id,

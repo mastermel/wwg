@@ -240,6 +240,66 @@
         ]
       }
     },
+    "/api/armies/{id}/commander-in-chief": {
+      "put": {
+        "tags": [
+          "ArmyUnits"
+        ],
+        "summary": "Makes one of the army's Commander units its Commander in Chief (Umpire or Admin), at any\ntime; the one before, if any, no longer is. Null leaves the army with none. Another army's\nunit is refused (400), as is a unit of another type (409).",
+        "operationId": "UpdateCommanderInChief",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCommanderInChiefRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      }
+    },
     "/api/campaigns/{id}/places": {
       "get": {
         "tags": [
@@ -6206,7 +6266,8 @@
           "corpsCommander",
           "divisionCommander",
           "brigadeCommander",
-          "importOrder"
+          "importOrder",
+          "isCommanderInChief"
         ],
         "type": "object",
         "properties": {
@@ -6307,6 +6368,10 @@
             ],
             "description": "Its library unit's place in the imported file, which orders the army's formations; null when\nit wasn't imported.",
             "format": "int32"
+          },
+          "isCommanderInChief": {
+            "type": "boolean",
+            "description": "Whether it's its army's Commander in Chief: where the player is."
           }
         },
         "description": "A unit in an army: the campaign's copy of a library unit, a boat built or a scout."
@@ -10709,6 +10774,23 @@
           }
         },
         "description": "The Umpire sets the campaign's supply settings."
+      },
+      "UpdateCommanderInChiefRequest": {
+        "required": [
+          "unitId"
+        ],
+        "type": "object",
+        "properties": {
+          "unitId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "One of the army's Commander units; null for none.",
+            "format": "uuid"
+          }
+        },
+        "description": "Chooses an army's Commander in Chief (decision 0032)."
       },
       "UpdateEmailSettingsRequest": {
         "required": [

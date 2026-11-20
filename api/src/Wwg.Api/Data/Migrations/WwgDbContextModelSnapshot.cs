@@ -15,7 +15,7 @@ namespace Wwg.Api.Data.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "10.0.12");
+            modelBuilder.HasAnnotation("ProductVersion", "10.0.15");
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole<System.Guid>", b =>
                 {
@@ -432,6 +432,9 @@ namespace Wwg.Api.Data.Migrations
                     b.Property<int?>("ImportOrder")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("IsCommanderInChief")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -466,6 +469,10 @@ namespace Wwg.Api.Data.Migrations
 
                     b.HasIndex("CampaignId", "UnitId")
                         .IsUnique();
+
+                    b.HasIndex(new[] { "ArmyId" }, "IX_ArmyUnits_CommanderInChief")
+                        .IsUnique()
+                        .HasFilter("\"IsCommanderInChief\" = 1");
 
                     b.ToTable("ArmyUnits");
                 });

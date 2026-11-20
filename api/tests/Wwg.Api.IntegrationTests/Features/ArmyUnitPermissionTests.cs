@@ -163,6 +163,31 @@ public sealed class ArmyUnitPermissionTests : ApiTest
         await response.AssertProblemAsync(HttpStatusCode.NotFound);
     }
 
+    [Theory]
+    [InlineData(Role.Admin, HttpStatusCode.NoContent)]
+    [InlineData(Role.Umpire, HttpStatusCode.NoContent)]
+    [InlineData(Role.Commander, HttpStatusCode.Forbidden)]
+    [InlineData(Role.Player, HttpStatusCode.Forbidden)]
+    [InlineData(Role.NonMember, HttpStatusCode.NotFound)]
+    public async Task UpdateCommanderInChief_ByRole_ReturnsExpectedStatus(
+        Role role,
+        HttpStatusCode expected
+    )
+    {
+        using var scenario = await CreateCampaignScenarioAsync();
+        var chief = await LibrarySteps.AddUnitAsync(scenario, "Napoleon", UnitType.Commander, 1, 0);
+
+        using var response = await scenario
+            .As(role)
+            .PutAsJsonAsync(
+                new Uri($"/api/armies/{scenario.ArmyId}/commander-in-chief", UriKind.Relative),
+                new UpdateCommanderInChiefRequest(chief),
+                CancellationToken
+            );
+
+        Assert.Equal(expected, response.StatusCode);
+    }
+
     private static Uri UnitUri(CampaignScenario scenario) =>
         new($"/api/army-units/{scenario.UnitId}", UriKind.Relative);
 

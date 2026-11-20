@@ -43,6 +43,10 @@ public sealed record UpdateArmyUnitRequest(
     [property: Trimmed, StringLength(UnitStats.MaxGroupLength)] string? BrigadeCommander
 );
 
+/// <summary>Chooses an army's Commander in Chief (decision 0032).</summary>
+/// <param name="UnitId">One of the army's Commander units; null for none.</param>
+public sealed record UpdateCommanderInChiefRequest([property: JsonRequired] Guid? UnitId);
+
 /// <summary>A unit in an army: the campaign's copy of a library unit, a boat built or a scout.</summary>
 /// <param name="Id">The unit's ID.</param>
 /// <param name="ArmyId">The army it's in.</param>
@@ -63,6 +67,7 @@ public sealed record UpdateArmyUnitRequest(
 /// Its library unit's place in the imported file, which orders the army's formations; null when
 /// it wasn't imported.
 /// </param>
+/// <param name="IsCommanderInChief">Whether it's its army's Commander in Chief: where the player is.</param>
 public sealed record ArmyUnitResponse(
     Guid Id,
     Guid ArmyId,
@@ -79,7 +84,8 @@ public sealed record ArmyUnitResponse(
     string? CorpsCommander,
     string? DivisionCommander,
     string? BrigadeCommander,
-    int? ImportOrder
+    int? ImportOrder,
+    bool IsCommanderInChief
 );
 
 /// <summary>A change to a unit's points (decision 0018).</summary>

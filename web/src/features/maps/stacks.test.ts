@@ -29,6 +29,7 @@ const placed = (id: string, longitude: number, latitude = 0): PlacedUnit => ({
     divisionCommander: null,
     brigadeCommander: null,
     importOrder: null,
+    isCommanderInChief: false,
   } satisfies ArmyUnitResponse,
   army,
   hex: { q: 0, r: 0 },

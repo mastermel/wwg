@@ -144,4 +144,10 @@ internal sealed class ArmyUnit : Entity
     /// each turn that closes with it on goes in its <see cref="ScreeningTurn"/>s.
     /// </summary>
     public bool Screening { get; set; }
+
+    /// <summary>
+    /// Whether it's its army's Commander in Chief (decision 0032): the Commander unit standing for
+    /// the player on the map, the Umpire's choice; at most one per army.
+    /// </summary>
+    public bool IsCommanderInChief { get; set; }
 }

@@ -44,6 +44,7 @@ const placed = (
     divisionCommander: null,
     brigadeCommander: null,
     importOrder: null,
+    isCommanderInChief: false,
   },
   army: army("a"),
   hex: { q: 0, r: 0 },

@@ -129,7 +129,8 @@ public sealed class ArmyUnitTests : ApiTest
                 null,
                 null,
                 null,
-                null
+                null,
+                false
             ),
             unit
         );
@@ -398,7 +399,8 @@ public sealed class ArmyUnitTests : ApiTest
             "Uxbridge",
             "Somerset",
             "Ponsonby",
-            null
+            null,
+            false
         );
         Assert.Equal(expected, await response.Content.ReadAsAsync<ArmyUnitResponse>());
         var army = await scenario
@@ -484,7 +486,8 @@ public sealed class ArmyUnitTests : ApiTest
             null,
             null,
             null,
-            null
+            null,
+            false
         );
         Assert.Equal(expected, scout);
         Assert.Contains(expected, (await ArmyAsync(scenario)).Units);

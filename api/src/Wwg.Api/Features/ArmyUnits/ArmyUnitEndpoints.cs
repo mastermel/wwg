@@ -31,6 +31,12 @@ internal static class ArmyUnitEndpoints
             .WithName("AddScout")
             .WithTags("ArmyUnits")
             .RequireCampaignAccess(CampaignAccess.Umpire, CampaignRouteId.Army);
+        // Where the player is (decision 0032): the Umpire's to say, not the commander's.
+        app.MapPut("/api/armies/{id:guid}/commander-in-chief", UpdateCommanderInChiefAsync)
+            .WithName("UpdateCommanderInChief")
+            .WithTags("ArmyUnits")
+            .RequireCampaignAccess(CampaignAccess.Umpire, CampaignRouteId.Army)
+            .ProducesProblem(StatusCodes.Status409Conflict);
 
         var unit = app.MapGroup("/api/army-units/{id:guid}").WithTags("ArmyUnits");
         unit.MapPut("", UpdateArmyUnitAsync)
@@ -169,6 +175,72 @@ internal static class ArmyUnitEndpoints
     }
 
     /// <summary>
+    /// Makes one of the army's Commander units its Commander in Chief (Umpire or Admin), at any
+    /// time; the one before, if any, no longer is. Null leaves the army with none. Another army's
+    /// unit is refused (400), as is a unit of another type (409).
+    /// </summary>
+    internal static async Task<
+        Results<NoContent, ValidationProblem, ProblemHttpResult>
+    > UpdateCommanderInChiefAsync(
+        Guid id,
+        UpdateCommanderInChiefRequest request,
+        WwgDbContext db,
+        TimeProvider time,
+        CancellationToken cancellationToken
+    )
+    {
+        if (request.UnitId is { } unitId)
+        {
+            var type = await db
+                .ArmyUnits.Where(u => u.Id == unitId && u.ArmyId == id)
+                .Select(u => (UnitType?)u.Type)
+                .SingleOrDefaultAsync(cancellationToken);
+            if (type is null)
+            {
+                return TypedResults.ValidationProblem(
+                    new Dictionary<string, string[]>(StringComparer.Ordinal)
+                    {
+                        ["unitId"] = ["There's no such unit in this army."],
+                    }
+                );
+            }
+            if (type != UnitType.Commander)
+            {
+                return TypedResults.Problem(
+                    statusCode: StatusCodes.Status409Conflict,
+                    title: "Not a commander",
+                    detail: "Only a Commander unit can be the Commander in Chief."
+                );
+            }
+        }
+
+        // The last one goes first, or the index (one per army) would refuse the new one.
+        var now = time.GetUtcNow().UtcDateTime;
+        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+        await db
+            .ArmyUnits.Where(u => u.ArmyId == id && u.IsCommanderInChief && u.Id != request.UnitId)
+            .ExecuteUpdateAsync(
+                set =>
+                    set.SetProperty(u => u.IsCommanderInChief, false)
+                        .SetProperty(u => u.UpdatedAt, now),
+                cancellationToken
+            );
+        if (request.UnitId is { } chosen)
+        {
+            await db
+                .ArmyUnits.Where(u => u.Id == chosen && !u.IsCommanderInChief)
+                .ExecuteUpdateAsync(
+                    set =>
+                        set.SetProperty(u => u.IsCommanderInChief, true)
+                            .SetProperty(u => u.UpdatedAt, now),
+                    cancellationToken
+                );
+        }
+        await transaction.CommitAsync(cancellationToken);
+        return TypedResults.NoContent();
+    }
+
+    /// <summary>
     /// 409 unless every unit is from the army's factions, and none is in the campaign already.
     /// </summary>
     private static async Task<ProblemHttpResult?> RefusedAsync(
@@ -252,8 +324,9 @@ internal static class ArmyUnitEndpoints
 
         unit.Name = request.Name;
         unit.Type = request.Type;
-        // Only some types screen (decision 0026).
+        // Only some types screen (decision 0026), and only a Commander leads the army (0032).
         unit.Screening &= Screens.Types.Contains(request.Type);
+        unit.IsCommanderInChief &= request.Type == UnitType.Commander;
         unit.FightingFactor = request.FightingFactor;
         unit.Points = request.Points;
         unit.Division = UnitGroups.Normalize(request.Division);
@@ -393,6 +466,7 @@ internal static class ArmyUnitProjection
             u.CorpsCommander,
             u.DivisionCommander,
             u.BrigadeCommander,
-            u.ImportOrder
+            u.ImportOrder,
+            u.IsCommanderInChief
         );
 }

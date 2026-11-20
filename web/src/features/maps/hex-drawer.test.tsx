@@ -37,6 +37,7 @@ const unit = (id: string, name: string, type: PlacedUnit["unit"]["type"]): Place
     divisionCommander: null,
     brigadeCommander: null,
     importOrder: null,
+    isCommanderInChief: false,
   },
   army,
   hex: { q: 0, r: 0 },

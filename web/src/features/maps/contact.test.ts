@@ -66,6 +66,7 @@ const unit = (
       divisionCommander: null,
       brigadeCommander: null,
       importOrder: null,
+      isCommanderInChief: false,
     } satisfies ArmyUnitResponse,
     army: of,
     hex,

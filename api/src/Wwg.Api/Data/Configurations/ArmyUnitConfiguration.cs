@@ -38,6 +38,14 @@ internal sealed class ArmyUnitConfiguration : IEntityTypeConfiguration<ArmyUnit>
             .HasForeignKey(u => u.UnitId)
             .OnDelete(DeleteBehavior.NoAction);
         builder.HasIndex(u => new { u.CampaignId, u.UnitId }).IsUnique();
+
+        // One Commander in Chief per army (decision 0032). Named, beside the plain index on ArmyId:
+        // EF would otherwise drop that one as covered, but a filtered index serves no other query.
+        builder.HasIndex(u => u.ArmyId);
+        builder
+            .HasIndex(u => u.ArmyId, "IX_ArmyUnits_CommanderInChief")
+            .IsUnique()
+            .HasFilter($"\"{nameof(ArmyUnit.IsCommanderInChief)}\" = 1");
     }
 }
 
