@@ -1,4 +1,4 @@
-import { ActionIcon, Alert, Badge, Button, Group, List, Stack, Text } from "@mantine/core";
+import { ActionIcon, Alert, Badge, Button, Group, Stack, Text } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { IconArrowBackUp, IconMoon, IconSend } from "@tabler/icons-react";
 import { useState } from "react";
@@ -6,6 +6,7 @@ import type { ArmyTurnDetails, ArmyTurnStatus, CampaignTurnSummary } from "@/api
 import { Section } from "@/components/Section";
 import { ArmyBadge } from "@/features/armies/identity/ArmyBadge";
 import { armyColorVar } from "@/features/armies/identity/army-colors";
+import { FormationList } from "@/features/maps/FormationList";
 import { describeOrder } from "@/features/maps/orders";
 import { SubmitTurnModal } from "@/features/maps/SubmitTurnModal";
 import type { PlacedUnit } from "@/features/maps/stacks";
@@ -39,7 +40,8 @@ interface TurnPanelProps {
 
 /**
  * A commander's turn (DESIGN.md §3.13): how far the turn has got, and for each army they command
- * its status, the Umpire's notes, each unit's order (with undo) and Submit.
+ * its status, the Umpire's notes, each unit's order (with undo) in the army's order of battle, and
+ * Submit.
  */
 export function TurnPanel({ open, commanded, units, orders, onChoose }: TurnPanelProps) {
   const [submitting, setSubmitting] = useState<OpenArmyTurn | null>(null);
@@ -155,59 +157,68 @@ function ArmyTurnOrders({
           </Text>
         </Alert>
       )}
-      <List listStyleType="none" spacing={6} aria-label={`${army.name}'s orders`}>
-        {units.map(({ unit, placed }) => {
+      <FormationList
+        items={units}
+        unitOf={(u) => u.unit}
+        label={`${army.name}'s orders`}
+        progress={(group) => {
+          // Units not on the map yet can't have orders, and don't hold up Submit.
+          const onMap = group.filter((u) => u.placed);
+          const ordered = onMap.filter((u) => orderOf(u.unit.id)).length;
+          return onMap.length === 0
+            ? "None on the map yet"
+            : `${String(ordered)} of ${String(onMap.length)} ordered`;
+        }}
+        renderItem={({ unit, placed }) => {
           const order = orderOf(unit.id);
           const note = review?.unitNotes.find((n) => n.unitId === unit.id);
           return (
-            <List.Item key={unit.id}>
-              <Group justify="space-between" wrap="nowrap" gap="xs">
-                <Group gap="xs" wrap="nowrap" miw={0}>
-                  <UnitSymbol type={unit.type} color={armyColorVar(army.color)} width={26} />
-                  <div style={{ minWidth: 0 }}>
-                    {placed && draft ? (
-                      <Button
-                        variant="transparent"
-                        size="compact-sm"
-                        px={0}
-                        onClick={() => {
-                          onChoose(placed);
-                        }}
-                      >
-                        {unit.name}
-                      </Button>
-                    ) : (
-                      <Text size="sm" truncate>
-                        {unit.name}
-                      </Text>
-                    )}
-                    <Text size="xs" c="dimmed">
-                      {describeOrder(order, placed, night)}
-                      {order?.byUmpire && " · set by the Umpire"}
+            <Group justify="space-between" wrap="nowrap" gap="xs">
+              <Group gap="xs" wrap="nowrap" miw={0}>
+                <UnitSymbol type={unit.type} color={armyColorVar(army.color)} width={26} />
+                <div style={{ minWidth: 0 }}>
+                  {placed && draft ? (
+                    <Button
+                      variant="transparent"
+                      size="compact-sm"
+                      px={0}
+                      onClick={() => {
+                        onChoose(placed);
+                      }}
+                    >
+                      {unit.name}
+                    </Button>
+                  ) : (
+                    <Text size="sm" truncate>
+                      {unit.name}
                     </Text>
-                    {note && (
-                      <Text size="xs" fw={500}>
-                        Umpire: {note.text}
-                      </Text>
-                    )}
-                  </div>
-                </Group>
-                {draft && order && (
-                  <ActionIcon
-                    variant="subtle"
-                    color="gray"
-                    aria-label={`Undo ${unit.name}'s order`}
-                    disabled={!online || orders.busy}
-                    onClick={() => void orders.undo(army.id, turn.id, unit)}
-                  >
-                    <IconArrowBackUp size={18} aria-hidden />
-                  </ActionIcon>
-                )}
+                  )}
+                  <Text size="xs" c="dimmed">
+                    {describeOrder(order, placed, night)}
+                    {order?.byUmpire && " · set by the Umpire"}
+                  </Text>
+                  {note && (
+                    <Text size="xs" fw={500}>
+                      Umpire: {note.text}
+                    </Text>
+                  )}
+                </div>
               </Group>
-            </List.Item>
+              {draft && order && (
+                <ActionIcon
+                  variant="subtle"
+                  color="gray"
+                  aria-label={`Undo ${unit.name}'s order`}
+                  disabled={!online || orders.busy}
+                  onClick={() => void orders.undo(army.id, turn.id, unit)}
+                >
+                  <IconArrowBackUp size={18} aria-hidden />
+                </ActionIcon>
+              )}
+            </Group>
           );
-        })}
-      </List>
+        }}
+      />
       {draft ? (
         <>
           <Button

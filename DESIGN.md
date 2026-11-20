@@ -2951,18 +2951,19 @@ build on positions.
     one already in the campaign is disabled, saying which army has it. With commanders as units
     (step 60), a heading names its commander only when the group has no Commander unit of its
     own (not its divisions' or brigades'): an army given its brigades but not their general.
-62. **The map's units by order of battle:** the unit lists beside the map group each army's units
-    as the army page does (corps, divisions, brigades, commanders first, in the file's order),
-    with each group's progress in its heading, in parts:
-    - ✅ **62a. `FormationList`:** the order of battle as nested lists for the panels beside the map
-      (`features/maps`), built on `orderOfBattle()`; each heading names the group, its commander
-      (as `OrderOfBattleTable` does) and what the panel counts ("3 of 5 placed"); a step in and a
-      line down the side for each level, not the table's wide indent; units in no division under
-      **Not in a division** once there are divisions or corps; a plain list when there are none.
-      Rows keep their names, so the panels' tests and the e2e locators don't change.
+62. ✅ **The map's units by order of battle:** the unit lists beside the map group each army's
+    units as the army page does (corps, divisions, brigades, commanders first, in the file's
+    order), with each group's progress in its heading, in parts:
+    - ✅ **62a. `FormationList`:** the order of battle as nested lists for the panels beside the
+      map (`features/maps`), built on `orderOfBattle()`; each heading names the group, its
+      commander (as `OrderOfBattleTable` does) and what the panel counts ("3 of 5 placed"); a step
+      in and a line down the side for each level, not the table's wide indent; units in no
+      division under **Not in a division** once there are divisions or corps; a plain list when
+      there are none. Rows keep their names, so the panels' tests and the e2e locators don't
+      change.
     - ✅ **62b. Setting up:** the Umpire's setup panel lists each army's units in it ("N of M
       placed"), and the open turn's **Not on the map yet** groups them by army, then formation.
-    - **62c. The commander's turn:** the turn panel's orders in it ("N of M ordered"), so a
+    - ✅ **62c. The commander's turn:** the turn panel's orders in it ("N of M ordered"), so a
       commander sees where the units still without orders are.
 63. **Folding formations:** each heading in `FormationList` folds its group away (a button with
     `aria-expanded`), open to start with; a group whose units are all placed, or all ordered,

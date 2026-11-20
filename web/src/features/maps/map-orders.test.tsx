@@ -204,6 +204,36 @@ describe("a commander's turn", () => {
     await expectNoAxeViolations(document.body);
   });
 
+  it("lists the orders in the army's order of battle, counting those given", async () => {
+    serveCommander(draft({ orders: [hold] }));
+    server.use(
+      http.get(`*/api/campaigns/${campaignId}/units`, () =>
+        HttpResponse.json([
+          { id: unitId, armyId, name: "Imperial Guard", type: "LineInfantry", division: "Guard" },
+          {
+            id: "0192f5c1-0000-7000-8000-00000000b099",
+            armyId,
+            name: "Lancers",
+            type: "LightCavalry",
+            division: "Guard",
+            brigade: "Guard Cavalry",
+          },
+        ]),
+      ),
+    );
+
+    await openMap();
+
+    const orders = await screen.findByRole("list", { name: "Armée du Nord's orders" });
+    const guard = within(orders).getByRole("list", { name: "Guard" });
+    expect(guard.previousElementSibling).toHaveTextContent("Guard 1 of 1 ordered");
+    expect(within(guard).getByText("Holds")).toBeInTheDocument();
+    // The Lancers aren't on the map yet, so there's nothing to order.
+    const cavalry = within(guard).getByRole("list", { name: "Guard Cavalry" });
+    expect(cavalry.previousElementSibling).toHaveTextContent("None on the map yet");
+    expect(within(cavalry).getByText("Lancers")).toBeInTheDocument();
+  });
+
   it("says when the turn falls, and marks a move by night", async () => {
     const night: CampaignTurnsResponse = {
       ...running,
