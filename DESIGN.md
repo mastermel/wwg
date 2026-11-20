@@ -1953,7 +1953,7 @@ make users Managers (`PUT /api/admin/users/{id}/manager`).
 | Edit the map settings; search for places | ✅ | ✅ | 403 | 403 | 404 |
 | View turn progress (numbers, statuses, counts) | ✅ | ✅ | ✅ | ✅ | 404 |
 | View **positions and orders** (the visibility rule) | ✅ all | ✅ all | own army | 403 | 404 |
-| Give orders, undo, submit (the open turn; a Draft, or for the Umpire a Draft or Submitted) | ✅ | ✅ | own army | 403 | 404 |
+| Give orders, undo, submit (the open turn; a Draft, or for the Umpire a Draft or Submitted); from step 64, hold the rest of a formation | ✅ | ✅ | own army | 403 | 404 |
 | Place units (turn 0, and units added later) | ✅ | ✅ | 403 | 403 | 404 |
 | Approve / send back / revert an army's turn | ✅ | ✅ | 403 | 403 | 404 |
 | Start the campaign; start the next turn | ✅ | ✅ | 403 | 403 | 404 |
@@ -2092,6 +2092,7 @@ each step)
 | GET | `/api/campaigns/{id}/positions?turn=` | Units' positions, as the caller may see them: now (the default), after a closed turn, or ordered in the open one |
 | GET | `/api/armies/{id}/turns` | An army's turns, with their orders, notes and history (visibility rule) |
 | PUT / DELETE | `/api/army-turns/{id}/orders/{unitId}` | Give a unit's order `{ kind, path?, forceMarch, livesOffTheLand }` (Move: the hexes it passes through, in order; kinds and flags from steps 47, 48 and 51) / undo it |
+| POST | `/api/army-turns/{id}/hold` | Step 64: hold the rest of a formation `{ unitIds }` (1–500): each without an order this turn holds, as a Hold from the drawer would (living off the land if it did last turn); those with one keep it. All or nothing, the problem naming the unit; the Umpire's holds are one Edited event. Returns the new orders |
 | POST | `/api/army-turns/{id}/submit` | Submit (every unit on the map has an order; emails the Umpire). Optional body `{ note? }` (≤2000), a note to the Umpire kept on the Submitted event |
 | POST | `/api/army-turns/{id}/approve` | Approve: Completed (this and the next two email the commander) |
 | POST | `/api/army-turns/{id}/send-back` | Back to Draft `{ note?, unitNotes? }` |
@@ -2981,6 +2982,12 @@ build on positions.
     - **Orders for the rest:** "Hold the rest of 2nd Brigade" gives every unit in the group
       without an order a Hold, in one request (a new endpoint, the same checks as `GiveOrder`,
       one history event), for its commander and the Umpire.
+    - ✅ **64a. Holding the rest (API):** `POST /api/army-turns/{id}/hold { unitIds }`
+      (`HoldUnits`, `Commander` access as `GiveOrder`): units without an order this turn hold,
+      through `GiveOrder`'s own checks (`StageUnitOrderAsync`), living off the land if they did
+      in their last Completed order; those with an order keep it. One by one in a transaction,
+      saving each, so the Umpire's notes join one Edited event; a refusal rolls back the lot
+      and names the unit ("Reserve Artillery: The Umpire hasn't placed …").
 65. **The order of battle everywhere units are listed:** the review dialog's notes per unit
     (sending a turn back or reverting it), the past turn's panel, the start-turn dialog's
     sightings, and any other flat list of an army's units, grouped with `FormationList` or

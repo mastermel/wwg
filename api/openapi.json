@@ -350,6 +350,86 @@
         ]
       }
     },
+    "/api/army-turns/{id}/hold": {
+      "post": {
+        "tags": [
+          "Turns"
+        ],
+        "summary": "Orders the rest of a formation to hold (step 64): each of the units given that has no\norder yet this turn holds where it is, as a Hold from `GiveOrder` would, living off the\nland if it did last turn; units with an order keep it. All or nothing: if one of them\ncan't hold (not the army's, not placed yet, a boat tied to a unit), nothing changes, and the\nproblem names it. The Umpire's holds are one Edited event in the turn's history, with a\nnote per unit. The same access, and turns, as `GiveOrder`.",
+        "operationId": "HoldUnits",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HoldUnitsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UnitPosition"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      }
+    },
     "/api/armies/{id}/marches": {
       "get": {
         "tags": [
@@ -7687,6 +7767,25 @@
           }
         },
         "description": "A settlement changing hands."
+      },
+      "HoldUnitsRequest": {
+        "required": [
+          "unitIds"
+        ],
+        "type": "object",
+        "properties": {
+          "unitIds": {
+            "maxItems": 500,
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "The formation's units: those with an order this turn keep it; the rest hold."
+          }
+        },
+        "description": "Units to hold, the rest of a formation (step 64)."
       },
       "HttpValidationProblemDetails": {
         "type": "object",

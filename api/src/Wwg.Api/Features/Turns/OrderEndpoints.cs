@@ -32,6 +32,13 @@ internal static class OrderEndpoints
             .RequireCampaignAccess(CampaignAccess.Commander, CampaignRouteId.ArmyTurn)
             .ProducesProblem(StatusCodes.Status409Conflict);
 
+        app.MapPost("/api/army-turns/{id:guid}/hold", HoldUnitsAsync)
+            .WithName("HoldUnits")
+            .WithTags("Turns")
+            .RequireCampaignAccess(CampaignAccess.Commander, CampaignRouteId.ArmyTurn)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict);
+
         return app;
     }
 
@@ -211,6 +218,41 @@ internal static class OrderEndpoints
             return NotEditable(byUmpire);
         }
 
+        var result = await StageUnitOrderAsync(
+            db,
+            time,
+            httpContext,
+            turn,
+            unitId,
+            request,
+            cancellationToken
+        );
+        if (result.Result is Ok<UnitPosition>)
+        {
+            await db.SaveChangesAsync(cancellationToken);
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Stages a unit's order (not saved), and for the Umpire notes it in the turn's history: where
+    /// it leaves the unit, or why it won't do. <see cref="GiveOrderAsync"/>'s checks, for one
+    /// unit or a batch (<see cref="HoldUnitsAsync"/>).
+    /// </summary>
+    private static async Task<
+        Results<Ok<UnitPosition>, ValidationProblem, ProblemHttpResult>
+    > StageUnitOrderAsync(
+        WwgDbContext db,
+        TimeProvider time,
+        HttpContext httpContext,
+        EditableTurn turn,
+        Guid unitId,
+        GiveOrderRequest request,
+        CancellationToken cancellationToken
+    )
+    {
+        var byUmpire = httpContext.CampaignContext().CanManage;
         var (ordered, refused) = await OrderedAsync(db, turn, unitId, cancellationToken);
         if (ordered is null)
         {
@@ -252,15 +294,133 @@ internal static class OrderEndpoints
                 db,
                 time,
                 httpContext,
-                id,
+                turn.Id,
                 unitId,
                 EditNote(move),
                 cancellationToken
             );
         }
 
-        await db.SaveChangesAsync(cancellationToken);
         return TypedResults.Ok(saved);
+    }
+
+    /// <summary>
+    /// Orders the rest of a formation to hold (step 64): each of the units given that has no
+    /// order yet this turn holds where it is, as a Hold from <c>GiveOrder</c> would, living off the
+    /// land if it did last turn; units with an order keep it. All or nothing: if one of them
+    /// can't hold (not the army's, not placed yet, a boat tied to a unit), nothing changes, and the
+    /// problem names it. The Umpire's holds are one Edited event in the turn's history, with a
+    /// note per unit. The same access, and turns, as <c>GiveOrder</c>.
+    /// </summary>
+    internal static async Task<
+        Results<Ok<List<UnitPosition>>, ValidationProblem, ProblemHttpResult>
+    > HoldUnitsAsync(
+        Guid id,
+        HoldUnitsRequest request,
+        WwgDbContext db,
+        TimeProvider time,
+        HttpContext httpContext,
+        CancellationToken cancellationToken
+    )
+    {
+        var byUmpire = httpContext.CampaignContext().CanManage;
+        var turn = await EditableTurnAsync(db, id, byUmpire, cancellationToken);
+        if (turn is null)
+        {
+            return NotEditable(byUmpire);
+        }
+
+        // One by one, saving each: the Umpire's next note joins the Edited event the last one
+        // saved, and a refusal rolls back the lot.
+        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+        var ordered = await db
+            .UnitOrders.AsNoTracking()
+            .Where(o => o.ArmyTurnId == id)
+            .Select(o => o.UnitId)
+            .ToListAsync(cancellationToken);
+        var rest = request.UnitIds.Distinct().Except(ordered).ToList();
+        var names = await db
+            .ArmyUnits.AsNoTracking()
+            .Where(u => rest.Contains(u.Id))
+            .ToDictionaryAsync(u => u.Id, u => u.Name, cancellationToken);
+        var lived = await LivedOffTheLandAsync(db, rest, cancellationToken);
+        var saved = new List<UnitPosition>();
+        foreach (var unitId in rest)
+        {
+            var hold = new GiveOrderRequest(
+                OrderKind.Hold,
+                null,
+                LivesOffTheLand: lived.Contains(unitId)
+            );
+            var result = await StageUnitOrderAsync(
+                db,
+                time,
+                httpContext,
+                turn,
+                unitId,
+                hold,
+                cancellationToken
+            );
+            if (result.Result is not Ok<UnitPosition> { Value: { } position })
+            {
+                return Naming(names.GetValueOrDefault(unitId, "A unit"), result.Result);
+            }
+
+            saved.Add(position);
+            await db.SaveChangesAsync(cancellationToken);
+        }
+
+        await transaction.CommitAsync(cancellationToken);
+        return TypedResults.Ok(saved);
+    }
+
+    /// <summary>Why a unit in a batch can't have its order, naming it.</summary>
+    private static Results<Ok<List<UnitPosition>>, ValidationProblem, ProblemHttpResult> Naming(
+        string name,
+        IResult problem
+    )
+    {
+        if (problem is ValidationProblem invalid)
+        {
+            var messages = invalid.ProblemDetails.Errors.SelectMany(e => e.Value);
+            return Invalid("unitIds", $"{name}: {string.Join(" ", messages)}");
+        }
+
+        var refused = (ProblemHttpResult)problem; // An order is saved, invalid or refused.
+        return TypedResults.Problem(
+            statusCode: refused.StatusCode,
+            title: refused.ProblemDetails.Title,
+            detail: $"{name}: {refused.ProblemDetails.Detail}"
+        );
+    }
+
+    /// <summary>
+    /// Which of the units lived off the land in the turn they're in place after: their latest
+    /// Completed order's, which the map's drawer keeps on a new order too (step 48).
+    /// </summary>
+    private static async Task<HashSet<Guid>> LivedOffTheLandAsync(
+        WwgDbContext db,
+        IReadOnlyCollection<Guid> unitIds,
+        CancellationToken cancellationToken
+    )
+    {
+        var orders = await db
+            .UnitOrders.AsNoTracking()
+            .Where(o => unitIds.Contains(o.UnitId) && o.ArmyTurn.Status == ArmyTurnStatus.Completed)
+            .Select(o => new
+            {
+                o.UnitId,
+                o.LivesOffTheLand,
+                o.ArmyTurn.CampaignTurn.Number,
+            })
+            .ToListAsync(cancellationToken);
+        return
+        [
+            .. orders
+                .GroupBy(o => o.UnitId)
+                .Where(g => g.OrderByDescending(o => o.Number).First().LivesOffTheLand)
+                .Select(g => g.Key),
+        ];
     }
 
     /// <summary>

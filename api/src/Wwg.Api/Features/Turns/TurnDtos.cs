@@ -126,6 +126,14 @@ public sealed record GiveOrderRequest(
     bool LivesOffTheLand = false
 );
 
+/// <summary>Units to hold, the rest of a formation (step 64).</summary>
+/// <param name="UnitIds">
+/// The formation's units: those with an order this turn keep it; the rest hold.
+/// </param>
+public sealed record HoldUnitsRequest(
+    [property: JsonRequired, MinLength(1), MaxLength(500)] IReadOnlyList<Guid> UnitIds
+);
+
 /// <summary>The Umpire's note on one unit's order.</summary>
 /// <param name="UnitId">The unit.</param>
 /// <param name="Text">The note.</param>
