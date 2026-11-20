@@ -3008,4 +3008,5 @@ build on positions.
     units and **Add units** already had `OrderOfBattleTable`. What stays as it was: a hex's few
     units (the drawer, the stack lists, a sighting's units and **Add a sighting**'s hexes, all
     by hex), and the supply warnings (a few units, by what's wrong). The Umpire's "Hold the
-    rest" (64c) still has no menu: no panel lists units for the Umpire during a turn.
+    rest" (64c) still has no menu: no panel lists units for the Umpire during a turn, and
+    holding unit by unit from the drawer will do for now (deferred, 2026-11-20).
