@@ -1,7 +1,7 @@
 # 0020. Sightings the Umpire shapes, and intelligence by courier between allies
 
 - **Date:** 2026-10-01
-- **Status:** Accepted (refines 0010's visibility rule)
+- **Status:** Accepted (refines 0010's visibility rule; couriers amended by 0033)
 
 ## Context
 
