@@ -109,7 +109,7 @@ The pre-commit hook runs `eslint --fix` and Prettier on staged files.
   `FormationList` (`features/maps`) lists an army's units the same way, as nested lists named
   for each group, with what the panel counts in each heading ("3 of 5 placed"); each heading
   folds its group (step 63), and a `complete` group starts folded. Its `actions` sit beside
-  each heading: `FormationMenu`, through `pickingOut` (`pick-out.tsx`), picks a formation out on
+  each heading: `FormationMenu`, through `formationActions` (`pick-out.tsx`), picks a formation out on
   the map (step 64); what stands out there is `standsOut`, a test of each unit.
   Managers and Admins import the club's CSV from the library page (`ImportLibraryModal`,
   decision 0025): the file's text is previewed, then imported. Its file field is a native

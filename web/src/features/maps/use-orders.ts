@@ -5,6 +5,7 @@ import {
   getListArmyTurnsQueryOptions,
   getListMarchesQueryKey,
   useGiveOrder,
+  useHoldUnits,
   useSubmitTurn,
   useUndoOrder,
 } from "@/api/generated/endpoints/turns/turns";
@@ -43,6 +44,7 @@ export function useOrders(campaignId: string) {
   const queryClient = useQueryClient();
   const give = useGiveOrder();
   const undo = useUndoOrder();
+  const hold = useHoldUnits();
   const submit = useSubmitTurn();
 
   const run = async (
@@ -71,7 +73,7 @@ export function useOrders(campaignId: string) {
   };
 
   return {
-    busy: give.isPending || undo.isPending || submit.isPending,
+    busy: give.isPending || undo.isPending || hold.isPending || submit.isPending,
     give: (
       armyId: string,
       turnId: string,
@@ -98,6 +100,16 @@ export function useOrders(campaignId: string) {
         () => undo.mutateAsync({ id: turnId, unitId: unit.id }),
         `Took back ${unit.name}'s order.`,
         `${unit.name}'s order couldn't be taken back. Try again.`,
+      ),
+    /** Holds a formation's units without orders (step 64), in one request: all or none. */
+    holdTheRest: (armyId: string, turnId: string, unitIds: string[], formation: string) =>
+      run(
+        armyId,
+        () => hold.mutateAsync({ id: turnId, data: { unitIds } }),
+        unitIds.length === 1
+          ? `The last unit in ${formation} will hold.`
+          : `The other ${String(unitIds.length)} units in ${formation} will hold.`,
+        `The rest of ${formation} couldn't be told to hold. Try again.`,
       ),
     submit: (armyId: string, turn: ArmyTurnDetails, armyName: string, note?: string) =>
       run(

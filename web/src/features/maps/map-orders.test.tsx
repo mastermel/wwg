@@ -305,6 +305,68 @@ describe("a commander's turn", () => {
     expect(heading).not.toHaveTextContent("Picked out on the map");
   });
 
+  it("holds the rest of a brigade from its heading, in one request", async () => {
+    const lancersId = "0192f5c1-0000-7000-8000-00000000b098";
+    const hussarsId = "0192f5c1-0000-7000-8000-00000000b097";
+    serveCommander(draft({ orders: [hold] }));
+    const sent: unknown[] = [];
+    server.use(
+      http.get(`*/api/campaigns/${campaignId}/units`, () =>
+        HttpResponse.json([
+          { id: unitId, armyId, name: "Imperial Guard", type: "LineInfantry", brigade: "Guard" },
+          { id: lancersId, armyId, name: "Lancers", type: "LightCavalry", brigade: "Guard" },
+          { id: hussarsId, armyId, name: "Hussars", type: "LightCavalry", brigade: "Guard" },
+        ]),
+      ),
+      http.get(`*/api/campaigns/${campaignId}/positions`, () =>
+        HttpResponse.json(
+          [unitId, lancersId, hussarsId].map((id) => ({
+            ...hold,
+            unitId: id,
+            turn: 0,
+            status: "Completed",
+            kind: "Move",
+          })),
+        ),
+      ),
+      http.post(`*/api/army-turns/${turnId}/hold`, async ({ request }) => {
+        sent.push(await request.json());
+        return HttpResponse.json([]);
+      }),
+    );
+    const user = userEvent.setup();
+    await openMap();
+
+    await user.click(await screen.findByRole("button", { name: "Guard: actions" }));
+    await user.click(
+      await screen.findByRole("menuitem", { name: "Hold the 2 without orders", hidden: true }),
+    );
+
+    expect(await screen.findByText("The other 2 units in Guard will hold.")).toBeInTheDocument();
+    // The Guard already holds: only the rest are sent.
+    expect(sent).toEqual([{ unitIds: [lancersId, hussarsId] }]);
+  });
+
+  it("offers no hold for a brigade whose units all have orders", async () => {
+    serveCommander(draft({ orders: [hold] }));
+    server.use(
+      http.get(`*/api/campaigns/${campaignId}/units`, () =>
+        HttpResponse.json([
+          { id: unitId, armyId, name: "Imperial Guard", type: "LineInfantry", brigade: "Guard" },
+        ]),
+      ),
+    );
+    const user = userEvent.setup();
+    await openMap();
+
+    await user.click(await screen.findByRole("button", { name: "Guard: actions" }));
+
+    expect(
+      await screen.findByRole("menuitem", { name: "Pick out on the map", hidden: true }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: /^Hold/, hidden: true })).not.toBeInTheDocument();
+  });
+
   it("says when the turn falls, and marks a move by night", async () => {
     const night: CampaignTurnsResponse = {
       ...running,

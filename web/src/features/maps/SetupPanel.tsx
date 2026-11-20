@@ -10,7 +10,7 @@ import { Section } from "@/components/Section";
 import { ArmyBadge } from "@/features/armies/identity/ArmyBadge";
 import { refreshCampaign } from "@/features/campaigns/campaign-cache";
 import { FormationList } from "@/features/maps/FormationList";
-import { pickingOut, type PickedOut } from "@/features/maps/pick-out";
+import { formationActions, type PickedOut } from "@/features/maps/pick-out";
 import type { PlacedUnit } from "@/features/maps/stacks";
 import { UnitPlacementRow } from "@/features/maps/UnitPlacementRow";
 import { errorMessage } from "@/lib/errors";
@@ -87,7 +87,11 @@ export function SetupPanel({
                 `${String(group.filter((u) => u.placed).length)} of ${String(group.length)} placed`
               }
               complete={(group) => group.every((u) => u.placed)}
-              {...pickingOut(pickedOut, onPickOut, (u: { unit: { id: string } }) => u.unit.id)}
+              {...formationActions({
+                picked: pickedOut,
+                onPickOut,
+                unitIdOf: (u: { unit: { id: string } }) => u.unit.id,
+              })}
               renderItem={({ unit, placed }) => (
                 <UnitPlacementRow
                   unit={unit}

@@ -8,7 +8,7 @@ import { ArmyBadge } from "@/features/armies/identity/ArmyBadge";
 import { armyColorVar } from "@/features/armies/identity/army-colors";
 import { FormationList } from "@/features/maps/FormationList";
 import { describeOrder } from "@/features/maps/orders";
-import { pickingOut, type PickedOut } from "@/features/maps/pick-out";
+import { formationActions, type PickedOut } from "@/features/maps/pick-out";
 import { SubmitTurnModal } from "@/features/maps/SubmitTurnModal";
 import type { PlacedUnit } from "@/features/maps/stacks";
 import { reviewOf, type OpenArmyTurn, type useOrders } from "@/features/maps/use-orders";
@@ -194,7 +194,28 @@ function ArmyTurnOrders({
           group.every((u) => u.placed) &&
           group.every((u) => orderOf(u.unit.id) !== undefined)
         }
-        {...pickingOut(pickedOut, onPickOut, (u: { unit: { id: string } }) => u.unit.id)}
+        {...formationActions({
+          picked: pickedOut,
+          onPickOut,
+          unitIdOf: (u: CommandedUnit) => u.unit.id,
+          // While giving orders: the units on the map in it without one.
+          holdTheRest: (name, group) => {
+            const rest = group.filter((u) => u.placed && !orderOf(u.unit.id));
+            return draft && rest.length > 0
+              ? {
+                  count: rest.length,
+                  disabled: !online || orders.busy,
+                  onHold: () =>
+                    void orders.holdTheRest(
+                      army.id,
+                      turn.id,
+                      rest.map((u) => u.unit.id),
+                      name,
+                    ),
+                }
+              : undefined;
+          },
+        })}
         renderItem={({ unit, placed }) => {
           const order = orderOf(unit.id);
           const note = review?.unitNotes.find((n) => n.unitId === unit.id);

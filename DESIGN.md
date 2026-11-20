@@ -1362,7 +1362,8 @@ visibility); the data is in §5.1. Built in Phase 8 (§7).
 - **Turn panel:** the turn number and its status; each unit Moved, Held or
   without an order, with an **undo** button for those with one, in the army's order of battle
   (step 62: corps, divisions and brigades, each heading counting the units with orders, and
-  folding its group away; step 63: one with every unit ordered starts folded); the Umpire's
+  folding its group away; step 63: one with every unit ordered starts folded; step 64: each
+  heading's menu picks the formation out on the map, or holds the units in it without orders); the Umpire's
   notes, if the turn was sent back or reverted; how far the turn has got
   ("4 of 6 armies submitted", no names); and **Submit** once every unit has an
   order. While Submitted, nothing can be changed.
@@ -2977,7 +2978,7 @@ build on positions.
     - Folds aren't remembered: they last while the panel is shown. Starting complete groups
       folded covers what remembering would, and a remembered fold could hide work that came
       back (a unit added, a turn sent back).
-64. **Formation actions:** from a group's heading on the map page:
+64. ✅ **Formation actions:** from a group's heading on the map page:
     - **Pick out on the map:** highlights the formation's units and fades the rest, as the
       Armies list does for an army.
     - **Orders for the rest:** "Hold the rest of 2nd Brigade" gives every unit in the group
@@ -2995,6 +2996,11 @@ build on positions.
       "Picked out on the map" until **Show every unit**. For commanders too (their own
       formations); picking out a formation lets an army picked out go, and the other way round
       (`standsOut`, `pick-out.tsx`).
+    - ✅ **64c. Holding the rest (UI):** in a commander's Draft turn, the menu offers **Hold the 3
+      without orders** while any unit in the formation on the map has none (`useOrders`'
+      `holdTheRest`). No confirmation: each hold can be undone like any other. The Umpire's
+      review panel lists no units (orders are the drawer's, step 36), so the Umpire has the
+      endpoint but no menu yet; step 65 can add one where units are listed.
 65. **The order of battle everywhere units are listed:** the review dialog's notes per unit
     (sending a turn back or reverting it), the past turn's panel, the start-turn dialog's
     sightings, and any other flat list of an army's units, grouped with `FormationList` or

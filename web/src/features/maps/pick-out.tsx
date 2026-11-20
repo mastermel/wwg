@@ -1,3 +1,4 @@
+import type { ComponentProps } from "react";
 import { FormationMenu } from "@/features/maps/FormationMenu";
 import type { PlacedUnit } from "@/features/maps/stacks";
 
@@ -26,16 +27,25 @@ export function standsOut(
   return null;
 }
 
+/** What the turn panel adds to a formation's menu (step 64): holding the rest of it. */
+type HoldTheRest = NonNullable<ComponentProps<typeof FormationMenu>["holdTheRest"]>;
+
 /**
- * `FormationList`'s `picked` and `actions` for picking formations out on the map (step 64): each
- * heading marked while its formation is the one picked out, with a `FormationMenu` to pick it out
- * or let it go.
+ * `FormationList`'s `picked` and `actions` for the map's formations (step 64): each heading
+ * marked while its formation is the one picked out, with a `FormationMenu` to pick it out or let
+ * it go, and, where given, to hold the rest of it.
  */
-export function pickingOut<T>(
-  picked: PickedOut | null,
-  onPickOut: (formation: PickedOut | null) => void,
-  unitIdOf: (item: T) => string,
-) {
+export function formationActions<T>({
+  picked,
+  onPickOut,
+  unitIdOf,
+  holdTheRest,
+}: {
+  picked: PickedOut | null;
+  onPickOut: (formation: PickedOut | null) => void;
+  unitIdOf: (item: T) => string;
+  holdTheRest?: (name: string, items: T[]) => HoldTheRest | undefined;
+}) {
   const isPicked = (items: T[]) => isPickedOut(picked, items.map(unitIdOf));
   return {
     picked: isPicked,
@@ -46,6 +56,7 @@ export function pickingOut<T>(
         onPickOut={() => {
           onPickOut(isPicked(items) ? null : { name, unitIds: new Set(items.map(unitIdOf)) });
         }}
+        holdTheRest={holdTheRest?.(name, items)}
       />
     ),
   };
