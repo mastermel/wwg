@@ -45,7 +45,7 @@ export function CourierMarkers({
               longitude={courier.longitude}
               latitude={courier.latitude}
               anchor="center"
-              offset={[18, -18]}
+              offset={[-30, 0]}
             >
               <Popover
                 opened={open === courier.reportId}

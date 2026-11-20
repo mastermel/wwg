@@ -1125,13 +1125,6 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
             report={reports.data?.find((r) => r.id === shownReport)}
             armies={armies.data ?? []}
           />
-          {manager && past === null && (
-            <CourierMarkers
-              campaignId={campaignId}
-              couriers={couriers.data ?? []}
-              armies={armies.data ?? []}
-            />
-          )}
           {hoveredHex && hoverCard && (
             <HexInfoPopup
               at={grid.centre(hoveredHex)}
@@ -1174,6 +1167,14 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
               );
             }}
           />
+          {/* Over the units: a stack's count would cover it. */}
+          {manager && past === null && (
+            <CourierMarkers
+              campaignId={campaignId}
+              couriers={couriers.data ?? []}
+              armies={armies.data ?? []}
+            />
+          )}
         </CampaignMap>
       </Box>
     </Stack>

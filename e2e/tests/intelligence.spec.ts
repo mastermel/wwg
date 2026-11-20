@@ -89,10 +89,7 @@ test("the Umpire sees a courier on the map and cancels it, saying why", async ({
   await expect(couriers.getByRole("list", { name: "Couriers" })).toContainText(
     `${route}: Hex (0, 0), arriving next turn.`,
   );
-  await page
-    .getByRole("region", { name: "Map", exact: true })
-    .getByRole("button", { name: `Courier from ${route}` })
-    .click();
+  await page.getByRole("button", { name: `Courier from ${route}`, exact: true }).click();
   const popover = page.getByRole("dialog").filter({ hasText: `Courier from ${route}` });
   await expect(popover).toContainText("“The Guard attacks at seven.”");
   await popover.getByRole("button", { name: "Cancel the courier" }).click();
