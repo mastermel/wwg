@@ -419,6 +419,70 @@ public sealed class LibraryTests : ApiTest
         await response.AssertValidationProblemAsync("status");
     }
 
+    [Theory]
+    [InlineData(0, 0)]
+    [InlineData(5, 30)]
+    public async Task CreateUnit_ACommander_HasNoFightingFactorOrPoints(
+        int fightingFactor,
+        int points
+    )
+    {
+        using var manager = await CreateManagerClientAsync();
+        var faction = await CreateFactionAsync(manager);
+
+        var unit = await CreateUnitAsync(
+            manager,
+            faction.Id,
+            Guard with
+            {
+                Type = UnitType.Commander,
+                FightingFactor = fightingFactor,
+                Points = points,
+            }
+        );
+
+        Assert.Equal((0, 0), (unit.FightingFactor, unit.Points));
+    }
+
+    [Fact]
+    public async Task UpdateUnit_ToACommander_ClearsItsFightingFactorAndPoints()
+    {
+        using var manager = await CreateManagerClientAsync();
+        var faction = await CreateFactionAsync(manager);
+        var unit = await CreateUnitAsync(manager, faction.Id);
+
+        using var response = await manager.PutAsJsonAsync(
+            new Uri($"/api/units/{unit.Id}", UriKind.Relative),
+            Guard with
+            {
+                Type = UnitType.Commander,
+            },
+            CancellationToken
+        );
+
+        var saved = await response.Content.ReadAsAsync<UnitResponse>();
+        Assert.Equal((0, 0), (saved!.FightingFactor, saved.Points));
+    }
+
+    [Fact]
+    public async Task UpdateUnit_NoFightingFactor_IsAValidationError()
+    {
+        using var manager = await CreateManagerClientAsync();
+        var faction = await CreateFactionAsync(manager);
+        var unit = await CreateUnitAsync(manager, faction.Id);
+
+        using var response = await manager.PutAsJsonAsync(
+            new Uri($"/api/units/{unit.Id}", UriKind.Relative),
+            Guard with
+            {
+                FightingFactor = 0,
+            },
+            CancellationToken
+        );
+
+        await response.AssertValidationProblemAsync("fightingFactor");
+    }
+
     [Fact]
     public async Task CreateUnit_FightingFactorOutOfRange_IsAValidationError()
     {

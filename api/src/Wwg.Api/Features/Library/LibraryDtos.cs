@@ -37,8 +37,8 @@ public sealed record SaveFactionRequest(
 /// <param name="FactionId">Its faction.</param>
 /// <param name="Name">Its name.</param>
 /// <param name="Type">What kind of troops it is.</param>
-/// <param name="FightingFactor">Its Fighting Factor (FF).</param>
-/// <param name="Points">What it's worth.</param>
+/// <param name="FightingFactor">Its Fighting Factor (FF), 1–9; 0 for a Commander.</param>
+/// <param name="Points">What it's worth, 0–100; 0 for a Commander.</param>
 /// <param name="Division">The division it's in; null for none.</param>
 /// <param name="Brigade">The brigade it's in; null for none.</param>
 /// <param name="Corps">The corps it's in; null for none.</param>
@@ -72,8 +72,8 @@ public sealed record UnitResponse(
 /// <summary>Adds a unit to a faction in the library, or changes one.</summary>
 /// <param name="Name">Its name (duplicates are allowed).</param>
 /// <param name="Type">What kind of troops it is.</param>
-/// <param name="FightingFactor">Its Fighting Factor (FF).</param>
-/// <param name="Points">What it's worth.</param>
+/// <param name="FightingFactor">Its Fighting Factor (FF), 1–9; 0 for a Commander.</param>
+/// <param name="Points">What it's worth, 0–100; 0 for a Commander.</param>
 /// <param name="Division">The division it's in (left out or empty: none).</param>
 /// <param name="Brigade">The brigade it's in (left out or empty: none).</param>
 /// <param name="Corps">The corps it's in (left out or empty: none).</param>
@@ -85,8 +85,8 @@ public sealed record UnitResponse(
 public sealed record SaveUnitRequest(
     [property: Trimmed, Required, StringLength(100)] string Name,
     [property: JsonRequired, EnumDataType(typeof(UnitType))] UnitType Type,
-    [property: JsonRequired, Range(UnitStats.MinFightingFactor, UnitStats.MaxFightingFactor)]
-        int FightingFactor,
+    // A Commander's is 0 (decision 0034): the handler holds every other unit to the minimum.
+    [property: JsonRequired, Range(0, UnitStats.MaxFightingFactor)] int FightingFactor,
     [property: JsonRequired, Range(UnitStats.MinPoints, UnitStats.MaxPoints)] int Points,
     [property: Trimmed, StringLength(UnitStats.MaxGroupLength)] string? Division,
     [property: Trimmed, StringLength(UnitStats.MaxGroupLength)] string? Brigade,

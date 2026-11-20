@@ -21,8 +21,8 @@ public sealed record AddScoutRequest([property: Trimmed, Required, StringLength(
 /// <summary>Changes the campaign's copy of a unit (the library's stays as it is).</summary>
 /// <param name="Name">The unit's name.</param>
 /// <param name="Type">What kind of troops it is: a scout's stays Scouts, and no other unit becomes one.</param>
-/// <param name="FightingFactor">Its Fighting Factor ("FF"), 1–9; 0 for a scout.</param>
-/// <param name="Points">What it's worth, 0–100; 0 for a scout.</param>
+/// <param name="FightingFactor">Its Fighting Factor ("FF"), 1–9; 0 for a scout or a Commander (stored as 0 whatever is sent).</param>
+/// <param name="Points">What it's worth, 0–100; 0 for a scout or a Commander (stored as 0 whatever is sent).</param>
 /// <param name="Division">The division it's in (left out or empty: none).</param>
 /// <param name="Brigade">The brigade it's in (left out or empty: none).</param>
 /// <param name="Corps">The corps it's in (left out or empty: none).</param>
@@ -32,7 +32,8 @@ public sealed record AddScoutRequest([property: Trimmed, Required, StringLength(
 public sealed record UpdateArmyUnitRequest(
     [property: Trimmed, Required, StringLength(100)] string Name,
     [property: JsonRequired, EnumDataType(typeof(UnitType))] UnitType Type,
-    // A scout's is 0 (decision 0028): the handler holds every other unit to the minimum.
+    // A scout's or Commander's is 0 (decisions 0028, 0034): the handler holds every other unit
+    // to the minimum.
     [property: JsonRequired, Range(0, UnitStats.MaxFightingFactor)] int FightingFactor,
     [property: JsonRequired, Range(UnitStats.MinPoints, UnitStats.MaxPoints)] int Points,
     [property: Trimmed, StringLength(UnitStats.MaxGroupLength)] string? Division,
@@ -55,8 +56,8 @@ public sealed record UpdateCommanderInChiefRequest([property: JsonRequired] Guid
 /// <param name="Nation">The nation it marches as (step 45): its faction's, or its army's when the faction has none.</param>
 /// <param name="Name">Its name.</param>
 /// <param name="Type">What kind of troops it is.</param>
-/// <param name="FightingFactor">Its Fighting Factor ("FF"), 1–9; 0 for a scout, which doesn't fight.</param>
-/// <param name="Points">What it's worth, 0–100; 0 for a scout.</param>
+/// <param name="FightingFactor">Its Fighting Factor ("FF"), 1–9; 0 for a scout, which doesn't fight, or a Commander.</param>
+/// <param name="Points">What it's worth, 0–100; 0 for a scout or a Commander.</param>
 /// <param name="Division">The division it's in; null for none.</param>
 /// <param name="Brigade">The brigade it's in; null for none.</param>
 /// <param name="Corps">The corps it's in; null for none.</param>

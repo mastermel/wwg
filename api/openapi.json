@@ -3210,7 +3210,7 @@
         "tags": [
           "ArmyUnits"
         ],
-        "summary": "Changes the campaign's copy of a unit: name, type, Fighting Factor, points, and its corps,\ndivision and brigade with their commanders (Umpire or Admin). The library unit stays as it\nis. A scout stays a scout, with no FF or points, and no other unit becomes one.",
+        "summary": "Changes the campaign's copy of a unit: name, type, Fighting Factor, points, and its corps,\ndivision and brigade with their commanders (Umpire or Admin). The library unit stays as it\nis. A scout stays a scout, with no FF or points, and no other unit becomes one; a Commander\nhas no FF or points either (decision 0034).",
         "operationId": "UpdateArmyUnit",
         "parameters": [
           {
@@ -6321,12 +6321,12 @@
           },
           "fightingFactor": {
             "type": "integer",
-            "description": "Its Fighting Factor (\"FF\"), 1–9; 0 for a scout, which doesn't fight.",
+            "description": "Its Fighting Factor (\"FF\"), 1–9; 0 for a scout, which doesn't fight, or a Commander.",
             "format": "int32"
           },
           "points": {
             "type": "integer",
-            "description": "What it's worth, 0–100; 0 for a scout.",
+            "description": "What it's worth, 0–100; 0 for a scout or a Commander.",
             "format": "int32"
           },
           "division": {
@@ -9325,16 +9325,16 @@
           },
           "fightingFactor": {
             "maximum": 9,
-            "minimum": 1,
+            "minimum": 0,
             "type": "integer",
-            "description": "Its Fighting Factor (FF).",
+            "description": "Its Fighting Factor (FF), 1–9; 0 for a Commander.",
             "format": "int32"
           },
           "points": {
             "maximum": 100,
             "minimum": 0,
             "type": "integer",
-            "description": "What it's worth.",
+            "description": "What it's worth, 0–100; 0 for a Commander.",
             "format": "int32"
           },
           "division": {
@@ -10407,12 +10407,12 @@
           },
           "fightingFactor": {
             "type": "integer",
-            "description": "Its Fighting Factor (FF).",
+            "description": "Its Fighting Factor (FF), 1–9; 0 for a Commander.",
             "format": "int32"
           },
           "points": {
             "type": "integer",
-            "description": "What it's worth.",
+            "description": "What it's worth, 0–100; 0 for a Commander.",
             "format": "int32"
           },
           "division": {
@@ -10635,14 +10635,14 @@
             "maximum": 9,
             "minimum": 0,
             "type": "integer",
-            "description": "Its Fighting Factor (\"FF\"), 1–9; 0 for a scout.",
+            "description": "Its Fighting Factor (\"FF\"), 1–9; 0 for a scout or a Commander (stored as 0 whatever is sent).",
             "format": "int32"
           },
           "points": {
             "maximum": 100,
             "minimum": 0,
             "type": "integer",
-            "description": "What it's worth, 0–100; 0 for a scout.",
+            "description": "What it's worth, 0–100; 0 for a scout or a Commander (stored as 0 whatever is sent).",
             "format": "int32"
           },
           "division": {

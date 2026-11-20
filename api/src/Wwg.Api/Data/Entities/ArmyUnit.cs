@@ -60,6 +60,17 @@ internal static class UnitStats
         MaxPoints = 100;
 
     /// <summary>
+    /// Whether a unit of this type has an FF and points: not a scout (decision 0028), nor a
+    /// Commander (decision 0034), whose are always 0.
+    /// </summary>
+    public static bool HasStats(UnitType type) =>
+        type is not (UnitType.Scouts or UnitType.Commander);
+
+    /// <summary>An FF below the lowest, for a unit that has one.</summary>
+    public static bool FightingFactorTooLow(UnitType type, int fightingFactor) =>
+        HasStats(type) && fightingFactor < MinFightingFactor;
+
+    /// <summary>
     /// The longest corps, division or brigade name, or commander's (decisions 0024 and 0025).
     /// </summary>
     public const int MaxGroupLength = 100;

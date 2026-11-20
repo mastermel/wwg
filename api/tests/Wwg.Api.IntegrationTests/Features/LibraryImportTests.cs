@@ -324,6 +324,25 @@ public sealed class LibraryImportTests : ApiTest
     }
 
     [Fact]
+    public async Task Import_ACommander_HasNoFightingFactorOrPoints()
+    {
+        using var manager = await CreateManagerClientAsync();
+
+        // Wellington's file has points, and Picton's no FF at all.
+        var picton = Row("Picton", type: "Commander")
+            .Replace("Commander,6,", "Commander,,", StringComparison.Ordinal);
+
+        await ImportAsync(
+            manager,
+            File(Row("Wellington", type: "Commander", ff: 0, points: 12), picton)
+        );
+
+        var british = await FactionAsync(manager, "British");
+        Assert.All(british.Units, u => Assert.Equal((0, 0), (u.FightingFactor, u.Points)));
+        Assert.Equal(2, british.Units.Count);
+    }
+
+    [Fact]
     public async Task Preview_AScout_IsARowError()
     {
         using var manager = await CreateManagerClientAsync();
@@ -429,9 +448,10 @@ public sealed class LibraryImportTests : ApiTest
             .Take(3);
         Assert.Equal(
             [
-                ("L.G. Sir John Moore", 1, 0, "I Corps", null, null),
-                ("L.G. Lord Edward Paget", 1, 0, "I Corps", "1st Division", null),
-                ("M.G. Peregrine Maitland", 1, 0, "I Corps", "1st Division", "1st Brigade"),
+                // The file's FF 1 is dropped: a Commander has none (decision 0034).
+                ("L.G. Sir John Moore", 0, 0, "I Corps", null, null),
+                ("L.G. Lord Edward Paget", 0, 0, "I Corps", "1st Division", null),
+                ("M.G. Peregrine Maitland", 0, 0, "I Corps", "1st Division", "1st Brigade"),
             ],
             commanders.Select(u =>
                 (u.Name, u.FightingFactor, u.Points, u.Corps, u.Division, u.Brigade)

@@ -442,6 +442,35 @@ public sealed class ArmyUnitTests : ApiTest
     }
 
     [Fact]
+    public async Task UpdateUnit_ToACommander_ClearsItsFightingFactorAndPoints()
+    {
+        using var scenario = await CreateCampaignScenarioAsync();
+
+        using var response = await UpdateAsync(
+            scenario,
+            scenario.UnitId,
+            Change("Wellington", UnitType.Commander, 5, 30)
+        );
+
+        var saved = await response.Content.ReadAsAsync<ArmyUnitResponse>();
+        Assert.Equal((UnitType.Commander, 0, 0), (saved!.Type, saved.FightingFactor, saved.Points));
+    }
+
+    [Fact]
+    public async Task UpdateUnit_ACommanderWithNoFightingFactorOrPoints_IsAccepted()
+    {
+        using var scenario = await CreateCampaignScenarioAsync();
+
+        using var response = await UpdateAsync(
+            scenario,
+            scenario.UnitId,
+            Change("Wellington", UnitType.Commander, 0, 0)
+        );
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
     public async Task UpdateUnit_NoFightingFactor_IsAValidationError()
     {
         using var scenario = await CreateCampaignScenarioAsync();

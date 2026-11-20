@@ -441,6 +441,40 @@ public sealed class BoatTests : ApiTest
         );
     }
 
+    [Fact]
+    public async Task GiveOrder_EmbarkOnACommandersBoats_IsAValidationError()
+    {
+        var (scenario, _) = await AboardAsync();
+        // A Commander's points are always 0 (decision 0034): it keeps its boats all the same.
+        using var commander = await scenario
+            .As(Role.Umpire)
+            .PutAsJsonAsync(
+                new Uri($"/api/army-units/{scenario.UnitId}", UriKind.Relative),
+                new UpdateArmyUnitRequest(
+                    "Wellington",
+                    UnitType.Commander,
+                    0,
+                    0,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+                ),
+                Token
+            );
+        commander.EnsureSuccessStatusCode();
+        var other = await LibrarySteps.AddUnitAsync(scenario, "2nd Division", points: 20);
+        using var placed = await TurnSteps.PlaceAsync(scenario, other);
+        placed.EnsureSuccessStatusCode();
+        var turn = await TurnSteps.OpenArmyTurnAsync(scenario);
+
+        using var boarded = await TurnSteps.OrderAsync(scenario, turn.Id, Embark, other);
+
+        await boarded.AssertValidationProblemAsync("kind");
+    }
+
     private static Task<HttpResponseMessage> SetPointsAsync(
         CampaignScenario scenario,
         int points

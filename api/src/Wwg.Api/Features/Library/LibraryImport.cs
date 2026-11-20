@@ -406,15 +406,22 @@ internal static class LibraryImport
                 return null; // A blank line, such as a spreadsheet's last.
             }
 
+            var key = Text("key", UnitStats.MaxImportKeyLength, required: true) ?? "";
+            var nation = Text("nation", MaxNameLength, required: true) ?? "";
+            var flag = Choice("flag", Nations) ?? Nation.None;
+            var unit = Text("unit", MaxNameLength, required: true) ?? "";
+            var type = Choice("type", UnitTypes, required: true) ?? default;
+            // A Commander has no FF or points (decision 0034): whatever the file says, it's 0.
+            var stats = UnitStats.HasStats(type);
             var row = new Row(
                 number,
-                Text("key", UnitStats.MaxImportKeyLength, required: true) ?? "",
-                Text("nation", MaxNameLength, required: true) ?? "",
-                Choice("flag", Nations) ?? Nation.None,
-                Text("unit", MaxNameLength, required: true) ?? "",
-                Choice("type", UnitTypes, required: true) ?? default,
-                Number("ff", UnitStats.MinFightingFactor, UnitStats.MaxFightingFactor),
-                Number("points", UnitStats.MinPoints, UnitStats.MaxPoints),
+                key,
+                nation,
+                flag,
+                unit,
+                type,
+                stats ? Number("ff", UnitStats.MinFightingFactor, UnitStats.MaxFightingFactor) : 0,
+                stats ? Number("points", UnitStats.MinPoints, UnitStats.MaxPoints) : 0,
                 Text("corps", UnitStats.MaxGroupLength),
                 Text("corps_commander", UnitStats.MaxGroupLength),
                 Text("division", UnitStats.MaxGroupLength),

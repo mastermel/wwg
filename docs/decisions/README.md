@@ -74,3 +74,4 @@ A reversal gets a new entry.
 | [0031](0031-moving-a-hex-together.md) | A hex's units move together along one path, at the pace of the slowest | 2026-11-20 |
 | [0032](0032-commander-in-chief.md) | Each army's Commander in Chief, chosen by the Umpire | 2026-11-20 |
 | [0033](0033-couriers-between-commanders-in-chief.md) | Couriers ride between Commanders in Chief, and the Umpire cancels them with a note | 2026-11-20 |
+| [0034](0034-commanders-have-no-ff-or-points.md) | Commanders have no FF or points | 2026-11-20 |

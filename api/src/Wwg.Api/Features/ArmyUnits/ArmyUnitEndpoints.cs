@@ -287,7 +287,8 @@ internal static class ArmyUnitEndpoints
     /// <summary>
     /// Changes the campaign's copy of a unit: name, type, Fighting Factor, points, and its corps,
     /// division and brigade with their commanders (Umpire or Admin). The library unit stays as it
-    /// is. A scout stays a scout, with no FF or points, and no other unit becomes one.
+    /// is. A scout stays a scout, with no FF or points, and no other unit becomes one; a Commander
+    /// has no FF or points either (decision 0034).
     /// </summary>
     internal static async Task<
         Results<Ok<ArmyUnitResponse>, ValidationProblem>
@@ -305,17 +306,23 @@ internal static class ArmyUnitEndpoints
             return TypedResults.ValidationProblem(problems);
         }
 
+        // A Commander has no FF or points (decision 0034), whatever was sent; a scout's are
+        // checked to be 0 above.
+        var stats = UnitStats.HasStats(request.Type);
+        var fightingFactor = stats ? request.FightingFactor : 0;
+        var points = stats ? request.Points : 0;
+
         // Once the campaign has started, a change to its points goes in its history (decision 0018).
         var open = await TurnRules.OpenTurnAsync(db, unit.CampaignId, cancellationToken);
-        if (open is { Number: > 0 } && request.Points != unit.Points)
+        if (open is { Number: > 0 } && points != unit.Points)
         {
             db.PointsChanges.Add(
                 new PointsChange
                 {
                     ArmyUnitId = id,
                     Turn = open.Number,
-                    Change = request.Points - unit.Points,
-                    PointsAfter = request.Points,
+                    Change = points - unit.Points,
+                    PointsAfter = points,
                     Reason = PointsChangeReason.Edited,
                     ByUserId = httpContext.User.GetUserId(),
                 }
@@ -327,8 +334,8 @@ internal static class ArmyUnitEndpoints
         // Only some types screen (decision 0026), and only a Commander leads the army (0032).
         unit.Screening &= Screens.Types.Contains(request.Type);
         unit.IsCommanderInChief &= request.Type == UnitType.Commander;
-        unit.FightingFactor = request.FightingFactor;
-        unit.Points = request.Points;
+        unit.FightingFactor = fightingFactor;
+        unit.Points = points;
         unit.Division = UnitGroups.Normalize(request.Division);
         unit.Brigade = UnitGroups.Normalize(request.Brigade);
         unit.Corps = UnitGroups.Normalize(request.Corps);
@@ -347,7 +354,8 @@ internal static class ArmyUnitEndpoints
 
     /// <summary>
     /// What a change to a unit would break of the scouts' rules (decision 0028): only the
-    /// campaign makes scouts, and a scout doesn't fight; every other unit has an FF.
+    /// campaign makes scouts, and a scout doesn't fight; every other unit but a Commander has an
+    /// FF.
     /// </summary>
     private static Dictionary<string, string[]> ScoutProblems(
         UnitType type,
@@ -374,7 +382,7 @@ internal static class ArmyUnitEndpoints
                 problems["points"] = ["A scout doesn't fight: its points are 0."];
             }
         }
-        else if (request.FightingFactor < UnitStats.MinFightingFactor)
+        else if (UnitStats.FightingFactorTooLow(request.Type, request.FightingFactor))
         {
             problems["fightingFactor"] =
             [

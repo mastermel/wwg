@@ -170,9 +170,9 @@ internal static class LibraryEndpoints
         CancellationToken cancellationToken
     )
     {
-        if (request.Type == UnitType.Scouts)
+        if (Problems(request) is { } problem)
         {
-            return NoScouts();
+            return problem;
         }
 
         if (!await db.Factions.AnyAsync(f => f.Id == id, cancellationToken))
@@ -200,9 +200,9 @@ internal static class LibraryEndpoints
         CancellationToken cancellationToken
     )
     {
-        if (request.Type == UnitType.Scouts)
+        if (Problems(request) is { } problem)
         {
-            return NoScouts();
+            return problem;
         }
 
         var unit = await db.Units.SingleOrDefaultAsync(u => u.Id == id, cancellationToken);
@@ -237,6 +237,30 @@ internal static class LibraryEndpoints
     internal const string NoScoutsMessage =
         "Scouts aren't the library's: the Umpire adds them to an army in the campaign.";
 
+    /// <summary>
+    /// What the form's ranges can't check: no scouts, and an FF for every unit but a Commander
+    /// (decision 0034).
+    /// </summary>
+    private static ValidationProblem? Problems(SaveUnitRequest request)
+    {
+        if (request.Type == UnitType.Scouts)
+        {
+            return NoScouts();
+        }
+
+        return UnitStats.FightingFactorTooLow(request.Type, request.FightingFactor)
+            ? TypedResults.ValidationProblem(
+                new Dictionary<string, string[]>(StringComparer.Ordinal)
+                {
+                    ["fightingFactor"] =
+                    [
+                        $"The FF is {UnitStats.MinFightingFactor}–{UnitStats.MaxFightingFactor}.",
+                    ],
+                }
+            )
+            : null;
+    }
+
     private static ValidationProblem NoScouts() =>
         TypedResults.ValidationProblem(
             new Dictionary<string, string[]>(StringComparer.Ordinal)
@@ -247,11 +271,13 @@ internal static class LibraryEndpoints
 
     private static void Apply(Unit unit, SaveUnitRequest request)
     {
+        // A Commander has none (decision 0034), whatever was sent.
+        var stats = UnitStats.HasStats(request.Type);
         (unit.Name, unit.Type, unit.FightingFactor, unit.Points) = (
             request.Name,
             request.Type,
-            request.FightingFactor,
-            request.Points
+            stats ? request.FightingFactor : 0,
+            stats ? request.Points : 0
         );
         unit.Division = UnitGroups.Normalize(request.Division);
         unit.Brigade = UnitGroups.Normalize(request.Brigade);
