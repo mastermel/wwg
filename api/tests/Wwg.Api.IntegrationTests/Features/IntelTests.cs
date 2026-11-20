@@ -361,7 +361,10 @@ public sealed class IntelTests : ApiTest
         await NextTurnAsync(scenario);
 
         var waiting = Assert.Single(await CouriersAsync(scenario));
-        Assert.Equal((0, 0), (waiting.Q, waiting.R));
+        Assert.Equal(
+            (0, 0, CourierWaiting.NoCommanderInChief),
+            (waiting.Q, waiting.R, waiting.Waiting)
+        );
     }
 
     [Fact]
@@ -518,17 +521,32 @@ public sealed class IntelTests : ApiTest
         await sent.AssertValidationProblemAsync("note");
     }
 
+    private static async Task<HttpResponseMessage> StopAsync(
+        CampaignScenario scenario,
+        Guid report,
+        string note = "Taken by Prussian hussars.",
+        Role role = Role.Umpire
+    ) =>
+        await scenario
+            .As(role)
+            .PostAsJsonAsync(
+                new Uri($"/api/reports/{report}/stop", UriKind.Relative),
+                new StopCourierRequest(note),
+                Token
+            );
+
+    private static async Task<Guid> SentIdAsync(HttpResponseMessage sent) =>
+        (await sent.Content.ReadAsAsync<ReportResponse>())!.Id;
+
     [Fact]
     public async Task StopCourier_ItNeverArrives()
     {
         var (scenario, ally) = await StartedAsync(new Hex(1, 0));
         using var _ = scenario;
         using var sent = await SendAsync(scenario, Everything(ally));
-        var report = (await sent.Content.ReadAsAsync<ReportResponse>())!.Id;
+        var report = await SentIdAsync(sent);
 
-        using var stopped = await scenario
-            .As(Role.Umpire)
-            .PostAsync(new Uri($"/api/reports/{report}/stop", UriKind.Relative), null, Token);
+        using var stopped = await StopAsync(scenario, report);
         await NextTurnAsync(scenario);
 
         Assert.Equal(HttpStatusCode.NoContent, stopped.StatusCode);
@@ -537,6 +555,108 @@ public sealed class IntelTests : ApiTest
             CourierStatus.Stopped,
             Assert.Single(await ReportsAsync(scenario, Role.Umpire)).Status
         );
+    }
+
+    [Fact]
+    public async Task StopCourier_WithoutANote_IsAValidationError()
+    {
+        var (scenario, ally) = await StartedAsync(new Hex(1, 0));
+        using var _ = scenario;
+        using var sent = await SendAsync(scenario, Everything(ally));
+        var report = await SentIdAsync(sent);
+
+        using var stopped = await StopAsync(scenario, report, note: " ");
+
+        await stopped.AssertValidationProblemAsync("note");
+    }
+
+    [Fact]
+    public async Task StopCourier_Twice_IsAConflict()
+    {
+        var (scenario, ally) = await StartedAsync(new Hex(1, 0));
+        using var _ = scenario;
+        using var sent = await SendAsync(scenario, Everything(ally));
+        var report = await SentIdAsync(sent);
+        using var first = await StopAsync(scenario, report);
+
+        using var again = await StopAsync(scenario, report);
+
+        await again.AssertProblemAsync(HttpStatusCode.Conflict);
+    }
+
+    [Theory]
+    [InlineData(Role.Umpire, HttpStatusCode.NoContent)]
+    [InlineData(Role.Commander, HttpStatusCode.Forbidden)]
+    [InlineData(Role.Player, HttpStatusCode.Forbidden)]
+    [InlineData(Role.NonMember, HttpStatusCode.NotFound)]
+    public async Task StopCourier_ByRole_TheUmpire(Role role, HttpStatusCode expected)
+    {
+        var (scenario, ally) = await StartedAsync(new Hex(1, 0));
+        using var _ = scenario;
+        using var sent = await SendAsync(scenario, Everything(ally));
+        var report = await SentIdAsync(sent);
+
+        using var stopped = await StopAsync(scenario, report, role: role);
+
+        Assert.Equal(expected, stopped.StatusCode);
+    }
+
+    [Fact]
+    public async Task ListCouriers_ACancelledCourier_IsKeptWithWhyWhenAndWho()
+    {
+        var (scenario, ally) = await StartedAsync(new Hex(1, 0));
+        using var _ = scenario;
+        using var sent = await SendAsync(scenario, Everything(ally));
+        var report = await SentIdAsync(sent);
+        using var stopped = await StopAsync(scenario, report);
+        await NextTurnAsync(scenario);
+
+        var courier = Assert.Single(await CouriersAsync(scenario));
+
+        Assert.Equal(
+            (CourierStatus.Stopped, 1, "Taken by Prussian hussars.", (int?)null),
+            (courier.Status, courier.StoppedTurn, courier.StoppedNote, courier.ArrivedTurn)
+        );
+        Assert.NotNull(courier.StoppedBy);
+    }
+
+    [Fact]
+    public async Task ListCouriers_AnArrivedCourier_IsKeptWithItsTurn()
+    {
+        var (scenario, ally) = await StartedAsync(new Hex(1, 0));
+        using var _ = scenario;
+        using var sent = await SendAsync(scenario, Everything(ally));
+        await NextTurnAsync(scenario);
+
+        var courier = Assert.Single(await CouriersAsync(scenario));
+
+        Assert.Equal(
+            (CourierStatus.Arrived, 2, false),
+            (courier.Status, courier.ArrivedTurn, courier.ArrivesNext)
+        );
+    }
+
+    [Fact]
+    public async Task ListCouriers_OnItsWay_NamesBothChiefsWithItsRideAndWhatItCarries()
+    {
+        // 1 km hexes: the ally 9 hexes away, light cavalry riding 4 a turn.
+        var (scenario, ally) = await StartedAsync(new Hex(9, -4), hexSize: 1000);
+        using var _ = scenario;
+        using var sent = await SendAsync(scenario, Everything(ally));
+
+        var courier = Assert.Single(await CouriersAsync(scenario));
+
+        Assert.Equal(
+            ("Marshal Ney", "Marshal Grouchy", CourierStatus.EnRoute, (CourierWaiting?)null),
+            (
+                courier.FromCommanderInChief,
+                courier.ToCommanderInChief,
+                courier.Status,
+                courier.Waiting
+            )
+        );
+        Assert.InRange(courier.TurnsToRide!.Value, 2, 3);
+        Assert.Equal(("Hold the bridge at Wavre.", true), (courier.Note, courier.IncludesSnapshot));
     }
 
     [Fact]

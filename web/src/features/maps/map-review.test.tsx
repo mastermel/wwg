@@ -394,28 +394,38 @@ describe("the Umpire's turn", () => {
 });
 
 describe("the Umpire's couriers", () => {
-  it("lists each on its way, flagged among the enemy, and stops one", async () => {
+  const courier = {
+    reportId: "0192f5c1-0000-7000-8000-00000000f101",
+    fromArmyId: nord.id,
+    toArmyId: prussians.id,
+    fromCommanderInChief: "Napoleon",
+    toCommanderInChief: "Blücher",
+    sentTurn: 1,
+    status: "EnRoute",
+    q: 1,
+    r: 0,
+    latitude: 50.7,
+    longitude: 4.5,
+    arrivesNext: false,
+    amongTheEnemy: true,
+    turnsToRide: 1.5,
+    waiting: null,
+    arrivedTurn: null,
+    stoppedTurn: null,
+    stoppedNote: null,
+    stoppedBy: null,
+    note: "Hold at Wavre.",
+    includesSnapshot: false,
+    sightingCount: 0,
+  };
+
+  it("lists each on its way, flagged among the enemy, and cancels one with why", async () => {
     serveUmpire(approved, waiting, []);
-    const stopped: string[] = [];
+    const stopped: { id: string; body: unknown }[] = [];
     server.use(
-      http.get(`*/api/campaigns/${campaignId}/couriers`, () =>
-        HttpResponse.json([
-          {
-            reportId: "0192f5c1-0000-7000-8000-00000000f101",
-            fromArmyId: nord.id,
-            toArmyId: prussians.id,
-            sentTurn: 1,
-            q: 1,
-            r: 0,
-            latitude: 50.7,
-            longitude: 4.5,
-            arrivesNext: false,
-            amongTheEnemy: true,
-          },
-        ]),
-      ),
-      http.post("*/api/reports/:id/stop", ({ params }) => {
-        stopped.push(String(params.id));
+      http.get(`*/api/campaigns/${campaignId}/couriers`, () => HttpResponse.json([courier])),
+      http.post("*/api/reports/:id/stop", async ({ params, request }) => {
+        stopped.push({ id: String(params.id), body: await request.json() });
         return new HttpResponse(null, { status: 204 });
       }),
     );
@@ -424,22 +434,86 @@ describe("the Umpire's couriers", () => {
 
     const couriers = await screen.findByRole("list", { name: "Couriers" });
     expect(couriers).toHaveTextContent(
-      "Armée du Nord to Prussian I Corps, sent turn 1: Hex (1, 0).",
+      "Armée du Nord (Napoleon) to Prussian I Corps (Blücher): Hex (1, 0), about 2 turns to ride.",
     );
+    expect(couriers).toHaveTextContent("Sent turn 1. Carries a message.");
     expect(couriers).toHaveTextContent("Among the enemy");
     await user.click(
       within(couriers).getByRole("button", {
-        name: "Stop the courier from Armée du Nord to Prussian I Corps",
+        name: "Cancel the courier from Armée du Nord (Napoleon) to Prussian I Corps (Blücher)",
       }),
     );
-    await user.click(
-      within(await screen.findByRole("dialog")).getByRole("button", { name: "Stop it" }),
-    );
+    const dialog = await screen.findByRole("dialog");
+    await user.type(within(dialog).getByRole("textbox", { name: /Why/ }), " Taken by hussars. ");
+    await user.click(within(dialog).getByRole("button", { name: "Cancel the courier" }));
 
     expect(
-      await screen.findByText("Stopped the courier from Armée du Nord to Prussian I Corps."),
+      await screen.findByText(
+        "Cancelled the courier from Armée du Nord (Napoleon) to Prussian I Corps (Blücher).",
+      ),
     ).toBeInTheDocument();
-    expect(stopped).toEqual(["0192f5c1-0000-7000-8000-00000000f101"]);
+    expect(stopped).toEqual([{ id: courier.reportId, body: { note: "Taken by hussars." } }]);
+  });
+
+  it("says why one waits", async () => {
+    serveUmpire(approved, waiting, []);
+    server.use(
+      http.get(`*/api/campaigns/${campaignId}/couriers`, () =>
+        HttpResponse.json([
+          {
+            ...courier,
+            toCommanderInChief: null,
+            turnsToRide: null,
+            waiting: "NoCommanderInChief",
+          },
+        ]),
+      ),
+    );
+    await openMap();
+
+    expect(await screen.findByRole("list", { name: "Couriers" })).toHaveTextContent(
+      "Hex (1, 0), waiting: Prussian I Corps has no Commander in Chief on the map.",
+    );
+  });
+
+  it("keeps those arrived or cancelled in the history, with why", async () => {
+    serveUmpire(approved, waiting, []);
+    server.use(
+      http.get(`*/api/campaigns/${campaignId}/couriers`, () =>
+        HttpResponse.json([
+          {
+            ...courier,
+            reportId: "0192f5c1-0000-7000-8000-00000000f102",
+            status: "Stopped",
+            amongTheEnemy: false,
+            turnsToRide: null,
+            stoppedTurn: 2,
+            stoppedNote: "Taken by hussars.",
+            stoppedBy: "Una Umpire",
+          },
+          {
+            ...courier,
+            status: "Arrived",
+            amongTheEnemy: false,
+            turnsToRide: null,
+            arrivedTurn: 2,
+          },
+        ]),
+      ),
+    );
+    const user = userEvent.setup();
+    await openMap();
+
+    expect(await screen.findByText("None on their way.")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "History (2)" }));
+    // The panel's transition leaves it display: none in jsdom.
+    const history = screen.getByRole("list", {
+      name: "Couriers arrived or cancelled",
+      hidden: true,
+    });
+    expect(history).toHaveTextContent("Sent turn 1, cancelled turn 2 by Una Umpire.");
+    expect(history).toHaveTextContent("Why: Taken by hussars.");
+    expect(history).toHaveTextContent("Sent turn 1, arrived turn 2.");
   });
 });
 

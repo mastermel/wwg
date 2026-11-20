@@ -57,26 +57,66 @@ public sealed record ReportResponse(
     int SightingCount
 );
 
-/// <summary>A courier on its way, for the Umpire (decision 0020).</summary>
+/// <summary>Why a courier on its way doesn't ride on (decision 0033).</summary>
+public enum CourierWaiting
+{
+    /// <summary>The recipient's army has no Commander in Chief on the map.</summary>
+    NoCommanderInChief,
+
+    /// <summary>No way the courier can ride gets to the recipient's Commander in Chief.</summary>
+    NoWay,
+}
+
+/// <summary>The Umpire cancelling a courier (decision 0033).</summary>
+/// <param name="Note">Why: captured, lost, killed. Only the Umpire and Admins see it.</param>
+public sealed record StopCourierRequest(
+    [property: Trimmed, Required, StringLength(500)] string Note
+);
+
+/// <summary>A courier, on its way or done, for the Umpire (decisions 0020 and 0033).</summary>
 /// <param name="ReportId">The report it carries.</param>
 /// <param name="FromArmyId">The sender's army.</param>
 /// <param name="ToArmyId">The recipient's army.</param>
+/// <param name="FromCommanderInChief">The sender's Commander in Chief now, by name, if any.</param>
+/// <param name="ToCommanderInChief">The recipient's Commander in Chief now, by name, if any.</param>
 /// <param name="SentTurn">The turn it was sent in.</param>
-/// <param name="Q">Its hex (axial q).</param>
+/// <param name="Status">On its way, arrived, or cancelled.</param>
+/// <param name="Q">Its hex (axial q): where it is, or where it arrived or was cancelled.</param>
 /// <param name="R">Its hex (axial r).</param>
 /// <param name="Latitude">The hex's centre.</param>
 /// <param name="Longitude">The hex's centre.</param>
-/// <param name="ArrivesNext">It arrives as the next turn starts.</param>
-/// <param name="AmongTheEnemy">Units of the other side are in its hex: the Umpire's to stop or let through.</param>
+/// <param name="ArrivesNext">On its way, it arrives as the next turn starts.</param>
+/// <param name="AmongTheEnemy">On its way, units of the other side are in its hex: the Umpire's to cancel or let through.</param>
+/// <param name="TurnsToRide">On its way, how many turns' ride it has left to where the recipient's Commander in Chief is now (null if it's waiting).</param>
+/// <param name="Waiting">On its way, why it doesn't ride on, if it doesn't.</param>
+/// <param name="ArrivedTurn">The turn it arrived for, if it has.</param>
+/// <param name="StoppedTurn">The turn it was cancelled in, if it was.</param>
+/// <param name="StoppedNote">Why it was cancelled, if it was.</param>
+/// <param name="StoppedBy">Who cancelled it, by name (null once their account is deleted).</param>
+/// <param name="Note">The report's note, if any.</param>
+/// <param name="IncludesSnapshot">Whether the report carries the sender's units.</param>
+/// <param name="SightingCount">How many sightings the report carries.</param>
 public sealed record CourierResponse(
     Guid ReportId,
     Guid FromArmyId,
     Guid ToArmyId,
+    string? FromCommanderInChief,
+    string? ToCommanderInChief,
     int SentTurn,
+    CourierStatus Status,
     int Q,
     int R,
     double Latitude,
     double Longitude,
     bool ArrivesNext,
-    bool AmongTheEnemy
+    bool AmongTheEnemy,
+    double? TurnsToRide,
+    CourierWaiting? Waiting,
+    int? ArrivedTurn,
+    int? StoppedTurn,
+    string? StoppedNote,
+    string? StoppedBy,
+    string? Note,
+    bool IncludesSnapshot,
+    int SightingCount
 );

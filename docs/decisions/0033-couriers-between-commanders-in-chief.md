@@ -33,7 +33,7 @@ one was stopped.
 
 ## Consequences
 
-- `IntelReport` gains `StoppedTurn`, `StoppedNote` and `StoppedById`; `POST /api/reports/{id}/stop`
+- `IntelReport` gains `StoppedTurn`, `StoppedNote` and `StoppedByUserId`; `POST /api/reports/{id}/stop`
   takes `{ note }`.
 - `GET /api/campaigns/{id}/couriers` lists every courier, newest first, with its status.
 - Choosing a C-in-C becomes something every army needs before its commander can send reports.

@@ -93,6 +93,13 @@ internal sealed class IntelReportConfiguration : IEntityTypeConfiguration<IntelR
             .WithMany()
             .HasForeignKey(r => r.ToArmyId)
             .OnDelete(DeleteBehavior.Cascade);
+        builder.Property(r => r.StoppedNote).HasMaxLength(500);
+        // Deleting a user keeps the cancelled courier, without them.
+        builder
+            .HasOne(r => r.StoppedByUser)
+            .WithMany()
+            .HasForeignKey(r => r.StoppedByUserId)
+            .OnDelete(DeleteBehavior.SetNull);
     }
 }
 

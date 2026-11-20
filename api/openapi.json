@@ -986,7 +986,7 @@
         "tags": [
           "Intelligence"
         ],
-        "summary": "The couriers on their way (Umpire or Admin): where each is, and whether the other side's\nunits are in its hex, for the Umpire to stop it or let it through.",
+        "summary": "Every courier (Umpire or Admin), newest first: where each on its way is, whether the\nother side's units are in its hex, how far it has to ride and why it waits, for the Umpire\nto cancel it or let it through; and those that arrived or were cancelled, and why.",
         "operationId": "ListCouriers",
         "parameters": [
           {
@@ -1026,7 +1026,7 @@
         "tags": [
           "Intelligence"
         ],
-        "summary": "Stops a courier on its way (Umpire or Admin): captured or lost, it never arrives.",
+        "summary": "Cancels a courier on its way (Umpire or Admin), with why: captured or lost, it never\narrives. Only the Umpire and Admins see the note.",
         "operationId": "StopCourier",
         "parameters": [
           {
@@ -1039,6 +1039,16 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StopCourierRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "204": {
             "description": "No Content"
@@ -7078,13 +7088,25 @@
           "reportId",
           "fromArmyId",
           "toArmyId",
+          "fromCommanderInChief",
+          "toCommanderInChief",
           "sentTurn",
+          "status",
           "q",
           "r",
           "latitude",
           "longitude",
           "arrivesNext",
-          "amongTheEnemy"
+          "amongTheEnemy",
+          "turnsToRide",
+          "waiting",
+          "arrivedTurn",
+          "stoppedTurn",
+          "stoppedNote",
+          "stoppedBy",
+          "note",
+          "includesSnapshot",
+          "sightingCount"
         ],
         "type": "object",
         "properties": {
@@ -7103,14 +7125,32 @@
             "description": "The recipient's army.",
             "format": "uuid"
           },
+          "fromCommanderInChief": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The sender's Commander in Chief now, by name, if any."
+          },
+          "toCommanderInChief": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The recipient's Commander in Chief now, by name, if any."
+          },
           "sentTurn": {
             "type": "integer",
             "description": "The turn it was sent in.",
             "format": "int32"
           },
+          "status": {
+            "description": "On its way, arrived, or cancelled.",
+            "$ref": "#/components/schemas/CourierStatus"
+          },
           "q": {
             "type": "integer",
-            "description": "Its hex (axial q).",
+            "description": "Its hex (axial q): where it is, or where it arrived or was cancelled.",
             "format": "int32"
           },
           "r": {
@@ -7130,20 +7170,91 @@
           },
           "arrivesNext": {
             "type": "boolean",
-            "description": "It arrives as the next turn starts."
+            "description": "On its way, it arrives as the next turn starts."
           },
           "amongTheEnemy": {
             "type": "boolean",
-            "description": "Units of the other side are in its hex: the Umpire's to stop or let through."
+            "description": "On its way, units of the other side are in its hex: the Umpire's to cancel or let through."
+          },
+          "turnsToRide": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "description": "On its way, how many turns' ride it has left to where the recipient's Commander in Chief is now (null if it's waiting).",
+            "format": "double"
+          },
+          "waiting": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "description": "On its way, why it doesn't ride on, if it doesn't.",
+                "$ref": "#/components/schemas/CourierWaiting"
+              }
+            ]
+          },
+          "arrivedTurn": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "description": "The turn it arrived for, if it has.",
+            "format": "int32"
+          },
+          "stoppedTurn": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "description": "The turn it was cancelled in, if it was.",
+            "format": "int32"
+          },
+          "stoppedNote": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Why it was cancelled, if it was."
+          },
+          "stoppedBy": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Who cancelled it, by name (null once their account is deleted)."
+          },
+          "note": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The report's note, if any."
+          },
+          "includesSnapshot": {
+            "type": "boolean",
+            "description": "Whether the report carries the sender's units."
+          },
+          "sightingCount": {
+            "type": "integer",
+            "description": "How many sightings the report carries.",
+            "format": "int32"
           }
         },
-        "description": "A courier on its way, for the Umpire (decision 0020)."
+        "description": "A courier, on its way or done, for the Umpire (decisions 0020 and 0033)."
       },
       "CourierStatus": {
         "enum": [
           "EnRoute",
           "Arrived",
           "Stopped"
+        ]
+      },
+      "CourierWaiting": {
+        "enum": [
+          "NoCommanderInChief",
+          "NoWay"
         ]
       },
       "CreateArmyRequest": {
@@ -9973,6 +10084,21 @@
           }
         },
         "description": "Starting the next turn."
+      },
+      "StopCourierRequest": {
+        "required": [
+          "note"
+        ],
+        "type": "object",
+        "properties": {
+          "note": {
+            "maxLength": 500,
+            "minLength": 1,
+            "type": "string",
+            "description": "Why: captured, lost, killed. Only the Umpire and Admins see it."
+          }
+        },
+        "description": "The Umpire cancelling a courier (decision 0033)."
       },
       "SubmitTurnRequest": {
         "required": [

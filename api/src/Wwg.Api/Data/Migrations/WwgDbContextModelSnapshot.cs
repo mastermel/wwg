@@ -1111,6 +1111,16 @@ namespace Wwg.Api.Data.Migrations
                         .HasMaxLength(16)
                         .HasColumnType("TEXT");
 
+                    b.Property<Guid?>("StoppedByUserId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("StoppedNote")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("StoppedTurn")
+                        .HasColumnType("INTEGER");
+
                     b.Property<Guid>("ToArmyId")
                         .HasColumnType("TEXT");
 
@@ -1120,6 +1130,8 @@ namespace Wwg.Api.Data.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("FromArmyId");
+
+                    b.HasIndex("StoppedByUserId");
 
                     b.HasIndex("ToArmyId");
 
@@ -1824,6 +1836,11 @@ namespace Wwg.Api.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("Wwg.Api.Data.Entities.AppUser", "StoppedByUser")
+                        .WithMany()
+                        .HasForeignKey("StoppedByUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("Wwg.Api.Data.Entities.Army", "ToArmy")
                         .WithMany()
                         .HasForeignKey("ToArmyId")
@@ -1831,6 +1848,8 @@ namespace Wwg.Api.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("FromArmy");
+
+                    b.Navigation("StoppedByUser");
 
                     b.Navigation("ToArmy");
                 });

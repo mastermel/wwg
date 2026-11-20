@@ -1,22 +1,21 @@
-import { ActionIcon, Badge, Group, List, Text } from "@mantine/core";
-import { notifications } from "@mantine/notifications";
+import { Accordion, ActionIcon, Badge, Group, List, Stack, Text } from "@mantine/core";
 import { IconHandStop } from "@tabler/icons-react";
-import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import {
-  getListCouriersQueryKey,
-  useStopCourier,
-} from "@/api/generated/endpoints/intelligence/intelligence";
 import type { ArmySummary, CourierResponse } from "@/api/generated/model";
-import { ConfirmModal } from "@/components/ConfirmModal";
 import { Section } from "@/components/Section";
-import { hexName } from "@/features/maps/hex-grid";
-import { errorMessage } from "@/lib/errors";
+import { CancelCourierModal } from "@/features/maps/CancelCourierModal";
+import {
+  courierCargo,
+  courierOutcome,
+  courierProgress,
+  courierRoute,
+} from "@/features/maps/couriers";
 import { useOnline } from "@/lib/use-online";
 
 /**
- * The couriers on their way, for the Umpire (step 49d, decision 0020): where each is, flagged
- * among the enemy, and stopping one. Nothing when there's none.
+ * Every courier, for the Umpire (steps 49d and 68, decisions 0020 and 0033): those on their way
+ * (where each is, how its ride goes, flagged among the enemy, cancelling one with a note), and,
+ * folded, those that arrived or were cancelled. Nothing when there's none.
  */
 export function CouriersPanel({
   campaignId,
@@ -28,80 +27,115 @@ export function CouriersPanel({
   armies: readonly ArmySummary[];
 }) {
   const online = useOnline();
-  const queryClient = useQueryClient();
-  const stop = useStopCourier();
-  const [stopping, setStopping] = useState<CourierResponse | null>(null);
+  const [cancelling, setCancelling] = useState<CourierResponse | null>(null);
   if (couriers.length === 0) return null;
-  const name = (id: string) => armies.find((a) => a.id === id)?.name ?? "An army";
-  const route = (c: CourierResponse) => `${name(c.fromArmyId)} to ${name(c.toArmyId)}`;
+  const onTheirWay = couriers.filter((c) => c.status === "EnRoute");
+  const done = couriers.filter((c) => c.status !== "EnRoute");
 
   return (
-    <Section title="Couriers" description="Reports on their way between allies.">
-      <List size="sm" spacing={6} listStyleType="none" p={0} aria-label="Couriers">
-        {couriers.map((courier) => (
-          <List.Item key={courier.reportId}>
-            <Group justify="space-between" wrap="nowrap" gap="xs">
-              <Text size="sm">
-                {route(courier)}, sent turn {courier.sentTurn}: {hexName(courier)}
-                {courier.arrivesNext ? ", arriving next turn" : ""}.
-              </Text>
-              <Group gap={4} wrap="nowrap">
-                {courier.amongTheEnemy && (
-                  <Badge color="orange" variant="light">
-                    Among the enemy
-                  </Badge>
-                )}
-                <ActionIcon
-                  variant="subtle"
-                  color="red"
-                  aria-label={`Stop the courier from ${route(courier)}`}
-                  disabled={!online}
-                  onClick={() => {
-                    setStopping(courier);
-                  }}
+    <Section
+      title="Couriers"
+      description="Reports between allies, from one Commander in Chief to the other."
+    >
+      <Stack gap="sm">
+        {onTheirWay.length === 0 ? (
+          <Text size="sm" c="dimmed">
+            None on their way.
+          </Text>
+        ) : (
+          <List size="sm" spacing={8} listStyleType="none" p={0} aria-label="Couriers">
+            {onTheirWay.map((courier) => (
+              <List.Item key={courier.reportId}>
+                <Group justify="space-between" wrap="nowrap" gap="xs" align="flex-start">
+                  <Stack gap={2}>
+                    <Text size="sm">
+                      {courierRoute(courier, armies)}: {courierProgress(courier, armies)}.
+                    </Text>
+                    <Text size="xs" c="dimmed">
+                      {courierOutcome(courier)} {courierCargo(courier)}
+                    </Text>
+                    {courier.note && (
+                      <Text size="xs" c="dimmed" style={{ whiteSpace: "pre-wrap" }}>
+                        “{courier.note}”
+                      </Text>
+                    )}
+                  </Stack>
+                  <Group gap={4} wrap="nowrap">
+                    {courier.amongTheEnemy && (
+                      <Badge color="orange" variant="light">
+                        Among the enemy
+                      </Badge>
+                    )}
+                    <ActionIcon
+                      variant="subtle"
+                      color="red"
+                      aria-label={`Cancel the courier from ${courierRoute(courier, armies)}`}
+                      disabled={!online}
+                      onClick={() => {
+                        setCancelling(courier);
+                      }}
+                    >
+                      <IconHandStop size={16} aria-hidden />
+                    </ActionIcon>
+                  </Group>
+                </Group>
+              </List.Item>
+            ))}
+          </List>
+        )}
+        {done.length > 0 && (
+          <Accordion variant="contained">
+            <Accordion.Item value="history">
+              <Accordion.Control>
+                <Text size="sm">History ({done.length})</Text>
+              </Accordion.Control>
+              <Accordion.Panel>
+                <List
+                  size="sm"
+                  spacing={8}
+                  listStyleType="none"
+                  p={0}
+                  aria-label="Couriers arrived or cancelled"
                 >
-                  <IconHandStop size={16} aria-hidden />
-                </ActionIcon>
-              </Group>
-            </Group>
-          </List.Item>
-        ))}
-      </List>
-      <ConfirmModal
-        opened={stopping !== null}
-        onClose={() => {
-          setStopping(null);
-        }}
-        title="Stop the courier?"
-        confirmLabel="Stop it"
-        loading={stop.isPending}
-        onConfirm={() => {
-          if (!stopping) return;
-          void stop
-            .mutateAsync({ id: stopping.reportId })
-            .then(() => {
-              notifications.show({
-                color: "green",
-                message: `Stopped the courier from ${route(stopping)}.`,
-              });
-              setStopping(null);
-            })
-            .catch((error: unknown) => {
-              notifications.show({
-                color: "red",
-                message: errorMessage(error, "The courier couldn't be stopped. Try again."),
-              });
-            })
-            .finally(
-              () =>
-                void queryClient.invalidateQueries({
-                  queryKey: getListCouriersQueryKey(campaignId),
-                }),
-            );
-        }}
-      >
-        Captured or lost: the report never arrives.
-      </ConfirmModal>
+                  {done.map((courier) => (
+                    <List.Item key={courier.reportId}>
+                      <Stack gap={2}>
+                        <Group gap="xs" wrap="nowrap">
+                          <Text size="sm">{courierRoute(courier, armies)}</Text>
+                          <Badge
+                            color={courier.status === "Arrived" ? "green" : "red"}
+                            variant="light"
+                          >
+                            {courier.status === "Arrived" ? "Arrived" : "Cancelled"}
+                          </Badge>
+                        </Group>
+                        <Text size="xs" c="dimmed">
+                          {courierOutcome(courier)} {courierCargo(courier)}
+                        </Text>
+                        {courier.stoppedNote && (
+                          <Text size="xs" style={{ whiteSpace: "pre-wrap" }}>
+                            Why: {courier.stoppedNote}
+                          </Text>
+                        )}
+                      </Stack>
+                    </List.Item>
+                  ))}
+                </List>
+              </Accordion.Panel>
+            </Accordion.Item>
+          </Accordion>
+        )}
+      </Stack>
+      {cancelling && (
+        <CancelCourierModal
+          campaignId={campaignId}
+          courier={cancelling}
+          armies={armies}
+          onClose={() => {
+            setCancelling(null);
+          }}
+        />
+      )}
     </Section>
   );
 }

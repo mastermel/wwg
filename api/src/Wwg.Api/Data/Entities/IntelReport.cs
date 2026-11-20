@@ -9,7 +9,7 @@ public enum CourierStatus
     /// <summary>Delivered: the recipient has the report.</summary>
     Arrived,
 
-    /// <summary>Stopped by the Umpire (captured, lost): it never arrives.</summary>
+    /// <summary>Cancelled by the Umpire (captured, lost), with a note: it never arrives.</summary>
     Stopped,
 }
 
@@ -51,4 +51,15 @@ internal sealed class IntelReport : Entity
 
     /// <summary>Within two turns' ride when sent: it arrives as the next turn starts (§L).</summary>
     public bool ArrivesNext { get; set; }
+
+    /// <summary>The open turn when the Umpire cancelled it, if they did (decision 0033).</summary>
+    public int? StoppedTurn { get; set; }
+
+    /// <summary>Why the Umpire cancelled it: theirs and Admins' only.</summary>
+    public string? StoppedNote { get; set; }
+
+    /// <summary>Who cancelled it (null once their account is deleted).</summary>
+    public Guid? StoppedByUserId { get; set; }
+
+    public AppUser? StoppedByUser { get; set; }
 }

@@ -156,7 +156,8 @@ The pre-commit hook runs `eslint --fix` and Prettier on staged files.
   `SightingsPanel` and on the map (`SightingMarkers`, the turn shown and 3 before, faded:
   `sightingsFor`), and the turn list marks their turns. Reports are `IntelligencePanel` and
   `SendReportModal`, a received one's units `SnapshotMarkers`; the Umpire's couriers are
-  `CouriersPanel`.
+  `CouriersPanel` (on their way, and the history), worded by `couriers.ts`, cancelled with a note
+  in `CancelCourierModal` (step 68, decision 0033).
 - Towns and victory points (step 50, decision 0021): a settlement's value is `victory.ts`
   (`settlementValue`, by the campaign's mode, mirroring the API's `HexSettlement.ValueIn`; the
   mode is `VictorySection` on the edit page); the scoreboard is the API's,

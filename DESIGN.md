@@ -1830,7 +1830,7 @@ cancelled:
 IntelReport (new fields)
   StoppedTurn  int? (the open turn when the Umpire cancelled it)
   StoppedNote  string? (≤500; why: the Umpire's and Admins' only)
-  StoppedById  → AppUser? (who cancelled it; null once deleted)
+  StoppedByUserId → AppUser? (who cancelled it; null once deleted)
 ```
 
 - What a sighting or report records is **copied in**, as it was then, so later changes don't
@@ -3086,15 +3086,15 @@ build on positions.
     - ✅ **68a. Riding (API):** `Couriers.Ends` from the sender's C-in-C to the recipient's
       (`UnitPlace.IsCommanderInChief`), re-aimed each turn; sending without a C-in-C either side:
       409; a courier with no C-in-C to ride to, or no way to it, waits.
-    - **68b. Every courier, and cancelling with a note (API):** `IntelReport.StoppedTurn`,
-      `StoppedNote`, `StoppedById`; `POST /api/reports/{id}/stop { note }`; `GET
+    - ✅ **68b. Every courier, and cancelling with a note (API):** `IntelReport.StoppedTurn`,
+      `StoppedNote`, `StoppedByUserId`; `POST /api/reports/{id}/stop { note }`; `GET
       /api/campaigns/{id}/couriers` lists every courier with its status, both C-in-Cs' names, the
       turns still to ride, why it waits (`Waiting`), what it carries, and when and why it was
-      cancelled or when it arrived.
+      cancelled or when it arrived. In the app, the Couriers panel lists those on their way with
+      these details and, folded, the history (arrived, cancelled with the note); cancelling asks
+      for the note (`CancelCourierModal`, worded by `couriers.ts`).
     - **68c. In the app:** `SendReportModal` greys out an ally without a C-in-C (and says so when
-      ours has none), and says the courier rides from our C-in-C to theirs; the Couriers panel lists
-      those on their way and, folded, the history (arrived, cancelled with the note), and cancelling
-      asks for the note.
+      ours has none), and says the courier rides from our C-in-C to theirs.
     - **68d. On the Umpire's map:** a courier marker for each on its way (`CourierMarkers`), its
       popover with the panel's details and a Cancel button.
     - **68e. End to end:** `intelligence.spec.ts` chooses each army's C-in-C, and cancels a
