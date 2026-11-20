@@ -181,6 +181,12 @@ function serveArmy(
       units = units.map((u) => (u.id === params.id ? { ...u, ...body } : u));
       return HttpResponse.json(units.find((u) => u.id === params.id));
     }),
+    http.put(`*/api/armies/${armyId}/commander-in-chief`, async ({ request }) => {
+      const body = (await request.json()) as { unitId: string | null };
+      requests.push({ method: "PUT", path: "commander-in-chief", body });
+      units = units.map((u) => ({ ...u, isCommanderInChief: u.id === body.unitId }));
+      return new HttpResponse(null, { status: 204 });
+    }),
     http.delete("*/api/army-units/:id", ({ params }) => {
       requests.push({ method: "DELETE", path: String(params.id), body: null });
       units = units.filter((u) => u.id !== params.id);
@@ -238,6 +244,60 @@ describe("units", () => {
       "C-in-C",
     );
     expect(within(other ?? document.body).queryByTitle("Commander in Chief")).toBeNull();
+  });
+
+  it("lets the Umpire make another commander the Commander in Chief", async () => {
+    const user = userEvent.setup();
+    const requests = serveArmy("Umpire", [
+      { ...unit("1", "Napoleon", "Commander", 1, 0), isCommanderInChief: true },
+      unit("2", "Ney", "Commander", 1, 0),
+      unit("3", "1st Division"),
+    ]);
+    await renderApp(`/campaigns/${campaignId}/armies/${armyId}`);
+    const section = await unitsSection();
+
+    // Only commanders can be chosen.
+    expect(
+      section.queryByRole("button", { name: "Make 1st Division Commander in Chief" }),
+    ).not.toBeInTheDocument();
+    await user.click(section.getByRole("button", { name: "Make Ney Commander in Chief" }));
+
+    expect(
+      await screen.findByText("Ney is now First Corps's Commander in Chief."),
+    ).toBeInTheDocument();
+    expect(requests).toContainEqual({
+      method: "PUT",
+      path: "commander-in-chief",
+      body: { unitId: unit("2", "").id },
+    });
+    expect(
+      await section.findByRole("button", { name: "Ney is no longer Commander in Chief" }),
+    ).toBeInTheDocument();
+    expect(
+      section.getByRole("button", { name: "Make Napoleon Commander in Chief" }),
+    ).toBeInTheDocument();
+  });
+
+  it("lets the Umpire leave the army with no Commander in Chief", async () => {
+    const user = userEvent.setup();
+    const requests = serveArmy("Umpire", [
+      { ...unit("1", "Napoleon", "Commander", 1, 0), isCommanderInChief: true },
+    ]);
+    await renderApp(`/campaigns/${campaignId}/armies/${armyId}`);
+    const section = await unitsSection();
+
+    await user.click(
+      await section.findByRole("button", { name: "Napoleon is no longer Commander in Chief" }),
+    );
+
+    expect(
+      await screen.findByText("First Corps has no Commander in Chief now."),
+    ).toBeInTheDocument();
+    expect(requests).toContainEqual({
+      method: "PUT",
+      path: "commander-in-chief",
+      body: { unitId: null },
+    });
   });
 
   it("shows the army's units in their order of battle, with its totals", async () => {

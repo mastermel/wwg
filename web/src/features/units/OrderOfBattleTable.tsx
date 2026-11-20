@@ -1,5 +1,5 @@
 import { ActionIcon, Checkbox, Group, Table, Text, VisuallyHidden } from "@mantine/core";
-import { IconEdit, IconTrash } from "@tabler/icons-react";
+import { IconEdit, IconStar, IconStarFilled, IconTrash } from "@tabler/icons-react";
 import { Fragment } from "react";
 import classes from "@/features/units/OrderOfBattleTable.module.css";
 import { unitCount } from "@/features/library/library-access";
@@ -42,6 +42,11 @@ interface OrderOfBattleTableProps<T extends Row> {
   online?: boolean;
   onEdit?: (unit: T) => void;
   onDelete?: (unit: T) => void;
+  /**
+   * Shows a star by each Commander unit, which makes it the army's Commander in Chief, or the one
+   * that is no longer (decision 0032): an army's units, for the Umpire.
+   */
+  onCommanderInChief?: (unit: T, chief: boolean) => void;
   /** The delete button's word: an army's units are removed from it, not deleted. */
   deleteVerb?: "Delete" | "Remove";
   /** Ends with a row of the unit count and total points (the army's). */
@@ -70,6 +75,7 @@ export function OrderOfBattleTable<T extends Row>({
   online = true,
   onEdit,
   onDelete,
+  onCommanderInChief,
   deleteVerb = "Delete",
   totals = false,
   selection,
@@ -132,6 +138,27 @@ export function OrderOfBattleTable<T extends Row>({
       {editor && (
         <Table.Td>
           <Group gap={4} justify="flex-end" wrap="nowrap">
+            {onCommanderInChief && unit.type === "Commander" && (
+              <ActionIcon
+                variant="subtle"
+                color={unit.isCommanderInChief ? "yellow" : "gray"}
+                aria-label={
+                  unit.isCommanderInChief
+                    ? `${unit.name} is no longer Commander in Chief`
+                    : `Make ${unit.name} Commander in Chief`
+                }
+                onClick={() => {
+                  onCommanderInChief(unit, !unit.isCommanderInChief);
+                }}
+                disabled={!online}
+              >
+                {unit.isCommanderInChief ? (
+                  <IconStarFilled size={16} aria-hidden />
+                ) : (
+                  <IconStar size={16} aria-hidden />
+                )}
+              </ActionIcon>
+            )}
             <ActionIcon
               variant="subtle"
               aria-label={`Edit ${unit.name}`}

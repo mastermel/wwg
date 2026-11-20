@@ -8,10 +8,12 @@ import { getGetArmyQueryKey } from "@/api/generated/endpoints/armies/armies";
 import {
   useDeleteArmyUnit,
   useUpdateArmyUnit,
+  useUpdateCommanderInChief,
 } from "@/api/generated/endpoints/army-units/army-units";
 import type { ArmyResponse, ArmyUnitResponse, UpdateArmyUnitRequest } from "@/api/generated/model";
 import { ConfirmModal } from "@/components/ConfirmModal";
 import { EmptyState } from "@/components/EmptyState";
+import { refreshCampaign } from "@/features/campaigns/campaign-cache";
 import { Section } from "@/components/Section";
 import { AddScoutModal } from "@/features/units/AddScoutModal";
 import { AddUnitsModal } from "@/features/units/AddUnitsModal";
@@ -38,13 +40,15 @@ const armyCopy = (values: UnitValues): UpdateArmyUnitRequest => ({
 /**
  * The army's units: the campaign's copies of library units, and its own scouts (decision 0028), in
  * their order of battle. The Umpire (or an Admin) adds them, from the army's factions or as scouts,
- * and edits and removes them.
+ * edits and removes them, and chooses which Commander unit is the army's Commander in Chief
+ * (decision 0032), at any time.
  */
 export function UnitsSection({ army, manager }: { army: ArmyResponse; manager: boolean }) {
   const online = useOnline();
   const queryClient = useQueryClient();
   const update = useUpdateArmyUnit();
   const remove = useDeleteArmyUnit();
+  const chief = useUpdateCommanderInChief();
   const [adding, addModal] = useDisclosure(false);
   const [addingScout, scoutModal] = useDisclosure(false);
   const [editing, setEditing] = useState<ArmyUnitResponse | null>(null);
@@ -65,12 +69,31 @@ export function UnitsSection({ army, manager }: { army: ArmyResponse; manager: b
     deleting.close();
   };
 
+  // Not confirmed: choosing again undoes it.
+  const chooseChief = async (unit: ArmyUnitResponse, isChief: boolean) => {
+    try {
+      await chief.mutateAsync({ id: army.id, data: { unitId: isChief ? unit.id : null } });
+      notifications.show({
+        color: "green",
+        message: isChief
+          ? `${unit.name} is now ${army.name}'s Commander in Chief.`
+          : `${army.name} has no Commander in Chief now.`,
+      });
+      await Promise.all([refresh(), refreshCampaign(queryClient, army.campaignId)]);
+    } catch (error) {
+      notifications.show({
+        color: "red",
+        message: errorMessage(error, "The Commander in Chief wasn't changed. Try again."),
+      });
+    }
+  };
+
   return (
     <Section
       title="Units"
       description={
         manager
-          ? "From the library, and the army's own scouts. Editing one here changes this campaign's copy only."
+          ? "From the library, and the army's own scouts. Editing one here changes this campaign's copy only. A commander's star makes it the army's Commander in Chief, where its player is."
           : undefined
       }
       flush
@@ -111,6 +134,7 @@ export function UnitsSection({ army, manager }: { army: ArmyResponse; manager: b
           online={online}
           onEdit={setEditing}
           onDelete={deleting.open}
+          onCommanderInChief={(unit, isChief) => void chooseChief(unit, isChief)}
           deleteVerb="Remove"
           totals
         />

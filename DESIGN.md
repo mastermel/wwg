@@ -3056,15 +3056,16 @@ build on positions.
     - ✅ **66d. Shared ghost lines:** moves along the same path from the same hex are drawn as
       one dashed line, wider the more units take it (`sharedLines`, `ghost-lines.ts`).
     - Later, if wanted: taking back a stack's orders at once.
-67. **The Commander in Chief** (decision 0032): the Umpire marks one Commander unit in each army
+67. ✅ **The Commander in Chief** (decision 0032): the Umpire marks one Commander unit in each army
     as its Commander in Chief, where the player is on the map; choosing another replaces it, at
     any time, setting up or started.
-    - **67a. The API:** `ArmyUnit.IsCommanderInChief` (a partial unique index: one per army);
+    - ✅ **67a. The API:** `ArmyUnit.IsCommanderInChief` (a partial unique index: one per army);
       `PUT /api/armies/{id}/commander-in-chief { unitId }` (Umpire; null for none), clearing the
       last in the same transaction; a Commander only (409), of that army (400); a unit changed
       to another type stops being one; `isCommanderInChief` on `ArmyUnitResponse`.
-    - **67b. Shown:** the star in a ring for its symbol (`UnitSymbol`'s `commanderInChief`; on
+    - ✅ **67b. Shown:** the star in a ring for its symbol (`UnitSymbol`'s `commanderInChief`; on
       the map, its ghost, the drawer, the panels and the legend), and a "C-in-C" badge beside its
       name in the unit lists (`CommanderInChiefBadge`).
-    - **67c. Choosing (UI):** the army page's units, for the Umpire: **Make Commander in Chief**
-      by each Commander unit (and **No longer Commander in Chief** by the one that is).
+    - ✅ **67c. Choosing (UI):** the army page's units, for the Umpire: a star by each Commander
+      unit makes it the Commander in Chief (filled by the one that is, which clears it); no
+      confirmation, as choosing again undoes it. A marker's stack shows its C-in-C on top.

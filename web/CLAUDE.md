@@ -175,6 +175,10 @@ The pre-commit hook runs `eslint --fix` and Prettier on staged files.
   `fights(type)` (`unit-types.ts`) is false for them, and they have no FF or points (`UnitStat`
   shows "–"). `unitTypeOptions` leaves them out, so no form or setting offers the type. The map's
   rules skip them: `canForceMarch`, `buildsBoats`, `hexWarnings`.
+- The Commander in Chief (step 67, decision 0032): `isCommanderInChief` on a unit; pass it to
+  `UnitSymbol`'s `commanderInChief` (the star in a ring) wherever a unit's symbol is drawn, and put
+  `CommanderInChiefBadge` beside its name in lists. It leads its marker's stack (`stackUnits`).
+  The Umpire chooses it by the star in the army page's units (`UnitsSection`).
 - Queries that must not be saved for offline use (live status, admin data such as the user list)
   pass `meta: { persist: false }`.
 - Accessibility (WCAG 2.1 AA) is enforced in part by `jsx-a11y`; also give every page a title and
