@@ -3133,3 +3133,27 @@ build on positions.
     - ✅ **69b. In the app:** `UnitFormModal` hides FF and points while the type is Commander and
       sends 0; `hasStats` (`unit-types.ts`) is false for Commanders and scouts, so `UnitStat`
       shows "–"; a Commander at 0 points keeps its boats on the map.
+70. **The Umpire's intelligence reports** (decision 0035): the Umpire sends an army a report of
+    their own, at once, with no courier: a note, exact positions of the chosen units of the
+    recipient's side, and sightings of the chosen units of the other side. Mostly for the start
+    of a campaign, telling each commander where their allies are. Not started; update §5.1, §5.2
+    and §5.3 as it's built.
+    - **70a. The API:** `IntelReport.FromUmpire` with `FromArmyId` nullable (a check constraint:
+      null only for the Umpire's); a snapshot entry's `ArmyId`; `POST
+      /api/armies/{id}/umpire-reports { note, positions: [unitId], sightings: [shaped as the
+      start-turn request's] }` (Umpire and Admins; 201; nothing to send, a position of the other
+      side, or a sighting of the recipient's side: 400; not under way: 409). Positions copied from
+      the open turn's start, never `afterOrders`; no unit ids in the snapshot. `Couriers.RideAsync`,
+      `GET /api/campaigns/{id}/couriers` and the "sent" reports leave these out; `ReportResponse`
+      says it's from the Umpire.
+    - **70b. In the app:** an Umpire-only "Send intelligence" (army page and turn panel): the
+      recipient, units grouped by army and side with checkboxes, the other side's prefilled as
+      sightings to shape (`SightingsFields`), and a note. The Intelligence panel shows "From the
+      Umpire"; `SnapshotMarkers` draws each entry in its own army's colour, and one whose army has
+      been deleted as an army no longer in the campaign.
+    - **70c. End to end:** `intelligence.spec.ts` sends one with an ally's position and an enemy
+      sighting, and the recipient sees both.
+    - To settle when started: whether the Umpire can write one while setting up, to arrive as turn
+      1 starts (or only once under way); whether to send one to several armies at once (one report
+      each); whether the Umpire can delete one sent by mistake; and whether it emails the
+      recipient or waits for the next turn's email.
