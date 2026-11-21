@@ -10,12 +10,13 @@ using Wwg.Api.Infrastructure.Email;
 namespace Wwg.Api.Features.Turns;
 
 /// <summary>
-/// The new turn's email (step 52c, decision 0023): to each army's commander, one per army, the
-/// turn's number, its day and time of day, and what's new for the army since the last turn.
+/// The new turn's email (step 52c, decision 0023): to each commander, one for all the armies
+/// they command (decision 0036), the turn's number, its day and time of day, and what's new for
+/// each army since the last turn.
 /// </summary>
 internal static class TurnStartedEmails
 {
-    /// <summary>Queues the email for every commanded army, as turn <paramref name="number"/> opens.</summary>
+    /// <summary>Queues the email for every commander, as turn <paramref name="number"/> opens.</summary>
     public static async Task QueueAsync(
         WwgDbContext db,
         IEmailQueue emails,
@@ -32,6 +33,7 @@ internal static class TurnStartedEmails
             .Select(a => new
             {
                 a.Id,
+                a.CommanderId,
                 Army = a.Name,
                 Campaign = a.Campaign.Name,
                 To = db
@@ -58,16 +60,21 @@ internal static class TurnStartedEmails
             number > 1
                 ? await TurnNewsBuilder.ForAsync(db, campaignId, number, cancellationToken)
                 : [];
-        foreach (var commander in commanders)
+        foreach (var commander in commanders.GroupBy(c => c.CommanderId))
         {
+            var first = commander.First();
             await emails.QueueAsync(
                 Create(
-                    commander.To,
-                    commander.Campaign,
-                    commander.Army,
+                    first.To,
+                    first.Campaign,
+                    [
+                        .. commander.Select(c => new ArmyNews(
+                            c.Army,
+                            news.GetValueOrDefault(c.Id) ?? TurnNews.None
+                        )),
+                    ],
                     number,
                     when,
-                    news.GetValueOrDefault(commander.Id) ?? TurnNews.None,
                     map
                 ),
                 cancellationToken
@@ -87,23 +94,28 @@ internal static class TurnStartedEmails
             _ => turn.Value.Part.ToString(),
         };
 
+    /// <summary>One of the commander's armies, and what's new for it.</summary>
+    internal sealed record ArmyNews(string Army, TurnNews News);
+
+    /// <summary>The email for a commander of <paramref name="armies"/> (by name; at least one).</summary>
     public static EmailMessage Create(
         TurnRecipient to,
         string campaign,
-        string army,
+        IReadOnlyList<ArmyNews> armies,
         int number,
         string? when,
-        TurnNews news,
         Uri map
     )
     {
         var at = when is null ? "" : $" ({when})";
+        var whose = armies.Count == 1 ? "its" : "their";
+        var names = Names([.. armies.Select(a => a.Army)]);
         var opening =
             number == 1
-                ? $"{campaign} has begun: turn 1{at} is open. Give {army} its first orders."
+                ? $"{campaign} has begun: turn 1{at} is open. Give {names} {whose} first orders."
                 : string.Create(
                     CultureInfo.InvariantCulture,
-                    $"Turn {number} of {campaign} has started{at}. Give {army} its orders."
+                    $"Turn {number} of {campaign} has started{at}. Give {names} {whose} orders."
                 );
         var html = new StringBuilder();
         var text = new StringBuilder();
@@ -114,7 +126,10 @@ internal static class TurnStartedEmails
         text.Append(CultureInfo.InvariantCulture, $"Hi {to.FirstName},\n\n{opening}\n\n");
         if (number > 1)
         {
-            AppendNews(html, text, news);
+            foreach (var army in armies)
+            {
+                AppendNews(html, text, armies.Count == 1 ? null : army.Army, army.News);
+            }
         }
 
         html.Append(
@@ -133,10 +148,21 @@ internal static class TurnStartedEmails
         );
     }
 
-    private static void AppendNews(StringBuilder html, StringBuilder text, TurnNews news)
+    /// <summary>"First Corps", "First Corps and Second Corps", "A, B and C".</summary>
+    private static string Names(List<string> names) =>
+        names.Count == 1 ? names[0] : $"{string.Join(", ", names[..^1])} and {names[^1]}";
+
+    /// <summary>An army's news, under its name when the email is for several (<paramref name="army"/>).</summary>
+    private static void AppendNews(
+        StringBuilder html,
+        StringBuilder text,
+        string? army,
+        TurnNews news
+    )
     {
-        html.Append("<h3>New since the last turn</h3>\n");
-        text.Append("New since the last turn\n\n");
+        var heading = army is null ? "New since the last turn" : $"{army}: new since the last turn";
+        html.Append(CultureInfo.InvariantCulture, $"<h3>{Encode(heading)}</h3>\n");
+        text.Append(CultureInfo.InvariantCulture, $"{heading}\n\n");
         if (news.IsEmpty)
         {
             html.Append("<p>Nothing new since the last turn.</p>\n");

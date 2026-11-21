@@ -554,11 +554,12 @@ Identity has two layers:
     Phase 9 → the army's commander); approved, sent back or reopened
     (reverted; with the Umpire's notes) → the army's commander, listing the
     orders the Umpire set (Phase 9);
-  - a **new turn started** (the campaign's first too) → each army's commander,
-    one per army: the turn's number, date and time of day, and what's new for
-    the army as the last turn closed (sightings, units out of supply and depots
+  - a **new turn started** (the campaign's first too) → each commander, one for
+    all their armies (step 71b): the turn's number, date and time of day, and what's
+    new for each army as the last turn closed (sightings, units out of supply and depots
     cut off, attrition, boats built, allies' reports with their notes), or
-    "Nothing new since the last turn" (`TurnNewsBuilder`, `TurnStartedEmails`);
+    "Nothing new since the last turn", under the army's name when they command several
+    (`TurnNewsBuilder`, `TurnStartedEmails`);
   - a player **given an army** (at its making, or made its commander) → that
     player; a **player joined** → the Umpire; **every army submitted** the
     open turn → the Umpire, with what's waiting as they start the next
@@ -3171,7 +3172,7 @@ build on positions.
       becomes `armies` (by name). A report to an army with the sender's commander is a 400
       (`RecipientProblemAsync`). The members list shows a badge per army; the commander picker
       still offers only Players without one until 71c.
-    - **71b. Emails:** `TurnStartedEmails` sends one email per commander: the turn and its day,
+    - ✅ **71b. Emails:** `TurnStartedEmails` sends one email per commander: the turn and its day,
       then each army's news under its name (`TurnNews.None` for an army with nothing new).
     - **71c. In the app:** `MembersSection` shows a badge per army; `commanderOptions` offers
       every Player, greying out those who command an army of the other side and saying why;
