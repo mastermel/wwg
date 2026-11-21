@@ -1,7 +1,7 @@
 # 0035. The Umpire sends an army intelligence: allies' positions, enemy sightings, a note
 
 - **Date:** 2026-11-21
-- **Status:** Accepted, not built yet (step 70; refines 0020)
+- **Status:** Accepted (step 70; refines 0020)
 
 ## Context
 

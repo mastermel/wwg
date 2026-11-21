@@ -114,3 +114,41 @@ test("the Umpire sees a courier on the map and cancels it, saying why", async ({
     "No reports yet.",
   );
 });
+
+test("the Umpire sends an army an ally's position and an enemy sighting, which it has at once", async ({
+  signUp,
+}) => {
+  test.slow();
+  const umpire = await signUp("Ada");
+  const bob = await signUp("Bob");
+  const cy = await signUp("Cy");
+  const { campaignUrl, armyId } = await startedCampaign(umpire, bob, "Quatre Bras", 4828, {
+    ally: { commander: cy, at: { q: 1, r: 0 } },
+    enemyAt: { q: 2, r: 0 },
+  });
+
+  const page = umpire.page;
+  await page.goto(`${campaignUrl}/armies/${armyId}`);
+  await page.getByRole("button", { name: "Send intelligence" }).click();
+  const dialog = page.getByRole("dialog", { name: "Send intelligence" });
+  await dialog.getByRole("checkbox", { name: "IV Corps, Hex (1, 0)" }).check();
+  await dialog.getByRole("checkbox", { name: "1st Brigade, Hex (2, 0)" }).check();
+  const sighting = dialog.getByRole("group", { name: "Hex (2, 0)" });
+  await expect(sighting).toContainText("1st Brigade (Line Infantry, 20 points)");
+  await sighting.getByText("Exact", { exact: true }).click();
+  await dialog.getByRole("textbox", { name: "Message" }).fill("Grouchy is at Wavre.");
+  expect(await scan(page, "send intelligence")).toEqual([]);
+  await dialog.getByRole("button", { name: "Send intelligence" }).click();
+  await expect(page.getByText("Sent intelligence to Armée du Nord.")).toBeVisible();
+
+  await bob.page.goto(`${campaignUrl}/map`);
+  const received = bob.page.getByRole("list", { name: "Reports received" });
+  await expect(received).toContainText("From the Umpire, turn 1.");
+  await expect(received).toContainText("Grouchy is at Wavre.");
+  await received.getByRole("button", { name: "Show the 1 unit" }).click();
+  await expect(received.getByRole("button", { name: "Hide the units" })).toBeVisible();
+  await expect(bob.page.getByRole("list", { name: "Sightings" })).toContainText(
+    "Hex (2, 0): Prussian I Corps: 1 line infantry, 20 points (reported).",
+  );
+  expect(await scan(bob.page, "map, the Umpire's report")).toEqual([]);
+});

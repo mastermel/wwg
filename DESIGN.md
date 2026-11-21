@@ -3147,7 +3147,7 @@ build on positions.
     - ✅ **69b. In the app:** `UnitFormModal` hides FF and points while the type is Commander and
       sends 0; `hasStats` (`unit-types.ts`) is false for Commanders and scouts, so `UnitStat`
       shows "–"; a Commander at 0 points keeps its boats on the map.
-70. **The Umpire's intelligence reports** (decision 0035): the Umpire sends an army a report of
+70. ✅ **The Umpire's intelligence reports** (decision 0035): the Umpire sends an army a report of
     their own, at once, with no courier: a note, exact positions of the chosen units of the
     recipient's side, and sightings of the chosen units of the other side. Mostly for the start
     of a campaign, telling each commander where their allies are. Settled: only once under way
@@ -3170,7 +3170,7 @@ build on positions.
       side grouped by army with checkboxes (an army's at once), where they stood as the open turn
       started (`umpire-intel.ts`); the other side's chosen ones become one sighting per hex to
       shape (`SightingsFields`, adding none by hand), and a note.
-    - **70c. End to end:** `intelligence.spec.ts` sends one with an ally's position and an enemy
+    - ✅ **70c. End to end:** `intelligence.spec.ts` sends one with an ally's position and an enemy
       sighting, and the recipient sees both.
 71. **A Player commands several armies** (decision 0036): the Umpire can give one Player more
     than one army, all of one side. They see what all of them see, give orders and submit for
