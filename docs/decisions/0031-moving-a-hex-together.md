@@ -29,4 +29,4 @@ a unit part of the way into a hex has less of it left to go.
 ## Consequences
 
 - New: `POST /api/army-turns/{id}/move`, and the drawer's **Move all**.
-- Taking back all of a stack's orders at once is later work, if it's wanted.
+- Taking back a stack's orders at once came after (step 66f, `POST /api/army-turns/{id}/undo`).

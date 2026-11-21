@@ -576,6 +576,45 @@ public sealed class BoatTests : ApiTest
     }
 
     [Fact]
+    public async Task UndoOrders_OfAUnitEmbarking_TakesBackItsBoatsOrdersToo()
+    {
+        var (scenario, _) = await AfloatAsync();
+        var turn = await TurnSteps.OpenArmyTurnAsync(scenario);
+        using var given = await TurnSteps.OrderAsync(scenario, turn.Id, Embark);
+
+        using var undone = await scenario
+            .As(Role.Commander)
+            .PostAsJsonAsync(
+                new Uri($"/api/army-turns/{turn.Id}/undo", UriKind.Relative),
+                new UndoOrdersRequest([scenario.UnitId]),
+                Token
+            );
+
+        undone.EnsureSuccessStatusCode();
+        Assert.Empty(await OpenOrdersAsync(scenario));
+    }
+
+    [Fact]
+    public async Task UndoOrders_OfABoatCarryingAUnit_ChangesNothingAndNamesIt()
+    {
+        var (scenario, boats) = await AboardAsync();
+        var turn = await TurnSteps.OpenArmyTurnAsync(scenario);
+        using var given = await TurnSteps.OrderAsync(scenario, turn.Id, TurnSteps.Hold);
+
+        using var undone = await scenario
+            .As(Role.Commander)
+            .PostAsJsonAsync(
+                new Uri($"/api/army-turns/{turn.Id}/undo", UriKind.Relative),
+                new UndoOrdersRequest([scenario.UnitId, boats[0]]),
+                Token
+            );
+
+        var problem = await undone.AssertProblemAsync(HttpStatusCode.Conflict);
+        Assert.StartsWith("Boat A: ", problem.Detail, StringComparison.Ordinal);
+        Assert.NotEmpty(await OpenOrdersAsync(scenario));
+    }
+
+    [Fact]
     public async Task SubmitTurn_WithTheUnitOrdered_NeedsNoOrdersForItsBoats()
     {
         var (scenario, _) = await AboardAsync();

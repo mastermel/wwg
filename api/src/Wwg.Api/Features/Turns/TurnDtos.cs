@@ -134,6 +134,12 @@ public sealed record HoldUnitsRequest(
     [property: JsonRequired, MinLength(1), MaxLength(500)] IReadOnlyList<Guid> UnitIds
 );
 
+/// <summary>Units whose orders to take back, a hex's stack say.</summary>
+/// <param name="UnitIds">The army's units: those without an order this turn are skipped.</param>
+public sealed record UndoOrdersRequest(
+    [property: JsonRequired, MinLength(1), MaxLength(500)] IReadOnlyList<Guid> UnitIds
+);
+
 /// <summary>The units in a hex to move together (step 66).</summary>
 /// <param name="UnitIds">
 /// The army's units in the hex: those with an order this turn keep it; the rest move.

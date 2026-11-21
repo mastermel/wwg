@@ -1980,7 +1980,7 @@ make users Managers (`PUT /api/admin/users/{id}/manager`).
 | Edit the map settings; search for places | ✅ | ✅ | 403 | 403 | 404 |
 | View turn progress (numbers, statuses, counts) | ✅ | ✅ | ✅ | ✅ | 404 |
 | View **positions and orders** (the visibility rule) | ✅ all | ✅ all | own army | 403 | 404 |
-| Give orders, undo, submit (the open turn; a Draft, or for the Umpire a Draft or Submitted); from step 64, hold the rest of a formation; from step 66, move a hex's units together | ✅ | ✅ | own army | 403 | 404 |
+| Give orders, undo, submit (the open turn; a Draft, or for the Umpire a Draft or Submitted); from step 64, hold the rest of a formation; from step 66, move a hex's units together, or take back their orders | ✅ | ✅ | own army | 403 | 404 |
 | Place units (turn 0, and units added later) | ✅ | ✅ | 403 | 403 | 404 |
 | Approve / send back / revert an army's turn | ✅ | ✅ | 403 | 403 | 404 |
 | Start the campaign; start the next turn | ✅ | ✅ | 403 | 403 | 404 |
@@ -2122,6 +2122,7 @@ each step)
 | GET | `/api/armies/{id}/turns` | An army's turns, with their orders, notes and history (visibility rule) |
 | PUT / DELETE | `/api/army-turns/{id}/orders/{unitId}` | Give a unit's order `{ kind, path?, forceMarch, livesOffTheLand }` (Move: the hexes it passes through, in order; kinds and flags from steps 47, 48 and 51) / undo it |
 | POST | `/api/army-turns/{id}/hold` | Step 64: hold the rest of a formation `{ unitIds }` (1–500): each without an order this turn holds, as a Hold from the drawer would (living off the land if it did last turn); those with one keep it. All or nothing, the problem naming the unit; the Umpire's holds are one Edited event. Returns the new orders |
+| POST | `/api/army-turns/{id}/undo` | Step 66f: take back several units' orders `{ unitIds }` (1–500), a hex's stack say, as `UndoOrder` would each (their boats' orders follow); those without one are skipped. All or nothing: a unit not in the army (404), or a boat tied to a unit (409, naming it), changes nothing; the Umpire's are one Edited event. 204 |
 | POST | `/api/army-turns/{id}/move` | Step 66: move a hex's units together `{ unitIds, path, forceMarch }` (1–500; a path of 1–50 steps): each without an order this turn moves along the path, as a Move from the drawer would (living off the land if it did last turn); those with one keep it. They must start in one hex, all on boats or all ashore, and each get the whole way (none part of the way into the last hex). All or nothing, the problem naming the unit; the Umpire's moves are one Edited event. Returns the new orders |
 | POST | `/api/army-turns/{id}/submit` | Submit (every unit on the map has an order; emails the Umpire). Optional body `{ note? }` (≤2000), a note to the Umpire kept on the Submitted event |
 | POST | `/api/army-turns/{id}/approve` | Approve: Completed (this and the next two email the commander) |
@@ -3075,7 +3076,11 @@ build on positions.
       **Hold the 2 without orders**, "… of Prussians" as Move all), through `HoldUnits` (64c's
       endpoint), all or none; units on boats hold beside units ashore, so it's offered for a mix
       too. The drawer closes once they're held.
-    - Later, if wanted: taking back a stack's orders at once.
+    - ✅ **66f. Taking back a stack's orders (API):** `POST /api/army-turns/{id}/undo { unitIds }`
+      (`UndoOrders`, `Commander` access as `UndoOrder`): each unit's order goes, with its boats'
+      (as `UndoOrder`), units without one skipped, in one transaction; a unit not in the army
+      (404) or a boat tied to a unit (409, naming it) changes nothing. The Umpire's are one Edited
+      event, a note per unit ("Order taken back.").
 67. ✅ **The Commander in Chief** (decision 0032): the Umpire marks one Commander unit in each army
     as its Commander in Chief, where the player is on the map; choosing another replaces it, at
     any time, setting up or started.

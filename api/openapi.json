@@ -490,6 +490,66 @@
         ]
       }
     },
+    "/api/army-turns/{id}/undo": {
+      "post": {
+        "tags": [
+          "Turns"
+        ],
+        "summary": "Takes back the orders of several units at once, a hex's stack say: as `UndoOrder` does\nfor each, in the same turns, units without an order skipped. All or nothing: a unit that\nisn't the army's (404) or a boat tied to a unit (409, naming it) changes nothing. The\nUmpire's are one Edited event in the turn's history, with a note per unit.",
+        "operationId": "UndoOrders",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UndoOrdersRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      }
+    },
     "/api/army-turns/{id}/move": {
       "post": {
         "tags": [
@@ -10185,6 +10245,25 @@
           }
         },
         "description": "Each side's total after a turn."
+      },
+      "UndoOrdersRequest": {
+        "required": [
+          "unitIds"
+        ],
+        "type": "object",
+        "properties": {
+          "unitIds": {
+            "maxItems": 500,
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "The army's units: those without an order this turn are skipped."
+          }
+        },
+        "description": "Units whose orders to take back, a hex's stack say."
       },
       "UnitMarchResponse": {
         "required": [

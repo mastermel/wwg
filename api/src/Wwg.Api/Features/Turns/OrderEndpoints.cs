@@ -42,6 +42,13 @@ internal static class OrderEndpoints
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict);
 
+        app.MapPost("/api/army-turns/{id:guid}/undo", UndoOrdersAsync)
+            .WithName("UndoOrders")
+            .WithTags("Turns")
+            .RequireCampaignAccess(CampaignAccess.Commander, CampaignRouteId.ArmyTurn)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict);
+
         app.MapPost("/api/army-turns/{id:guid}/move", MoveUnitsAsync)
             .WithName("MoveUnits")
             .WithTags("Turns")
@@ -581,6 +588,126 @@ internal static class OrderEndpoints
         }
 
         return TypedResults.NoContent();
+    }
+
+    /// <summary>
+    /// Takes back the orders of several units at once, a hex's stack say: as <c>UndoOrder</c> does
+    /// for each, in the same turns, units without an order skipped. All or nothing: a unit that
+    /// isn't the army's (404) or a boat tied to a unit (409, naming it) changes nothing. The
+    /// Umpire's are one Edited event in the turn's history, with a note per unit.
+    /// </summary>
+    internal static async Task<Results<NoContent, ProblemHttpResult>> UndoOrdersAsync(
+        Guid id,
+        UndoOrdersRequest request,
+        WwgDbContext db,
+        TimeProvider time,
+        HttpContext httpContext,
+        CancellationToken cancellationToken
+    )
+    {
+        var byUmpire = httpContext.CampaignContext().CanManage;
+        var turn = await EditableTurnAsync(db, id, byUmpire, cancellationToken);
+        if (turn is null)
+        {
+            return NotEditable(byUmpire);
+        }
+
+        var unitIds = request.UnitIds.Distinct().ToList();
+        var names = await db
+            .ArmyUnits.AsNoTracking()
+            .Where(u => u.ArmyId == turn.ArmyId && unitIds.Contains(u.Id))
+            .ToDictionaryAsync(u => u.Id, u => u.Name, cancellationToken);
+        if (names.Count < unitIds.Count)
+        {
+            return TypedResults.Problem(
+                statusCode: StatusCodes.Status404NotFound,
+                detail: "That unit isn't in this army."
+            );
+        }
+
+        var campaignId = httpContext.CampaignContext().CampaignId;
+        if (await TiedAmongAsync(db, campaignId, id, names, cancellationToken) is { } tied)
+        {
+            return tied;
+        }
+
+        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+        var ordered = await db
+            .UnitOrders.AsNoTracking()
+            .Where(o => o.ArmyTurnId == id && unitIds.Contains(o.UnitId))
+            .Select(o => o.UnitId)
+            .ToListAsync(cancellationToken);
+        // Their boats' orders follow them.
+        await db
+            .UnitOrders.Where(o =>
+                o.ArmyTurnId == id
+                && (
+                    unitIds.Contains(o.UnitId)
+                    || (o.CarrierId != null && unitIds.Contains(o.CarrierId.Value))
+                )
+            )
+            .ExecuteDeleteAsync(cancellationToken);
+        if (byUmpire)
+        {
+            await RecordTakenBackAsync(db, time, httpContext, id, ordered, cancellationToken);
+        }
+
+        await transaction.CommitAsync(cancellationToken);
+        return TypedResults.NoContent();
+    }
+
+    /// <summary>The Umpire's taking back the units' orders, one Edited event with a note each.</summary>
+    private static async Task RecordTakenBackAsync(
+        WwgDbContext db,
+        TimeProvider time,
+        HttpContext httpContext,
+        Guid armyTurnId,
+        IEnumerable<Guid> unitIds,
+        CancellationToken cancellationToken
+    )
+    {
+        // Saving each, so the next note joins the Edited event the last one made.
+        foreach (var unitId in unitIds)
+        {
+            await RecordEditAsync(
+                db,
+                time,
+                httpContext,
+                armyTurnId,
+                unitId,
+                "Order taken back.",
+                cancellationToken
+            );
+            await db.SaveChangesAsync(cancellationToken);
+        }
+    }
+
+    /// <summary>409 for the first of the units that's a boat tied to a unit, naming it; else null.</summary>
+    private static async Task<ProblemHttpResult?> TiedAmongAsync(
+        WwgDbContext db,
+        Guid campaignId,
+        Guid armyTurnId,
+        IReadOnlyDictionary<Guid, string> names,
+        CancellationToken cancellationToken
+    )
+    {
+        var embarked = await Embarkation.LoadAsync(db, campaignId, cancellationToken);
+        foreach (var (unitId, name) in names)
+        {
+            var carrier = embarked.CarrierNow(unitId)
+                ?? await TiedThisTurnAsync(db, armyTurnId, unitId, cancellationToken);
+            if (carrier is { } tiedTo)
+            {
+                var tied = await TiedAsync(db, tiedTo, cancellationToken);
+                return TypedResults.Problem(
+                    statusCode: tied.StatusCode,
+                    title: tied.ProblemDetails.Title,
+                    detail: $"{name}: {tied.ProblemDetails.Detail}"
+                );
+            }
+        }
+
+        return null;
     }
 
     /// <summary>An order as it's staged: where the unit ends up, how it got there, and on what boats.</summary>
