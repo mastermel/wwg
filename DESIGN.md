@@ -1840,6 +1840,16 @@ IntelReport (new fields)
   StoppedByUserId → AppUser? (who cancelled it; null once deleted)
 ```
 
+**Step 70** (decision 0035) adds the Umpire's reports:
+
+```
+IntelReport (changed)
+  FromArmyId  → Army? (null only for the Umpire's: a check constraint)
+  FromUmpire  bool (no courier: SentTurn = ArrivedTurn, Status Arrived)
+  Snapshot    each entry names its ArmyId (older entries: the sender's)
+  SightingIds for the Umpire's, the recipient's sightings it made (ByUmpire, on the open turn)
+```
+
 - What a sighting or report records is **copied in**, as it was then, so later changes don't
   rewrite it. Deleting an army deletes its depots, its sightings and the reports it sent or got;
   a holding or holding change whose army goes is kept, with no one in its place.
@@ -2004,6 +2014,7 @@ make users Managers (`PUT /api/admin/users/{id}/manager`).
 | Step 58: add a scout to an army | ✅ | ✅ | 403 | 403 | 404 |
 | Step 67: choose an army's Commander in Chief | ✅ | ✅ | 403 | 403 | 404 |
 | Step 68: list every courier (history too); cancel one with a note | ✅ | ✅ | 403 | 403 | 404 |
+| Step 70: send an army the Umpire's report (no courier; the recipient sees it among reports received) | ✅ | ✅ | 403 | 403 | 404 |
 
 - **The visibility rule** is one server-side check, "can this user see army
   A's positions in turn N?", that every read of positions or orders goes
@@ -2178,6 +2189,7 @@ one, as a campaign is made with both)
 | POST | `/api/armies/{id}/reports` | Send an ally a report `{ toArmyId, includesSnapshot, includesSightings, note }` (201; not an ally, an army of the same commander (step 71a), or nothing to send: 400; not under way, or an army off the map: 409; from step 68, either army without a Commander in Chief: 409) (step 49c) |
 | GET | `/api/campaigns/{id}/reports` | The reports the viewer may see, newest first |
 | GET | `/api/campaigns/{id}/couriers` | The couriers on their way, flagged where the other side's units are in their hex; from step 68, every courier, newest first, with its status, both C-in-Cs, the turns still to ride, why it waits, and why it was cancelled |
+| POST | `/api/armies/{id}/umpire-reports` | The Umpire's report to the army `{ note, positions: [unitId], sightings: [{ unitIds, showsHex, showsArmies, showsTypes, strength, size, showsAfloat }] }`, arriving at once with no courier, each as the open turn started (201; nothing to send, a position of the other side, a sighting of the army's side, across hexes, or rough without a size: 400; not under way: 409) (step 70a) |
 | POST | `/api/reports/{id}/stop` | Stop a courier (204; not on its way: 409); from step 68, cancel it `{ note }` (required, ≤500) |
 | PUT | `/api/campaigns/{id}/holdings/{q}/{r}` | Who holds a settlement `{ armyId }` (null: no one; 204; no settlement worth anything there: 404) (step 50a) |
 | GET | `/api/campaigns/{id}/scoreboard` | Each side's total with its armies' parts, the totals after every turn, and the settlements and changes the viewer may see (step 50b) |
@@ -3138,27 +3150,25 @@ build on positions.
 70. **The Umpire's intelligence reports** (decision 0035): the Umpire sends an army a report of
     their own, at once, with no courier: a note, exact positions of the chosen units of the
     recipient's side, and sightings of the chosen units of the other side. Mostly for the start
-    of a campaign, telling each commander where their allies are. Not started; update §5.1, §5.2
-    and §5.3 as it's built.
-    - **70a. The API:** `IntelReport.FromUmpire` with `FromArmyId` nullable (a check constraint:
+    of a campaign, telling each commander where their allies are. Settled: only once under way
+    (sent on turn 1, the positions are the set-up placements); one army at a time; no deleting
+    one; no email (it's in the Intelligence panel at once).
+    - ✅ **70a. The API:** `IntelReport.FromUmpire` with `FromArmyId` nullable (a check constraint:
       null only for the Umpire's); a snapshot entry's `ArmyId`; `POST
-      /api/armies/{id}/umpire-reports { note, positions: [unitId], sightings: [shaped as the
-      start-turn request's] }` (Umpire and Admins; 201; nothing to send, a position of the other
-      side, or a sighting of the recipient's side: 400; not under way: 409). Positions copied from
-      the open turn's start, never `afterOrders`; no unit ids in the snapshot. `Couriers.RideAsync`,
-      `GET /api/campaigns/{id}/couriers` and the "sent" reports leave these out; `ReportResponse`
-      says it's from the Umpire.
+      /api/armies/{id}/umpire-reports { note, positions: [unitId], sightings: [{ unitIds, … shaped
+      as the start-turn request's }] }` (Umpire and Admins; 201; nothing to send, a position of
+      the other side, or a sighting of the recipient's side or across hexes: 400; not under way:
+      409). Positions copied from the open turn's start, never `afterOrders`; no unit ids in the
+      snapshot. Its sightings are the recipient's (`ByUmpire`) on the open turn
+      (`SightingRecords.New`). `Couriers.RideAsync`, `GET /api/campaigns/{id}/couriers` and the
+      "sent" reports leave these out; `ReportResponse.fromUmpire`. The Intelligence panel shows
+      "From the Umpire"; `SnapshotMarkers` draws each entry in its own army's colour, and one whose
+      army has been deleted in grey.
     - **70b. In the app:** an Umpire-only "Send intelligence" (army page and turn panel): the
       recipient, units grouped by army and side with checkboxes, the other side's prefilled as
-      sightings to shape (`SightingsFields`), and a note. The Intelligence panel shows "From the
-      Umpire"; `SnapshotMarkers` draws each entry in its own army's colour, and one whose army has
-      been deleted as an army no longer in the campaign.
+      sightings to shape (`SightingsFields`), and a note.
     - **70c. End to end:** `intelligence.spec.ts` sends one with an ally's position and an enemy
       sighting, and the recipient sees both.
-    - To settle when started: whether the Umpire can write one while setting up, to arrive as turn
-      1 starts (or only once under way); whether to send one to several armies at once (one report
-      each); whether the Umpire can delete one sent by mistake; and whether it emails the
-      recipient or waits for the next turn's email.
 71. **A Player commands several armies** (decision 0036): the Umpire can give one Player more
     than one army, all of one side. They see what all of them see, give orders and submit for
     each on its own, send no couriers between them, and get one "turn started" email for them

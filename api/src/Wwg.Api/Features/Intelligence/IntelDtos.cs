@@ -127,3 +127,37 @@ public sealed record CourierResponse(
     bool IncludesSnapshot,
     int SightingCount
 );
+
+/// <summary>
+/// The Umpire's report to an army (decision 0035), arriving at once: a note, where some of its
+/// side's units are, and sightings of some of the other side's. Each as the open turn started.
+/// </summary>
+/// <param name="Note">A note, if any.</param>
+/// <param name="Positions">Units of the recipient's side, whose hexes it learns exactly.</param>
+/// <param name="Sightings">Sightings of the other side's units, one per hex, shaped as the Umpire chooses.</param>
+public sealed record SendUmpireReportRequest(
+    [property: Trimmed, StringLength(1000)] string? Note,
+    [property: JsonRequired] IReadOnlyList<Guid> Positions,
+    [property: JsonRequired] IReadOnlyList<UmpireSightingRequest> Sightings
+);
+
+/// <summary>
+/// A sighting in the Umpire's report (decision 0035): of the chosen units of the other side, all in
+/// one hex, shaped as the Umpire's sightings are as a turn starts (decision 0020).
+/// </summary>
+/// <param name="UnitIds">The units it's of, in one hex (not the rest of the hex).</param>
+/// <param name="ShowsHex">Whether the recipient learns the hex, or only roughly where.</param>
+/// <param name="ShowsArmies">Whether they learn whose troops (army and nation).</param>
+/// <param name="ShowsTypes">Whether they learn each unit's type.</param>
+/// <param name="Strength">Hidden, a rough size, or their points.</param>
+/// <param name="Size">The rough size, when that's what's shown.</param>
+/// <param name="ShowsAfloat">Whether they learn if the force is on boats.</param>
+public sealed record UmpireSightingRequest(
+    [property: JsonRequired] IReadOnlyList<Guid> UnitIds,
+    [property: JsonRequired] bool ShowsHex,
+    [property: JsonRequired] bool ShowsArmies,
+    [property: JsonRequired] bool ShowsTypes,
+    [property: JsonRequired, EnumDataType(typeof(SightingStrength))] SightingStrength Strength,
+    [property: EnumDataType(typeof(ForceSize))] ForceSize? Size = null,
+    bool ShowsAfloat = false
+);

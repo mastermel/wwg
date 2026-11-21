@@ -1001,6 +1001,73 @@
         ]
       }
     },
+    "/api/armies/{id}/umpire-reports": {
+      "post": {
+        "tags": [
+          "Intelligence"
+        ],
+        "summary": "Sends the army the Umpire's own report (Umpire or Admin; decision 0035), arriving at once\nwith no courier: a note, where the chosen units of its side are, and sightings of the chosen\nunits of the other side, each as the open turn started. Only once the campaign is under way.",
+        "operationId": "SendUmpireReport",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendUmpireReportRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      }
+    },
     "/api/campaigns/{id}/reports": {
       "get": {
         "tags": [
@@ -9579,6 +9646,41 @@
         },
         "description": "A commander's report to an ally (decision 0020), carried by courier."
       },
+      "SendUmpireReportRequest": {
+        "required": [
+          "note",
+          "positions",
+          "sightings"
+        ],
+        "type": "object",
+        "properties": {
+          "note": {
+            "maxLength": 1000,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "A note, if any."
+          },
+          "positions": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Units of the recipient's side, whose hexes it learns exactly."
+          },
+          "sightings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UmpireSightingRequest"
+            },
+            "description": "Sightings of the other side's units, one per hex, shaped as the Umpire chooses."
+          }
+        },
+        "description": "The Umpire's report to an army (decision 0035), arriving at once: a note, where some of its\nside's units are, and sightings of some of the other side's. Each as the open turn started."
+      },
       "SetHoldingRequest": {
         "required": [
           "armyId"
@@ -10255,6 +10357,59 @@
           }
         },
         "description": "Each side's total after a turn."
+      },
+      "UmpireSightingRequest": {
+        "required": [
+          "unitIds",
+          "showsHex",
+          "showsArmies",
+          "showsTypes",
+          "strength"
+        ],
+        "type": "object",
+        "properties": {
+          "unitIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "The units it's of, in one hex (not the rest of the hex)."
+          },
+          "showsHex": {
+            "type": "boolean",
+            "description": "Whether the recipient learns the hex, or only roughly where."
+          },
+          "showsArmies": {
+            "type": "boolean",
+            "description": "Whether they learn whose troops (army and nation)."
+          },
+          "showsTypes": {
+            "type": "boolean",
+            "description": "Whether they learn each unit's type."
+          },
+          "strength": {
+            "description": "Hidden, a rough size, or their points.",
+            "$ref": "#/components/schemas/SightingStrength"
+          },
+          "size": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "description": "The rough size, when that's what's shown.",
+                "$ref": "#/components/schemas/ForceSize"
+              }
+            ]
+          },
+          "showsAfloat": {
+            "type": "boolean",
+            "description": "Whether they learn if the force is on boats.",
+            "default": false
+          }
+        },
+        "description": "A sighting in the Umpire's report (decision 0035): of the chosen units of the other side, all in\none hex, shaped as the Umpire's sightings are as a turn starts (decision 0020)."
       },
       "UndoOrdersRequest": {
         "required": [

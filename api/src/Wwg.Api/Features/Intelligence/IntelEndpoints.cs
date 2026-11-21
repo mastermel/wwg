@@ -21,6 +21,11 @@ internal static class IntelEndpoints
             .WithTags("Intelligence")
             .RequireCampaignAccess(CampaignAccess.Commander, CampaignRouteId.Army)
             .ProducesProblem(StatusCodes.Status409Conflict);
+        app.MapPost("/api/armies/{id:guid}/umpire-reports", SendUmpireReportAsync)
+            .WithName("SendUmpireReport")
+            .WithTags("Intelligence")
+            .RequireCampaignAccess(CampaignAccess.Umpire, CampaignRouteId.Army)
+            .ProducesProblem(StatusCodes.Status409Conflict);
         app.MapGet("/api/campaigns/{id:guid}/reports", ListReportsAsync)
             .WithName("ListReports")
             .WithTags("Intelligence")
@@ -112,6 +117,58 @@ internal static class IntelEndpoints
         return TypedResults.Created(
             $"/api/reports/{report.Id}",
             ToResponse(grid, report, sender: true)
+        );
+    }
+
+    /// <summary>
+    /// Sends the army the Umpire's own report (Umpire or Admin; decision 0035), arriving at once
+    /// with no courier: a note, where the chosen units of its side are, and sightings of the chosen
+    /// units of the other side, each as the open turn started. Only once the campaign is under way.
+    /// </summary>
+    internal static async Task<
+        Results<Created<ReportResponse>, ValidationProblem, ProblemHttpResult>
+    > SendUmpireReportAsync(
+        Guid id,
+        SendUmpireReportRequest request,
+        WwgDbContext db,
+        HttpContext httpContext,
+        CancellationToken cancellationToken
+    )
+    {
+        var campaignId = httpContext.CampaignContext().CampaignId;
+        var open = await TurnRules.OpenTurnAsync(db, campaignId, cancellationToken);
+        var grid = await CampaignMaps.GridAsync(db, campaignId, cancellationToken);
+        if (open is not { Number: > 0 } || grid is null)
+        {
+            return TypedResults.Problem(
+                statusCode: StatusCodes.Status409Conflict,
+                title: "Not under way",
+                detail: "Intelligence goes out once the campaign is under way."
+            );
+        }
+
+        var side = await db
+            .Armies.Where(a => a.Id == id)
+            .Select(a => (Guid?)a.SideId)
+            .SingleOrDefaultAsync(cancellationToken);
+        if (side is not { } sideId)
+        {
+            return TypedResults.Problem(statusCode: StatusCodes.Status404NotFound);
+        }
+
+        var (now, _) = await Whereabouts.LoadAsync(db, campaignId, cancellationToken);
+        if (UmpireReports.Problem(request, sideId, now) is var (field, message))
+        {
+            return Invalid(field, message);
+        }
+
+        var (report, sightings) = UmpireReports.New(id, request, open.Number, now);
+        db.Sightings.AddRange(sightings);
+        db.IntelReports.Add(report);
+        await db.SaveChangesAsync(cancellationToken);
+        return TypedResults.Created(
+            $"/api/reports/{report.Id}",
+            ToResponse(grid, report, sender: false)
         );
     }
 

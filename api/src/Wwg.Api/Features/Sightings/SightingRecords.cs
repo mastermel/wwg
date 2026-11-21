@@ -6,6 +6,16 @@ using Wwg.Api.Features.Turns;
 
 namespace Wwg.Api.Features.Sightings;
 
+/// <summary>What the Umpire lets a sighting show (decision 0020).</summary>
+internal sealed record SightingShape(
+    bool ShowsHex,
+    bool ShowsArmies,
+    bool ShowsTypes,
+    SightingStrength Strength,
+    ForceSize? Size,
+    bool ShowsAfloat
+);
+
 /// <summary>Keeping the sightings the Umpire shaped as a turn starts (step 49b, decision 0020).</summary>
 internal static class SightingRecords
 {
@@ -86,26 +96,56 @@ internal static class SightingRecords
         List<UnitPlace> seen,
         List<UnitPlace> places,
         HashSet<(Guid, Hex)> found
+    ) =>
+        New(
+            request.ObservingArmyId,
+            turn,
+            hex,
+            new SightingShape(
+                request.ShowsHex,
+                request.ShowsArmies,
+                request.ShowsTypes,
+                request.Strength,
+                request.Size,
+                request.ShowsAfloat
+            ),
+            seen,
+            places,
+            byUmpire: !found.Contains((request.ObservingArmyId, hex))
+        );
+
+    /// <summary>
+    /// A sighting (not added) of the units seen in a hex, shaped as the Umpire chose: where it was
+    /// roughly, from the observing army's nearest unit in <paramref name="places"/>.
+    /// </summary>
+    public static Sighting New(
+        Guid observingArmyId,
+        int turn,
+        Hex hex,
+        SightingShape shape,
+        List<UnitPlace> seen,
+        List<UnitPlace> places,
+        bool byUmpire
     )
     {
         var observer = places
-            .Where(p => p.ArmyId == request.ObservingArmyId)
+            .Where(p => p.ArmyId == observingArmyId)
             .MinBy(p => p.At.Distance(hex));
         return new Sighting
         {
-            ObservingArmyId = request.ObservingArmyId,
+            ObservingArmyId = observingArmyId,
             Turn = turn,
             Q = hex.Q,
             R = hex.R,
-            ShowsHex = request.ShowsHex,
+            ShowsHex = shape.ShowsHex,
             Whereabouts = observer is null ? "Reported to the army" : Sight.Roughly(hex, observer),
-            ArmyIds = request.ShowsArmies ? [.. seen.Select(p => p.ArmyId).Distinct()] : null,
-            UnitTypes = request.ShowsTypes ? [.. seen.Select(p => p.Type).Order()] : null,
-            Strength = request.Strength,
-            Size = request.Strength == SightingStrength.Rough ? request.Size : null,
-            Points = request.Strength == SightingStrength.Exact ? seen.Sum(p => p.Points) : null,
-            Afloat = request.ShowsAfloat ? seen.Any(p => p.Afloat) : null,
-            ByUmpire = !found.Contains((request.ObservingArmyId, hex)),
+            ArmyIds = shape.ShowsArmies ? [.. seen.Select(p => p.ArmyId).Distinct()] : null,
+            UnitTypes = shape.ShowsTypes ? [.. seen.Select(p => p.Type).Order()] : null,
+            Strength = shape.Strength,
+            Size = shape.Strength == SightingStrength.Rough ? shape.Size : null,
+            Points = shape.Strength == SightingStrength.Exact ? seen.Sum(p => p.Points) : null,
+            Afloat = shape.ShowsAfloat ? seen.Any(p => p.Afloat) : null,
+            ByUmpire = byUmpire,
         };
     }
 }

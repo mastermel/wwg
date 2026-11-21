@@ -32,6 +32,11 @@ they choose are, from any army, allied or enemy.
   recipient's own reports ("all sightings received"); its snapshot doesn't, as a commander's
   snapshot is of their own army only.
 
+- **Settled as it was built:** only once the campaign is under way (one sent on turn 1 gives the
+  set-up placements, which serves the start of a campaign); to one army at a time; it can't be
+  deleted (a correcting note can follow); and it sends no email, being in the Intelligence panel at
+  once.
+
 ## Consequences
 
 - `IntelReport.FromArmyId` becomes nullable, allowed only for an Umpire's report; a snapshot
