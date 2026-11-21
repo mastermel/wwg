@@ -1329,7 +1329,8 @@ visibility); the data is in §5.1. Built in Phase 8 (§7).
 - `/campaigns/:id/map`: the map, for every member (what's on it follows §5.2).
 - `/campaigns/:id/map/settings` (Umpire, Admin): bounds and place search, the
   layer switches, the label language, the distance unit (km or miles), and the
-  hex size (while setting up; from Phase 11), and the movement table (step 44).
+  hex size (while setting up; from Phase 11; to a hundredth of a km or mile, such as
+  2.75 mi, saved in whole metres), and the movement table (step 44).
 - `/campaigns/:id/map/terrain` (Umpire, Admin; from the Map page, step 43a): the terrain
   editor, its own page: a hex's ground, forest and settlement (with its value and starting
   holder), its six sides, **Infer terrain**, and rolling a hex's actual terrain.

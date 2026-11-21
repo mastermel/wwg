@@ -7,17 +7,22 @@ export const distanceUnitLabels: Record<DistanceUnit, { long: string; short: str
   Miles: { long: "Miles", short: "mi" },
 };
 
-/** Metres (as stored) in the campaign's unit, to a tenth. */
+/** Metres (as stored) in the campaign's unit, to a hundredth (whole metres keep 2.75 mi exact). */
 export const toUnit = (metres: number, unit: DistanceUnit) =>
-  Math.round((metres / metresPer[unit]) * 10) / 10;
+  Math.round((metres / metresPer[unit]) * 100) / 100;
 
 /** A distance in the campaign's unit, in whole metres (as the API takes it). */
 export const toMetres = (distance: number, unit: DistanceUnit) =>
   Math.round(distance * metresPer[unit]);
 
-/** The smallest and largest hex size (the API's 500 m and 50 km), in the campaign's unit. */
-export const minHexDistance = (unit: DistanceUnit) => Math.ceil(toUnit(500, unit) * 10) / 10;
-export const maxHexDistance = (unit: DistanceUnit) => Math.floor(toUnit(50_000, unit));
+/**
+ * The smallest and largest hex size (the API's 500 m and 50 km), in the campaign's unit, to a
+ * hundredth inside them.
+ */
+export const minHexDistance = (unit: DistanceUnit) =>
+  Math.ceil((500 / metresPer[unit]) * 100) / 100;
+export const maxHexDistance = (unit: DistanceUnit) =>
+  Math.floor((50_000 / metresPer[unit]) * 100) / 100;
 
 /** The languages place names can be in (the API's list), for choosing one. */
 export const labelLanguages = [

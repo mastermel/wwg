@@ -66,12 +66,14 @@ const exactHexCountLimit = 60_000;
 /** Where the Umpire starts choosing, before there's an area: Europe. */
 const europe: MapBounds = { west: -10, south: 36, east: 30, north: 60 };
 
-// The hex size is entered in the campaign's unit, and saved in metres.
+// The hex size is entered in the campaign's unit, and saved in metres. While it's being typed it
+// can be text that isn't a number yet ("2.", or nothing), as the number input gives it.
 const SettingsForm = UpdateCampaignMapBody.omit({ hexSize: true }).extend({
-  hexDistance: z.number({ error: "Enter a size." }),
+  hexDistance: z.union([z.number(), z.string()]).pipe(z.number({ error: "Enter a size." })),
 });
 
-type SettingsValues = z.infer<typeof SettingsForm>;
+type SettingsInput = z.input<typeof SettingsForm>;
+type SettingsValues = z.output<typeof SettingsForm>;
 
 const layerSwitches: { key: keyof MapLayers; label: string }[] = [
   { key: "roads", label: "Main roads" },
@@ -147,7 +149,7 @@ function SettingsFormView({
   const update = useUpdateCampaignMap();
   const mapRef = useRef<MapRef>(null);
   const [formError, setFormError] = useState<string | null>(null);
-  const form = useForm<SettingsValues>({
+  const form = useForm<SettingsInput, unknown, SettingsValues>({
     resolver: zodResolver(SettingsForm),
     defaultValues: {
       bounds: settings.bounds,
@@ -158,10 +160,11 @@ function SettingsFormView({
     },
   });
   const { errors, isSubmitting } = form.formState;
-  const [bounds, layers, labelLanguage, distanceUnit, hexDistance] = useWatch({
+  const [bounds, layers, labelLanguage, distanceUnit, typedDistance] = useWatch({
     control: form.control,
     name: ["bounds", "layers", "labelLanguage", "distanceUnit", "hexDistance"],
   });
+  const hexDistance = typeof typedDistance === "number" ? typedDistance : Number.NaN;
   const unit = distanceUnitLabels[distanceUnit].short;
   const hexes =
     bounds && hexDistance >= minHexDistance(distanceUnit)
@@ -220,7 +223,7 @@ function SettingsFormView({
     }
   };
 
-  // Changing the unit keeps the size: 4.8 km becomes 3 mi.
+  // Changing the unit keeps the size: 4.83 km becomes 3 mi.
   const changeUnit = (next: SettingsValues["distanceUnit"]) => {
     form.setValue("hexDistance", toUnit(toMetres(hexDistance, distanceUnit), next));
     form.setValue("distanceUnit", next, { shouldDirty: true });
@@ -236,7 +239,7 @@ function SettingsFormView({
           labelLanguage: values.labelLanguage,
           distanceUnit: values.distanceUnit,
           layers: values.layers,
-          // The saved size exactly, unless it was changed (km and miles round it to a tenth).
+          // The saved size exactly, unless it was changed (km and miles round it to a hundredth).
           hexSize:
             values.hexDistance === toUnit(settings.hexSize, settings.distanceUnit) &&
             values.distanceUnit === settings.distanceUnit
@@ -401,12 +404,10 @@ function SettingsFormView({
                         suffix={` ${unit}`}
                         min={minHexDistance(distanceUnit)}
                         max={maxHexDistance(distanceUnit)}
-                        decimalScale={1}
+                        decimalScale={2}
                         disabled={started}
                         value={field.value}
-                        onChange={(value) => {
-                          field.onChange(typeof value === "number" ? value : undefined);
-                        }}
+                        onChange={field.onChange}
                         error={errors.hexDistance?.message}
                       />
                     )}

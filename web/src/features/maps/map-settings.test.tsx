@@ -205,13 +205,41 @@ describe("map settings", () => {
     await renderApp(`/campaigns/${campaignId}/map/settings`);
 
     const size = await screen.findByRole("textbox", { name: "Hex size, across the flats" });
-    expect(size).toHaveValue("4.8 km");
+    expect(size).toHaveValue("4.83 km");
     await user.clear(size);
     await user.type(size, "5");
     await user.click(screen.getByRole("button", { name: "Save map settings" }));
 
     expect(await screen.findByText("Saved the map settings.")).toBeInTheDocument();
     expect(puts).toEqual([expect.objectContaining({ hexSize: 5000 })]);
+  });
+
+  it("saves a hex size to a hundredth", async () => {
+    const puts = serve("Umpire");
+    const user = userEvent.setup();
+    await renderApp(`/campaigns/${campaignId}/map/settings`);
+
+    await user.click(await screen.findByRole("radio", { name: "Miles" }));
+    const size = screen.getByRole("textbox", { name: "Hex size, across the flats" });
+    await user.clear(size);
+    await user.type(size, "2.756");
+    expect(size).toHaveValue("2.75 mi");
+    await user.click(screen.getByRole("button", { name: "Save map settings" }));
+
+    expect(await screen.findByText("Saved the map settings.")).toBeInTheDocument();
+    expect(puts).toEqual([expect.objectContaining({ hexSize: 4426 })]);
+  });
+
+  it("asks for a hex size when it's cleared", async () => {
+    const puts = serve("Umpire");
+    const user = userEvent.setup();
+    await renderApp(`/campaigns/${campaignId}/map/settings`);
+
+    await user.clear(await screen.findByRole("textbox", { name: "Hex size, across the flats" }));
+    await user.click(screen.getByRole("button", { name: "Save map settings" }));
+
+    expect(await screen.findByText("Enter a size.")).toBeInTheDocument();
+    expect(puts).toEqual([]);
   });
 
   it("keeps the area and hex size fixed once the campaign has started", async () => {
