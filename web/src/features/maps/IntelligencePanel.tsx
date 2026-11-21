@@ -22,9 +22,15 @@ interface IntelligencePanelProps {
 const armyName = (armies: readonly ArmySummary[], id: string) =>
   armies.find((a) => a.id === id)?.name ?? "An army";
 
+/** Who a report is from, and when it was sent and arrived: the Umpire's arrive at once (decision 0035). */
+const fromLine = (armies: readonly ArmySummary[], report: ReportResponse) =>
+  report.fromArmyId
+    ? `From ${armyName(armies, report.fromArmyId)}, sent turn ${String(report.sentTurn)}${report.arrivedTurn ? `, arrived turn ${String(report.arrivedTurn)}` : ""}.`
+    : `From the Umpire, turn ${String(report.sentTurn)}.`;
+
 /**
- * A commander's intelligence (step 49d, decision 0020): reports from allies, kept, each shown on
- * the map on request; reports sent; and sending one.
+ * A commander's intelligence (step 49d, decision 0020): reports from allies and the Umpire
+ * (decision 0035), kept, each shown on the map on request; reports sent; and sending one.
  */
 export function IntelligencePanel({
   campaignId,
@@ -39,10 +45,13 @@ export function IntelligencePanel({
   const [sending, setSending] = useState(false);
   const mineIds = new Set(mine.map((a) => a.id));
   const received = reports.filter((r) => mineIds.has(r.toArmyId));
-  const sent = reports.filter((r) => mineIds.has(r.fromArmyId));
+  const sent = reports.filter((r) => r.fromArmyId && mineIds.has(r.fromArmyId));
 
   return (
-    <Section title="Intelligence" description="Reports between allies, carried by courier.">
+    <Section
+      title="Intelligence"
+      description="Reports between allies, carried by courier, and from the Umpire."
+    >
       <Stack gap="md">
         {received.length > 0 && (
           <Stack gap={4}>
@@ -53,10 +62,7 @@ export function IntelligencePanel({
               {received.map((report) => (
                 <List.Item key={report.id}>
                   <Stack gap={2}>
-                    <Text size="sm">
-                      From {armyName(armies, report.fromArmyId)}, sent turn {report.sentTurn}
-                      {report.arrivedTurn ? `, arrived turn ${String(report.arrivedTurn)}` : ""}.
-                    </Text>
+                    <Text size="sm">{fromLine(armies, report)}</Text>
                     {report.note && (
                       <Text size="sm" c="dimmed" style={{ whiteSpace: "pre-wrap" }}>
                         “{report.note}”
@@ -73,8 +79,8 @@ export function IntelligencePanel({
                           }}
                         >
                           {shown === report.id
-                            ? "Hide their units"
-                            : `Show their ${String(report.snapshot.length)} ${report.snapshot.length === 1 ? "unit" : "units"}`}
+                            ? `Hide ${report.fromUmpire ? "the" : "their"} units`
+                            : `Show ${report.fromUmpire ? "the" : "their"} ${String(report.snapshot.length)} ${report.snapshot.length === 1 ? "unit" : "units"}`}
                         </Button>
                       )}
                       {report.sightingCount > 0 && (

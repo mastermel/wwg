@@ -1022,6 +1022,46 @@ describe("a commander's turn", () => {
     });
   });
 
+  it("keeps a report from the Umpire, with no courier", async () => {
+    serveCommander(draft());
+    server.use(
+      http.get(`*/api/campaigns/${campaignId}/reports`, () =>
+        HttpResponse.json([
+          {
+            id: "0192f5c1-0000-7000-8000-00000000f102",
+            fromArmyId: null,
+            fromUmpire: true,
+            toArmyId: armyId,
+            sentTurn: 1,
+            arrivedTurn: 1,
+            status: "Arrived",
+            note: "Your allies are to the east.",
+            snapshot: [
+              {
+                name: "IV Corps",
+                type: "LineInfantry",
+                q: 2,
+                r: 0,
+                latitude: 50.7,
+                longitude: 4.5,
+                points: 40,
+                armyId: allyId,
+              },
+            ],
+            sightingCount: 1,
+          },
+        ]),
+      ),
+    );
+    await openMap();
+
+    const received = await screen.findByRole("list", { name: "Reports received" });
+    expect(received).toHaveTextContent("From the Umpire, turn 1.");
+    expect(received).toHaveTextContent("“Your allies are to the east.”");
+    expect(within(received).getByRole("button", { name: "Show the 1 unit" })).toBeInTheDocument();
+    expect(screen.queryByRole("list", { name: "Reports sent" })).not.toBeInTheDocument();
+  });
+
   it("takes an order back", async () => {
     const requests = serveCommander(draft({ orders: [hold] }));
     const user = userEvent.setup();

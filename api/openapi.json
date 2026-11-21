@@ -9088,6 +9088,7 @@
         "required": [
           "id",
           "fromArmyId",
+          "fromUmpire",
           "toArmyId",
           "sentTurn",
           "arrivedTurn",
@@ -9104,9 +9105,16 @@
             "format": "uuid"
           },
           "fromArmyId": {
-            "type": "string",
-            "description": "The sender's army.",
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The sender's army; null for the Umpire's.",
             "format": "uuid"
+          },
+          "fromUmpire": {
+            "type": "boolean",
+            "description": "The Umpire's own report: no courier, it arrived at once."
           },
           "toArmyId": {
             "type": "string",
@@ -9152,7 +9160,7 @@
             "items": {
               "$ref": "#/components/schemas/SnapshotUnitResponse"
             },
-            "description": "The sender's units as they were, if sent."
+            "description": "The units as they were, if sent: the sender's, or those the Umpire chose."
           },
           "sightingCount": {
             "type": "integer",
@@ -9160,7 +9168,7 @@
             "format": "int32"
           }
         },
-        "description": "A report between allies, as its sender, its recipient or the Umpire sees it."
+        "description": "A report between allies, or from the Umpire (decision 0035), as its sender, its recipient or the\nUmpire sees it."
       },
       "ResetPasswordRequest": {
         "required": [
@@ -10070,7 +10078,8 @@
           "r",
           "latitude",
           "longitude",
-          "points"
+          "points",
+          "armyId"
         ],
         "type": "object",
         "properties": {
@@ -10106,6 +10115,11 @@
             "type": "integer",
             "description": "Its points.",
             "format": "int32"
+          },
+          "armyId": {
+            "type": "string",
+            "description": "Its army (which may since have left the campaign).",
+            "format": "uuid"
           }
         },
         "description": "A unit as a report's snapshot has it."

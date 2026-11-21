@@ -82,6 +82,12 @@ internal sealed class IntelReportConfiguration : IEntityTypeConfiguration<IntelR
         builder.Property(r => r.Note).HasMaxLength(1000);
         builder.Property(r => r.Status).HasMaxLength(16);
         builder.PrimitiveCollection(r => r.SightingIds);
+        builder.ToTable(t =>
+            t.HasCheckConstraint(
+                "CK_IntelReports_FromUmpire",
+                "(\"FromArmyId\" IS NULL) = (\"FromUmpire\" = 1)"
+            )
+        );
         // Deleting either army deletes the reports between them.
         builder
             .HasOne(r => r.FromArmy)

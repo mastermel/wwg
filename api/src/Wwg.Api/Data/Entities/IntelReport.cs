@@ -16,13 +16,18 @@ public enum CourierStatus
 /// <summary>
 /// Intelligence one army's commander sends an ally (decision 0020): a snapshot of their units, the
 /// sightings they'd received, and a note, carried by a courier tracked turn by turn, not drawn.
+/// Or the Umpire's to an army (decision 0035), with no sender and no courier: it arrives at once.
 /// What was sent is copied in as it was then.
 /// </summary>
 internal sealed class IntelReport : Entity
 {
-    public Guid FromArmyId { get; set; }
+    /// <summary>The sending army: null only for the Umpire's (<see cref="FromUmpire"/>).</summary>
+    public Guid? FromArmyId { get; set; }
 
-    public Army FromArmy { get; set; } = null!; // Set by EF Core when loaded.
+    public Army? FromArmy { get; set; }
+
+    /// <summary>The Umpire's own report (decision 0035): no sending army, no courier.</summary>
+    public bool FromUmpire { get; set; }
 
     public Guid ToArmyId { get; set; }
 
@@ -36,10 +41,13 @@ internal sealed class IntelReport : Entity
 
     public string? Note { get; set; }
 
-    /// <summary>The sender's units as they were (JSON: name, type, hex, points), if sent.</summary>
+    /// <summary>The units as they were (JSON: army, name, type, hex, points), if sent.</summary>
     public string? Snapshot { get; set; }
 
-    /// <summary>The sightings sent (the sender's, as they were), copied to the recipient on arrival.</summary>
+    /// <summary>
+    /// The sightings sent (the sender's, as they were), copied to the recipient on arrival; for the
+    /// Umpire's, the recipient's sightings it made.
+    /// </summary>
     public List<Guid> SightingIds { get; set; } = [];
 
     public CourierStatus Status { get; set; }

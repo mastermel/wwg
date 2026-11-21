@@ -1088,8 +1088,11 @@ namespace Wwg.Api.Data.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
 
-                    b.Property<Guid>("FromArmyId")
+                    b.Property<Guid?>("FromArmyId")
                         .HasColumnType("TEXT");
+
+                    b.Property<bool>("FromUmpire")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("Note")
                         .HasMaxLength(1000)
@@ -1134,7 +1137,10 @@ namespace Wwg.Api.Data.Migrations
 
                     b.HasIndex("ToArmyId");
 
-                    b.ToTable("IntelReports");
+                    b.ToTable("IntelReports", t =>
+                        {
+                            t.HasCheckConstraint("CK_IntelReports_FromUmpire", "(\"FromArmyId\" IS NULL) = (\"FromUmpire\" = 1)");
+                        });
                 });
 
             modelBuilder.Entity("Wwg.Api.Data.Entities.MovementRate", b =>
@@ -1832,8 +1838,7 @@ namespace Wwg.Api.Data.Migrations
                     b.HasOne("Wwg.Api.Data.Entities.Army", "FromArmy")
                         .WithMany()
                         .HasForeignKey("FromArmyId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.HasOne("Wwg.Api.Data.Entities.AppUser", "StoppedByUser")
                         .WithMany()

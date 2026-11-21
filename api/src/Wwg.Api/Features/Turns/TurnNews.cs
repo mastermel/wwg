@@ -266,7 +266,9 @@ internal static partial class TurnNewsBuilder
                 (
                     r.ToArmyId,
                     new ReportNews(
-                        armies.GetValueOrDefault(r.FromArmyId) ?? "An ally",
+                        r.FromArmyId is { } from
+                            ? armies.GetValueOrDefault(from) ?? "An ally"
+                            : "The Umpire",
                         r.Note,
                         r.SightingIds.Count,
                         r.Snapshot is not null

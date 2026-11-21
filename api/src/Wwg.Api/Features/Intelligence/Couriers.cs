@@ -7,8 +7,18 @@ using Wwg.Api.Features.Turns;
 
 namespace Wwg.Api.Features.Intelligence;
 
-/// <summary>A unit in a report's snapshot, as stored.</summary>
-internal sealed record SnapshotUnit(string Name, UnitType Type, int Q, int R, int Points);
+/// <summary>
+/// A unit in a report's snapshot, as stored; its army since decision 0035 (before, always the
+/// sender's).
+/// </summary>
+internal sealed record SnapshotUnit(
+    string Name,
+    UnitType Type,
+    int Q,
+    int R,
+    int Points,
+    Guid? ArmyId = null
+);
 
 /// <summary>Sending reports, and their couriers' rides as each turn closes (step 49c, decision 0020).</summary>
 internal static class Couriers
@@ -46,12 +56,12 @@ internal static class Couriers
             ArrivesNext = turnsToRide is { } turns && turns <= CloseByTurns,
         };
 
-    /// <summary>The snapshot a report carries: the army's units where they are now.</summary>
+    /// <summary>The snapshot a report carries: the units where they are now.</summary>
     public static string SnapshotOf(IEnumerable<UnitPlace> units) =>
         JsonSerializer.Serialize(
             units
                 .OrderBy(u => u.Name, StringComparer.Ordinal)
-                .Select(u => new SnapshotUnit(u.Name, u.Type, u.At.Q, u.At.R, u.Points))
+                .Select(u => new SnapshotUnit(u.Name, u.Type, u.At.Q, u.At.R, u.Points, u.ArmyId))
                 .ToList()
         );
 
@@ -73,7 +83,9 @@ internal static class Couriers
     {
         var reports = await db
             .IntelReports.Where(r =>
-                r.FromArmy.CampaignId == campaignId && r.Status == CourierStatus.EnRoute
+                r.ToArmy.CampaignId == campaignId
+                && !r.FromUmpire
+                && r.Status == CourierStatus.EnRoute
             )
             .ToListAsync(cancellationToken);
         if (reports.Count == 0)

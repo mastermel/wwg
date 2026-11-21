@@ -8,7 +8,10 @@ using Wwg.Api.Infrastructure.Auth;
 
 namespace Wwg.Api.Features.Intelligence;
 
-/// <summary>Intelligence between allies, by courier (step 49c, decision 0020).</summary>
+/// <summary>
+/// Intelligence between allies, by courier (step 49c, decision 0020), and from the Umpire (step 70,
+/// decision 0035).
+/// </summary>
 internal static class IntelEndpoints
 {
     public static IEndpointRouteBuilder MapIntelEndpoints(this IEndpointRouteBuilder app)
@@ -128,17 +131,21 @@ internal static class IntelEndpoints
         var reports = await db
             .IntelReports.AsNoTracking()
             .Where(r =>
-                r.FromArmy.CampaignId == id
+                r.ToArmy.CampaignId == id
                 && (
                     context.CanManage
-                    || r.FromArmy.CommanderId == context.MemberId
+                    || (r.FromArmy != null && r.FromArmy.CommanderId == context.MemberId)
                     || (
                         r.ToArmy.CommanderId == context.MemberId
                         && r.Status == CourierStatus.Arrived
                     )
                 )
             )
-            .Select(r => new { Report = r, Sender = r.FromArmy.CommanderId == context.MemberId })
+            .Select(r => new
+            {
+                Report = r,
+                Sender = r.FromArmy != null && r.FromArmy.CommanderId == context.MemberId,
+            })
             .ToListAsync(cancellationToken);
         return TypedResults.Ok(
             reports
@@ -168,10 +175,10 @@ internal static class IntelEndpoints
 
         var reports = await db
             .IntelReports.AsNoTracking()
-            .Where(r => r.FromArmy.CampaignId == id)
+            .Where(r => r.ToArmy.CampaignId == id && !r.FromUmpire)
             .Select(r => new CourierRow(
                 r,
-                r.FromArmy.SideId,
+                r.ToArmy.SideId,
                 r.StoppedByUser == null
                     ? null
                     : r.StoppedByUser.FirstName + " " + r.StoppedByUser.LastName
@@ -206,6 +213,8 @@ internal static class IntelEndpoints
     )
     {
         var report = row.Report;
+        // Only allies' reports have couriers (the Umpire's are left out above), and they have a sender.
+        var from = report.FromArmyId.GetValueOrDefault();
         var at = new Hex(report.CourierQ, report.CourierR);
         var (latitude, longitude) = grid.Centre(at);
         var enRoute = report.Status == CourierStatus.EnRoute;
@@ -218,9 +227,9 @@ internal static class IntelEndpoints
             : null;
         return new CourierResponse(
             report.Id,
-            report.FromArmyId,
+            from,
             report.ToArmyId,
-            chiefs.GetValueOrDefault(report.FromArmyId),
+            chiefs.GetValueOrDefault(from),
             chiefs.GetValueOrDefault(report.ToArmyId),
             report.SentTurn,
             report.Status,
@@ -330,6 +339,7 @@ internal static class IntelEndpoints
         new(
             report.Id,
             report.FromArmyId,
+            report.FromUmpire,
             report.ToArmyId,
             report.SentTurn,
             sender ? null : report.ArrivedTurn,
@@ -352,7 +362,10 @@ internal static class IntelEndpoints
                                 u.R,
                                 latitude,
                                 longitude,
-                                u.Points
+                                u.Points,
+                                // Before decision 0035, a snapshot was always of the sender's units.
+                                u.ArmyId
+                                    ?? report.FromArmyId.GetValueOrDefault()
                             );
                         }),
                 ],

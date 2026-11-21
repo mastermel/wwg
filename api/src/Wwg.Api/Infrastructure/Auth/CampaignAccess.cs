@@ -214,7 +214,8 @@ internal static class CampaignAccessExtensions
                 var report = await db
                     .IntelReports.AsNoTracking()
                     .Where(r => r.Id == id)
-                    .Select(r => new { r.FromArmy.CampaignId, r.FromArmy.CommanderId })
+                    // SQL gives null for the Umpire's (decision 0035), which has no sending army.
+                    .Select(r => new { r.ToArmy.CampaignId, r.FromArmy!.CommanderId })
                     .FirstOrDefaultAsync(cancellationToken);
                 return report is null ? null : (report.CampaignId, report.CommanderId);
             }

@@ -25,6 +25,7 @@ public sealed record SendReportRequest(
 /// <param name="Latitude">The hex's centre.</param>
 /// <param name="Longitude">The hex's centre.</param>
 /// <param name="Points">Its points.</param>
+/// <param name="ArmyId">Its army (which may since have left the campaign).</param>
 public sealed record SnapshotUnitResponse(
     string Name,
     UnitType Type,
@@ -32,22 +33,28 @@ public sealed record SnapshotUnitResponse(
     int R,
     double Latitude,
     double Longitude,
-    int Points
+    int Points,
+    Guid ArmyId
 );
 
-/// <summary>A report between allies, as its sender, its recipient or the Umpire sees it.</summary>
+/// <summary>
+/// A report between allies, or from the Umpire (decision 0035), as its sender, its recipient or the
+/// Umpire sees it.
+/// </summary>
 /// <param name="Id">The report.</param>
-/// <param name="FromArmyId">The sender's army.</param>
+/// <param name="FromArmyId">The sender's army; null for the Umpire's.</param>
+/// <param name="FromUmpire">The Umpire's own report: no courier, it arrived at once.</param>
 /// <param name="ToArmyId">The recipient's army.</param>
 /// <param name="SentTurn">The turn it was sent in.</param>
 /// <param name="ArrivedTurn">The turn it arrived for, once it has.</param>
 /// <param name="Status">On its way, arrived, or stopped (a sender isn't told which).</param>
 /// <param name="Note">Its note, if any.</param>
-/// <param name="Snapshot">The sender's units as they were, if sent.</param>
+/// <param name="Snapshot">The units as they were, if sent: the sender's, or those the Umpire chose.</param>
 /// <param name="SightingCount">How many sightings it carries.</param>
 public sealed record ReportResponse(
     Guid Id,
-    Guid FromArmyId,
+    Guid? FromArmyId,
+    bool FromUmpire,
     Guid ToArmyId,
     int SentTurn,
     int? ArrivedTurn,

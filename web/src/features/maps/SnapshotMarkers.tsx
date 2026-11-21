@@ -4,8 +4,10 @@ import { armyColorVar } from "@/features/armies/identity/army-colors";
 import { UnitSymbol } from "@/features/units/UnitSymbol";
 
 /**
- * A received report's snapshot on the map, inside a CampaignMap (step 49d): the ally's units where
- * they were when it was sent, faded as past positions are. For sight only: the report says so.
+ * A received report's snapshot on the map, inside a CampaignMap (step 49d): the units where they
+ * were when it was sent, faded as past positions are, each in its army's colour (an Umpire's report
+ * can name several, decision 0035), or grey for an army no longer in the campaign. For sight only:
+ * the report says so.
  */
 export function SnapshotMarkers({
   report,
@@ -14,7 +16,7 @@ export function SnapshotMarkers({
   report: ReportResponse | undefined;
   armies: readonly ArmySummary[];
 }) {
-  const army = armies.find((a) => a.id === report?.fromArmyId);
+  const colors = new Map(armies.map((a) => [a.id, armyColorVar(a.color)]));
   return (
     <>
       {(report?.snapshot ?? []).map((unit, index) => (
@@ -28,7 +30,7 @@ export function SnapshotMarkers({
           <span aria-hidden>
             <UnitSymbol
               type={unit.type}
-              color={army ? armyColorVar(army.color) : "var(--mantine-color-silver-3)"}
+              color={colors.get(unit.armyId) ?? "var(--mantine-color-silver-3)"}
               width={26}
             />
           </span>
