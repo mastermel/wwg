@@ -475,6 +475,28 @@ public sealed class BoatTests : ApiTest
         await boarded.AssertValidationProblemAsync("kind");
     }
 
+    [Fact]
+    public async Task GiveOrder_AScoutAboard_KeepsItsBoat()
+    {
+        var scout = Guid.Empty;
+        var (scenario, boats) = await AfloatAsync(boats: 1, beforeStart: async s =>
+        {
+            scout = await LibrarySteps.AddScoutAsync(s, "Hussar picket");
+            using var placed = await TurnSteps.PlaceAsync(s, scout);
+            placed.EnsureSuccessStatusCode();
+        });
+        var first = await TurnSteps.OpenArmyTurnAsync(scenario);
+        using var embarked = await TurnSteps.OrderAsync(scenario, first.Id, Embark, scout);
+        embarked.EnsureSuccessStatusCode();
+        await TurnAsync(scenario, TurnSteps.Hold);
+        var second = await TurnSteps.OpenArmyTurnAsync(scenario);
+
+        // A scout's points are always 0 (decision 0028): it hasn't lost its boat.
+        using var held = await TurnSteps.OrderAsync(scenario, second.Id, TurnSteps.Hold, scout);
+
+        Assert.Equal(boats, (await held.Content.ReadAsAsync<UnitPosition>())!.Boats);
+    }
+
     private static Task<HttpResponseMessage> SetPointsAsync(
         CampaignScenario scenario,
         int points

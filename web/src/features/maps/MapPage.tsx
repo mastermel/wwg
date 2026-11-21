@@ -148,6 +148,7 @@ import { HexDrawer } from "@/features/maps/HexDrawer";
 import { UnitMarkers } from "@/features/maps/UnitMarkers";
 import { useOpenTurns, useOrders } from "@/features/maps/use-orders";
 import { useReview } from "@/features/maps/use-review";
+import { hasStats } from "@/features/units/unit-types";
 import { errorMessage } from "@/lib/errors";
 import { useOnline } from "@/lib/use-online";
 
@@ -369,9 +370,10 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
                       : undefined,
                   livesOffTheLand: position.livesOffTheLand,
                   // Worn down to 0 points it has lost its boats: they're free (decision 0022). A
-                  // Commander's points are always 0 (decision 0034): it keeps them.
+                  // scout's or Commander's points are always 0 (decisions 0028, 0034): it keeps
+                  // them.
                   boats:
-                    known.unit.points === 0 && known.unit.type !== "Commander"
+                    known.unit.points === 0 && hasStats(known.unit.type)
                       ? []
                       : aboardAfter(position),
                 },

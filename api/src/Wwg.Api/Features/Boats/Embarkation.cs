@@ -8,8 +8,8 @@ namespace Wwg.Api.Features.Boats;
 /// <summary>
 /// Who is on boats (decision 0022): as the open turn starts (now, by the orders of the last
 /// closed turn), and after its orders as given (next). Each unit aboard, with the boats tied to
-/// it; a unit worn down to 0 points (not a Commander, whose are always 0) has lost its boats,
-/// which are free again.
+/// it; a unit worn down to 0 points has lost its boats, which are free again. A scout's or
+/// Commander's points are always 0 (decisions 0028, 0034): they keep theirs.
 /// </summary>
 internal sealed class Embarked
 {
@@ -89,8 +89,13 @@ internal static class Embarkation
     {
         var lost = await db
             .ArmyUnits.AsNoTracking()
-            // A Commander's points are always 0 (decision 0034): it hasn't been worn down.
-            .Where(u => u.CampaignId == campaignId && u.Points == 0 && u.Type != UnitType.Commander)
+            // A scout's or Commander's points are always 0: it hasn't been worn down.
+            .Where(u =>
+                u.CampaignId == campaignId
+                && u.Points == 0
+                && u.Type != UnitType.Scouts
+                && u.Type != UnitType.Commander
+            )
             .Select(u => u.Id)
             .ToListAsync(cancellationToken);
         var orders = await db

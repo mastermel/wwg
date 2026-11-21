@@ -131,7 +131,7 @@ true, because the build launches the app to write the document.
   (`Holdings`). The library refuses the type.
 - A Commander's FF and points are always 0 (decision 0034): `UnitStats.HasStats` is false for it
   and scouts, and the library and army-unit handlers and the import store 0 whatever is sent. A
-  unit at 0 points has lost its boats (`Embarkation`), but not a Commander.
+  unit at 0 points has lost its boats (`Embarkation`), but not a Commander or a scout.
 - The library import (decision 0025) is `Features/Library/LibraryImport.cs`: it reads the CSV's
   text (its own RFC 4180 reader), checks each row as the unit form is checked, and plans
   against the library (factions by name, units by `ImportKey`); the preview returns the plan, the

@@ -304,14 +304,17 @@ describe("boats on the map", () => {
     expect(within(panel).getByText("Boat 1")).toBeInTheDocument();
   });
 
-  it("keeps a Commander's boats, though its points are 0", async () => {
-    serve({ positions: aboard, guardPoints: 0, guardType: "Commander" });
-    const { drawer } = await openGuard();
+  it.each(["Commander", "Scouts"] as const)(
+    "keeps the boats of a unit of type %s, though its points are 0",
+    async (guardType) => {
+      serve({ positions: aboard, guardPoints: 0, guardType });
+      const { drawer } = await openGuard();
 
-    expect(drawer.getByText(/On 3 boats/)).toBeInTheDocument();
-    const panel = screen.getByRole("region", { name: "Turn 1" });
-    expect(within(panel).queryByText("Boat 1")).not.toBeInTheDocument();
-  });
+      expect(drawer.getByText(/On 3 boats/)).toBeInTheDocument();
+      const panel = screen.getByRole("region", { name: "Turn 1" });
+      expect(within(panel).queryByText("Boat 1")).not.toBeInTheDocument();
+    },
+  );
 
   it("lets a unit landing live off the land, keeping its landing", async () => {
     const sent = serve({

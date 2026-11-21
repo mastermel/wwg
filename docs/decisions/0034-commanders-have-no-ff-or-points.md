@@ -19,7 +19,7 @@ asked for an FF anyway.
   them, as for a scout.
 - **A Commander still counts as a fighting unit** otherwise: contact, boats and sightings treat it
   as before. In particular, 0 points doesn't mean it has lost its boats (decision 0022): that rule
-  is for units worn down to 0.
+  is for units worn down to 0. Nor does it for a scout, whose points are always 0 too.
 - A migration sets every Commander's FF and points to 0, in the library and in every campaign.
 
 ## Consequences
