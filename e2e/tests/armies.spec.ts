@@ -152,3 +152,33 @@ test("the Umpire renames a side and puts an army on it, with its nation", async 
   await expect(row.getByTitle("France")).toBeVisible();
   await expect(sides.getByRole("row", { name: /French Empire/ })).toContainText("1 army");
 });
+
+test("the Umpire gives a Player a second army of their side, but not one of the other", async ({
+  signUp,
+  isMobile,
+}) => {
+  test.skip(isMobile, desktopOnly);
+  const umpire = await signUp("Ada");
+  const commander = await signUp("Arthur");
+  await createCampaign(umpire.page, "The Hundred Days");
+  await join(commander.page, await joinLink(umpire.page), "The Hundred Days");
+  await umpire.page.reload();
+
+  // Decision 0036: a Player can command several armies, all of one side.
+  await addArmy(umpire, "First Corps", commander);
+  await addArmy(umpire, "Second Corps", commander);
+  await expect(
+    umpire.page.getByRole("region", { name: "Members" }).getByRole("row", { name: /Arthur/ }),
+  ).toContainText(/First Corps.*Second Corps/);
+
+  await umpire.page.getByRole("button", { name: "New army" }).click();
+  const dialog = umpire.page.getByRole("dialog");
+  await dialog.getByRole("combobox", { name: "Side" }).click();
+  await dialog.getByRole("option", { name: "Side 2" }).click();
+  await dialog.getByRole("combobox", { name: "Commander" }).click();
+  await expect(
+    dialog.getByRole("option", {
+      name: `${commander.name} (commands First Corps, of the other side)`,
+    }),
+  ).toHaveAttribute("data-combobox-disabled", "true");
+});

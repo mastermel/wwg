@@ -143,8 +143,9 @@ function ArmyTurnOrders({
     (u) => u.placed && !turn.orders.some((o) => o.unitId === u.unit.id),
   ).length;
 
+  // Named for its army: a commander of several has a Submit for each (decision 0036).
   return (
-    <Stack gap="xs">
+    <Stack gap="xs" role="group" aria-label={army.name}>
       <Group justify="space-between" wrap="nowrap">
         <Text fw={600} size="sm">
           <ArmyBadge army={army} />

@@ -3179,6 +3179,7 @@ build on positions.
       saying which; `SendReportModal` greys out an army of the same commander ("yours too", or
       "the same commander" for the Umpire); a commander's `TurnList` names each army's status when
       they have several. The turn panel already listed each commanded army with its own Submit.
-    - **71d. End to end:** `armies.spec.ts` gives a Player a second army of their side, and is
-      refused one of the other side; `turns.spec.ts` (or `intelligence.spec.ts`) has the Player
-      submit both armies' turns.
+    - ✅ **71d. End to end:** `armies.spec.ts` gives a Player a second army of their side, and
+      greys them out for one of the other side; `turns.spec.ts` has a Player submit both armies'
+      turns, each from its own group in the turn panel (named for the army), and the turn list
+      names both.

@@ -58,14 +58,15 @@ npm run lint && npm run typecheck && npm run format:check
   campaign at turn 1, with the commander's army and two units placed in hexes (both move two a
   turn), and with `enemyAt`, a commanderless Prussian army of the other side with one unit there
   (armies get turns only as they open, so it's made before the start), and with `ally`, an army
-  of the same side commanded by another user, likewise, with each army's Commander in Chief
+  of the same side commanded by another user (or by the commander, a second army of theirs:
+  decision 0036), likewise, with each army's Commander in Chief
   (Napoleon with the Guard, Grouchy with IV Corps: couriers ride between them, decision 0033); `holdForArmy` plays such an army's turn
   as the Umpire.
   Pass small hexes when a test needs several in view on a phone. Army units come from the
   library: `libraryFaction(browserOf(page), name, nation, units)` (tests/support/library.ts)
   makes a faction of the test's own (a stamped name: every run shares the library) as the
   Admin; `chooseFaction` and `addFromLibrary` do the Umpire's side in the UI. `holdAndSubmit`
-  and `approveAndStartNext` move a turn on through the API; the latter confirms no attrition, so it
+  (or `giveOrders`, leaving it to submit) and `approveAndStartNext` move a turn on through the API; the latter confirms no attrition, so it
   fails once a unit owes some (a fourth move in a row: decision 0018; the 7th turn out of supply,
   where an army has a depot: decision 0019). A unit out of supply is named "…, out of supply".
 - To stand in for an outside service (the map's tiles, say), `page.route` it, and

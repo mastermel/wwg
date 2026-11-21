@@ -109,7 +109,10 @@ export async function startedCampaign(
   // An allied army of the same side, with its own commander, from the start.
   let allyArmyId: string | null = null;
   if (options.ally) {
-    await join(options.ally.commander.page, await joinLink(umpire.page), name);
+    // The ally can be the commander's own second army (decision 0036), with no one new to join.
+    if (options.ally.commander !== commander) {
+      await join(options.ally.commander.page, await joinLink(umpire.page), name);
+    }
     const everyone = await api.get<{ id: string; firstName: string }[]>(
       `/api/campaigns/${campaignId}/members`,
     );
@@ -152,6 +155,21 @@ export async function holdAndSubmit(
   moves: Partial<Record<string, { q: number; r: number }[]>> = {},
 ) {
   const api = await apiAs(commander.page);
+  const turn = await giveOrders(commander, campaignId, armyId, moves);
+  await api.post(`/api/army-turns/${turn}/submit`, null);
+}
+
+/**
+ * The commander gives every unit an order in the open turn, through the API, as `holdAndSubmit`
+ * does, but leaves it unsubmitted. Returns the army turn's id.
+ */
+export async function giveOrders(
+  commander: User,
+  campaignId: string,
+  armyId: string,
+  moves: Partial<Record<string, { q: number; r: number }[]>> = {},
+) {
+  const api = await apiAs(commander.page);
   const turns = await api.get<{ id: string; open: boolean }[]>(`/api/armies/${armyId}/turns`);
   const turn = turns.find((t) => t.open);
   if (!turn) throw new Error("The army has no open turn.");
@@ -165,7 +183,7 @@ export async function holdAndSubmit(
       path ? { kind: "Move", path } : { kind: "Hold" },
     );
   }
-  await api.post(`/api/army-turns/${turn.id}/submit`, null);
+  return turn.id;
 }
 
 /** The Umpire gives each of an army's units a Hold, submits its turn for it and approves it. */

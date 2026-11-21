@@ -3,7 +3,12 @@ import { desktopOnly, expect, test } from "./support/fixtures.ts";
 import { latestEmailText } from "./support/mailpit.ts";
 import { apiAs } from "./support/api.ts";
 import { clickMapCentre, clickMapPart } from "./support/map.ts";
-import { approveAndStartNext, holdAndSubmit, startedCampaign } from "./support/turns.ts";
+import {
+  approveAndStartNext,
+  giveOrders,
+  holdAndSubmit,
+  startedCampaign,
+} from "./support/turns.ts";
 import { browserOf, libraryFaction } from "./support/library.ts";
 
 test("a commander moves one unit, holds another and submits the turn", async ({ signUp }) => {
@@ -57,6 +62,41 @@ test("a commander moves one unit, holds another and submits the turn", async ({ 
   await expect
     .poll(() => latestEmailText(umpire.email), { timeout: 15_000 })
     .toContain("The army has submitted turn 1 of");
+});
+
+test("a commander of two armies submits each one's turn", async ({ signUp }) => {
+  test.slow();
+  const umpire = await signUp("Ada");
+  const commander = await signUp("Bob");
+  // Grouchy's Wing is Bob's too (decision 0036).
+  const { campaignUrl, campaignId, armyId, allyArmyId } = await startedCampaign(
+    umpire,
+    commander,
+    "Wavre 1815",
+    1000,
+    { ally: { commander, at: { q: 1, r: 0 } } },
+  );
+  await giveOrders(commander, campaignId, armyId);
+  await giveOrders(commander, campaignId, allyArmyId ?? "");
+
+  const page = commander.page;
+  await page.goto(`${campaignUrl}/map`);
+  const panel = page.getByRole("region", { name: "Turn 1" });
+  for (const army of ["Armée du Nord", "Grouchy's Wing"]) {
+    const orders = panel.getByRole("group", { name: army, exact: true });
+    await orders.getByRole("button", { name: "Submit turn 1" }).click();
+    await page.getByRole("dialog").getByRole("button", { name: "Submit" }).click();
+    await expect(page.getByText(`Submitted ${army}'s turn 1.`)).toBeVisible();
+    await expect(orders.getByText("Submitted: the Umpire reviews it next.")).toBeVisible();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+  }
+
+  // The turn list names each army's status.
+  await expect(
+    page.getByRole("button", {
+      name: /Turn 1 \(open\):.*Armée du Nord: submitted.*Grouchy's Wing: submitted/,
+    }),
+  ).toBeVisible();
 });
 
 test("a commander moves both units in a hex together", async ({ signUp }) => {
