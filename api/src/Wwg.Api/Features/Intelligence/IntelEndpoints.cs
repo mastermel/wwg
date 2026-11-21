@@ -43,8 +43,8 @@ internal static class IntelEndpoints
     }
 
     /// <summary>
-    /// Sends an ally a report (the army's commander, or the Umpire on its behalf): any of a
-    /// snapshot of the army's units, every sighting it has received so far, and a note. A courier
+    /// Sends an ally a report (the army's commander, or the Umpire on its behalf): a hand-written
+    /// message (decision 0037). A courier
     /// sets out from the army's Commander in Chief for the ally's (both armies need one); within
     /// two turns' ride, it arrives as the next turn starts. Not to an army with the same commander
     /// (decision 0036).
@@ -94,23 +94,9 @@ internal static class IntelEndpoints
         }
 
         var rides = await CourierRides.LoadAsync(db, grid, campaignId, cancellationToken);
-        var sightings = request.IncludesSightings
-            ? await db
-                .Sightings.Where(s => s.ObservingArmyId == id)
-                .Select(s => s.Id)
-                .ToListAsync(cancellationToken)
-            : [];
         var report = db
             .IntelReports.Add(
-                Couriers.NewReport(
-                    id,
-                    request,
-                    open.Number,
-                    now,
-                    sightings,
-                    from,
-                    rides.TurnsTo(from, to)
-                )
+                Couriers.NewReport(id, request, open.Number, from, rides.TurnsTo(from, to))
             )
             .Entity;
         await db.SaveChangesAsync(cancellationToken);
@@ -349,8 +335,7 @@ internal static class IntelEndpoints
     }
 
     /// <summary>
-    /// Why a report to that army won't do, or null: an ally with another commander, with something
-    /// to send.
+    /// Why a report to that army won't do, or null: an ally with another commander.
     /// </summary>
     private static async Task<ValidationProblem?> RecipientProblemAsync(
         WwgDbContext db,
@@ -374,16 +359,8 @@ internal static class IntelEndpoints
         }
 
         // One Player's armies already know what each other knows (decision 0036).
-        if (to.CommanderId is not null && to.CommanderId == armies[armyId].CommanderId)
-        {
-            return Invalid("toArmyId", "You command that army too: it knows what yours does.");
-        }
-
-        return
-            !request.IncludesSnapshot
-            && !request.IncludesSightings
-            && string.IsNullOrEmpty(request.Note)
-            ? Invalid("note", "Send something: your units, your sightings or a note.")
+        return to.CommanderId is not null && to.CommanderId == armies[armyId].CommanderId
+            ? Invalid("toArmyId", "You command that army too: it knows what yours does.")
             : null;
     }
 

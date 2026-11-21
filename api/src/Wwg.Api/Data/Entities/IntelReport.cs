@@ -14,8 +14,9 @@ public enum CourierStatus
 }
 
 /// <summary>
-/// Intelligence one army's commander sends an ally (decision 0020): a snapshot of their units, the
-/// sightings they'd received, and a note, carried by a courier tracked turn by turn, not drawn.
+/// Intelligence one army's commander sends an ally (decision 0020): a note (and, before decision
+/// 0037, a snapshot of their units and the sightings they'd received), carried by a courier tracked
+/// turn by turn, not drawn.
 /// Or the Umpire's to an army (decision 0035), with no sender and no courier: it arrives at once.
 /// What was sent is copied in as it was then.
 /// </summary>

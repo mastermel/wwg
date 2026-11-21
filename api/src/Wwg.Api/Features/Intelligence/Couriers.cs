@@ -30,13 +30,14 @@ internal static class Couriers
     public static Hex? CommanderInChiefOf(IReadOnlyList<UnitPlace> places, Guid armyId) =>
         places.FirstOrDefault(p => p.ArmyId == armyId && p.IsCommanderInChief)?.At;
 
-    /// <summary>A report as it sets out, with what it carries copied in (not added).</summary>
+    /// <summary>
+    /// A report as it sets out (not added): its message only (decision 0037), though older ones
+    /// may carry a snapshot and sightings.
+    /// </summary>
     public static IntelReport NewReport(
         Guid fromArmyId,
         SendReportRequest request,
         int turn,
-        IReadOnlyList<UnitPlace> now,
-        List<Guid> sightingIds,
         Hex from,
         double? turnsToRide
     ) =>
@@ -45,11 +46,7 @@ internal static class Couriers
             FromArmyId = fromArmyId,
             ToArmyId = request.ToArmyId,
             SentTurn = turn,
-            Note = string.IsNullOrEmpty(request.Note) ? null : request.Note,
-            Snapshot = request.IncludesSnapshot
-                ? SnapshotOf(now.Where(p => p.ArmyId == fromArmyId))
-                : null,
-            SightingIds = sightingIds,
+            Note = request.Note,
             Status = CourierStatus.EnRoute,
             CourierQ = from.Q,
             CourierR = from.R,

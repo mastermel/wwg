@@ -5,16 +5,15 @@ using Wwg.Api.Infrastructure;
 
 namespace Wwg.Api.Features.Intelligence;
 
-/// <summary>A commander's report to an ally (decision 0020), carried by courier.</summary>
+/// <summary>
+/// A commander's report to an ally (decision 0020), carried by courier: a hand-written message only
+/// (decision 0037).
+/// </summary>
 /// <param name="ToArmyId">The ally: another army of the same side.</param>
-/// <param name="IncludesSnapshot">Whether it carries the army's units: where they are, and their points.</param>
-/// <param name="IncludesSightings">Whether it carries every sighting the army has received so far.</param>
-/// <param name="Note">A note, if any.</param>
+/// <param name="Note">The message.</param>
 public sealed record SendReportRequest(
     [property: JsonRequired] Guid ToArmyId,
-    [property: JsonRequired] bool IncludesSnapshot,
-    [property: JsonRequired] bool IncludesSightings,
-    [property: Trimmed, StringLength(1000)] string? Note
+    [property: Trimmed, Required, StringLength(1000)] string Note
 );
 
 /// <summary>A unit as a report's snapshot has it.</summary>

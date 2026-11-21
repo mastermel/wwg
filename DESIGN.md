@@ -1801,6 +1801,7 @@ IntelReport (a report to an ally, by courier; 49c)
   FromArmyId / ToArmyId  → Army     SentTurn  int     ArrivedTurn  int?
   Note         string? (≤1000)      Snapshot  string? (JSON: the sender's units as they were)
   SightingIds  Guid[] (copied to the recipient on arrival)
+               (from step 72, an ally's report carries only its Note: decision 0037)
   Status       EnRoute | Arrived | Stopped     CourierQ / CourierR  int
   ArrivesNext  bool (within two turns' ride when sent)
 
@@ -2186,7 +2187,7 @@ one, as a campaign is made with both)
 | GET | `/api/campaigns/{id}/supply` | Each unit's supply as the open turn began and by its orders as given, and each intermediate depot's, as the viewer may see (step 48c) |
 | GET | `/api/campaigns/{id}/sightings/due` | The sightings the open turn's orders give, per observing army, possible screens flagged, for the Umpire to shape (step 49a); from step 56, a screened hex's hidden units apart (`screenedUnits`) |
 | GET | `/api/campaigns/{id}/sightings` | The sightings the viewer may see, every turn's, oldest first (step 49b) |
-| POST | `/api/armies/{id}/reports` | Send an ally a report `{ toArmyId, includesSnapshot, includesSightings, note }` (201; not an ally, an army of the same commander (step 71a), or nothing to send: 400; not under way, or an army off the map: 409; from step 68, either army without a Commander in Chief: 409) (step 49c) |
+| POST | `/api/armies/{id}/reports` | Send an ally a report `{ toArmyId, note }`, from step 72 a message only (201; not an ally, an army of the same commander (step 71a), or no message: 400; not under way, or an army off the map: 409; from step 68, either army without a Commander in Chief: 409) (step 49c) |
 | GET | `/api/campaigns/{id}/reports` | The reports the viewer may see, newest first |
 | GET | `/api/campaigns/{id}/couriers` | The couriers on their way, flagged where the other side's units are in their hex; from step 68, every courier, newest first, with its status, both C-in-Cs, the turns still to ride, why it waits, and why it was cancelled |
 | POST | `/api/armies/{id}/umpire-reports` | The Umpire's report to the army `{ note, positions: [unitId], sightings: [{ unitIds, showsHex, showsArmies, showsTypes, strength, size, showsAfloat }] }`, arriving at once with no courier, each as the open turn started (201; nothing to send, a position of the other side, a sighting of the army's side, across hexes, or rough without a size: 400; not under way: 409) (step 70a) |
@@ -3196,3 +3197,7 @@ build on positions.
       greys them out for one of the other side; `turns.spec.ts` has a Player submit both armies'
       turns, each from its own group in the turn panel (named for the army), and the turn list
       names both.
+72. ✅ **Reports between allies are messages only** (decision 0037): `SendReportRequest` is
+    `{ toArmyId, note }`, the note required; `SendReportModal` is the recipient and a message.
+    Reports already sent keep their snapshot and sightings (a courier on its way still delivers
+    them), as do the Umpire's.

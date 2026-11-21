@@ -1,4 +1,4 @@
-import { Alert, Button, Checkbox, Group, Modal, Select, Stack, Textarea } from "@mantine/core";
+import { Alert, Button, Group, Modal, Select, Stack, Textarea } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
@@ -24,9 +24,9 @@ interface SendReportModalProps {
 }
 
 /**
- * Sending an ally a report (step 49d, decisions 0020 and 0033): the army's units, its sightings so
- * far, a note; a courier carries it from our Commander in Chief to theirs, so both need one. Mount
- * it only while open.
+ * Sending an ally a report (step 49d, decisions 0020, 0033 and 0037): a hand-written message; a
+ * courier carries it from our Commander in Chief to theirs, so both need one. Mount it only while
+ * open.
  */
 export function SendReportModal({
   campaignId,
@@ -55,11 +55,9 @@ export function SendReportModal({
         : "no Commander in Chief";
   const [toId, setToId] = useState<string | null>(allies.find((a) => !why(a))?.id ?? null);
   const noChief = !chiefs.has(fromId);
-  const [snapshot, setSnapshot] = useState(false);
-  const [sightings, setSightings] = useState(false);
   const [note, setNote] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const empty = !snapshot && !sightings && note.trim() === "";
+  const empty = note.trim() === "";
 
   const submit = async () => {
     if (!toId) return;
@@ -69,9 +67,7 @@ export function SendReportModal({
         id: fromId,
         data: {
           toArmyId: toId,
-          includesSnapshot: snapshot,
-          includesSightings: sightings,
-          note: note.trim() || null,
+          note: note.trim(),
         },
       });
       notifications.show({
@@ -139,24 +135,6 @@ export function SendReportModal({
               comboboxProps={{ withinPortal: false }}
             />
           )}
-          <Checkbox
-            hidden // Removed for now, putting emphasis on handwritten message
-            label="Our units"
-            description="Where each is now, and its points."
-            checked={snapshot}
-            onChange={(event) => {
-              setSnapshot(event.currentTarget.checked);
-            }}
-          />
-          <Checkbox
-            hidden // Removed for now, putting emphasis on handwritten message
-            label="Our sightings"
-            description="Every sighting of the enemy received so far, on its turn."
-            checked={sightings}
-            onChange={(event) => {
-              setSightings(event.currentTarget.checked);
-            }}
-          />
           <Textarea
             label="Message"
             autosize

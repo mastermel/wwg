@@ -939,7 +939,7 @@
         "tags": [
           "Intelligence"
         ],
-        "summary": "Sends an ally a report (the army's commander, or the Umpire on its behalf): any of a\nsnapshot of the army's units, every sighting it has received so far, and a note. A courier\nsets out from the army's Commander in Chief for the ally's (both armies need one); within\ntwo turns' ride, it arrives as the next turn starts. Not to an army with the same commander\n(decision 0036).",
+        "summary": "Sends an ally a report (the army's commander, or the Umpire on its behalf): a hand-written\nmessage (decision 0037). A courier\nsets out from the army's Commander in Chief for the ally's (both armies need one); within\ntwo turns' ride, it arrives as the next turn starts. Not to an army with the same commander\n(decision 0036).",
         "operationId": "SendReport",
         "parameters": [
           {
@@ -9615,8 +9615,6 @@
       "SendReportRequest": {
         "required": [
           "toArmyId",
-          "includesSnapshot",
-          "includesSightings",
           "note"
         ],
         "type": "object",
@@ -9626,25 +9624,14 @@
             "description": "The ally: another army of the same side.",
             "format": "uuid"
           },
-          "includesSnapshot": {
-            "type": "boolean",
-            "description": "Whether it carries the army's units: where they are, and their points."
-          },
-          "includesSightings": {
-            "type": "boolean",
-            "description": "Whether it carries every sighting the army has received so far."
-          },
           "note": {
             "maxLength": 1000,
-            "minLength": 0,
-            "type": [
-              "null",
-              "string"
-            ],
-            "description": "A note, if any."
+            "minLength": 1,
+            "type": "string",
+            "description": "The message."
           }
         },
-        "description": "A commander's report to an ally (decision 0020), carried by courier."
+        "description": "A commander's report to an ally (decision 0020), carried by courier: a hand-written message only\n(decision 0037)."
       },
       "SendUmpireReportRequest": {
         "required": [

@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using Microsoft.EntityFrameworkCore;
 using Wwg.Api.Data.Entities;
 using Wwg.Api.Features.Armies;
 using Wwg.Api.Features.ArmyUnits;
@@ -133,7 +134,25 @@ public sealed class IntelTests : ApiTest
             );
 
     private static SendReportRequest Everything(Guid ally) =>
-        new(ally, true, true, "Hold the bridge at Wavre.");
+        new(ally, "Hold the bridge at Wavre.");
+
+    /// <summary>
+    /// Has the report sent carry every sighting the army has received so far, as reports could
+    /// before decision 0037: one may still be on its way.
+    /// </summary>
+    private async Task CarrySightingsAsync(HttpResponseMessage sent, Guid army)
+    {
+        var id = await SentIdAsync(sent);
+        await WithDbAsync(async db =>
+        {
+            var report = await db.IntelReports.SingleAsync(r => r.Id == id, Token);
+            report.SightingIds = await db
+                .Sightings.Where(s => s.ObservingArmyId == army)
+                .Select(s => s.Id)
+                .ToListAsync(Token);
+            return await db.SaveChangesAsync(Token);
+        });
+    }
 
     /// <summary>Every army holds and is approved (the Umpire submitting for those with none), and the next turn starts.</summary>
     private static async Task NextTurnAsync(CampaignScenario scenario)
@@ -213,11 +232,8 @@ public sealed class IntelTests : ApiTest
             (1, 2, CourierStatus.Arrived),
             (received.SentTurn, received.ArrivedTurn, received.Status)
         );
-        Assert.Equal("Hold the bridge at Wavre.", received.Note);
-        var unit = Assert.Single(received.Snapshot!, u =>
-            string.Equals(u.Name, "1st Division", StringComparison.Ordinal)
-        );
-        Assert.Equal((0, 0, 20), (unit.Q, unit.R, unit.Points));
+        Assert.Equal(("Hold the bridge at Wavre.", 0), (received.Note, received.SightingCount));
+        Assert.Null(received.Snapshot);
     }
 
     [Fact]
@@ -232,11 +248,7 @@ public sealed class IntelTests : ApiTest
 
         var email = await Emails.WaitForEmailToAsync("player@example.com", "turn 2 has started");
         Assert.Contains("Reports from allies", email.TextBody, StringComparison.Ordinal);
-        Assert.Contains(
-            "From First Corps (their units' positions)",
-            email.TextBody,
-            StringComparison.Ordinal
-        );
+        Assert.Contains("From First Corps\n", email.TextBody, StringComparison.Ordinal);
         Assert.Contains("> Hold the bridge at Wavre.", email.TextBody, StringComparison.Ordinal);
     }
 
@@ -384,7 +396,7 @@ public sealed class IntelTests : ApiTest
     }
 
     [Fact]
-    public async Task SendReport_TheSendersSightings_BecomeTheAllysOnArrival()
+    public async Task StartNextTurn_AReportCarryingSightings_TheyBecomeTheAllysOnArrival()
     {
         var (scenario, ally) = await StartedAsync(new Hex(-1, 0), enemyAt: new Hex(1, 0));
         using var _ = scenario;
@@ -394,7 +406,8 @@ public sealed class IntelTests : ApiTest
             $"/api/campaigns/{scenario.CampaignId}/armies"
         );
         await NextTurnWithSightingAsync(scenario, armies!);
-        using var sent = await SendAsync(scenario, new SendReportRequest(ally, false, true, null));
+        using var sent = await SendAsync(scenario, Everything(ally));
+        await CarrySightingsAsync(sent, scenario.ArmyId);
         await NextTurnAsync(scenario);
 
         var theirs = await umpire.GetAsAsync<List<SightingResponse>>(
@@ -406,7 +419,7 @@ public sealed class IntelTests : ApiTest
     }
 
     [Fact]
-    public async Task SendReport_SightingsSentBackByTheAlly_ArentHandedBackToTheirFirstObserver()
+    public async Task StartNextTurn_SightingsCarriedBackByTheAlly_ArentHandedBackToTheirFirstObserver()
     {
         var (scenario, ally) = await StartedAsync(new Hex(-1, 0), enemyAt: new Hex(1, 0));
         using var _ = scenario;
@@ -415,8 +428,9 @@ public sealed class IntelTests : ApiTest
             $"/api/campaigns/{scenario.CampaignId}/armies"
         );
         await NextTurnWithSightingAsync(scenario, armies!);
-        using var sent = await SendAsync(scenario, new SendReportRequest(ally, false, true, null));
+        using var sent = await SendAsync(scenario, Everything(ally));
         sent.EnsureSuccessStatusCode();
+        await CarrySightingsAsync(sent, scenario.ArmyId);
         await NextTurnAsync(scenario);
 
         // The ally sends everything it has back, the shared sighting among it.
@@ -424,10 +438,11 @@ public sealed class IntelTests : ApiTest
             .As(Role.Player)
             .PostAsJsonAsync(
                 new Uri($"/api/armies/{ally}/reports", UriKind.Relative),
-                new SendReportRequest(scenario.ArmyId, false, true, null),
+                Everything(scenario.ArmyId),
                 Token
             );
         back.EnsureSuccessStatusCode();
+        await CarrySightingsAsync(back, ally);
         await NextTurnAsync(scenario);
 
         var sightings = await umpire.GetAsAsync<List<SightingResponse>>(
@@ -532,12 +547,12 @@ public sealed class IntelTests : ApiTest
     }
 
     [Fact]
-    public async Task SendReport_WithNothingInIt_IsAValidationError()
+    public async Task SendReport_WithoutAMessage_IsAValidationError()
     {
         var (scenario, ally) = await StartedAsync(new Hex(1, 0));
         using var _ = scenario;
 
-        using var sent = await SendAsync(scenario, new SendReportRequest(ally, false, false, " "));
+        using var sent = await SendAsync(scenario, new SendReportRequest(ally, " "));
 
         await sent.AssertValidationProblemAsync("note");
     }
@@ -677,7 +692,10 @@ public sealed class IntelTests : ApiTest
             )
         );
         Assert.InRange(courier.TurnsToRide!.Value, 2, 3);
-        Assert.Equal(("Hold the bridge at Wavre.", true), (courier.Note, courier.IncludesSnapshot));
+        Assert.Equal(
+            ("Hold the bridge at Wavre.", false, 0),
+            (courier.Note, courier.IncludesSnapshot, courier.SightingCount)
+        );
     }
 
     [Fact]

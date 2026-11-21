@@ -1005,18 +1005,14 @@ describe("a commander's turn", () => {
     await user.type(within(dialog).getByRole("textbox", { name: "Message" }), "Come to Ligny.");
     await user.click(within(dialog).getByRole("button", { name: "Send by courier" }));
 
-    // Removing this for now as we've hidden the component. We might bring this functionality back later
-    // expect(
-    //   await screen.findByText("Sent a report to Grouchy's Wing by courier."),
-    // ).toBeInTheDocument();
-
+    expect(
+      await screen.findByText("Sent a report to Grouchy's Wing by courier."),
+    ).toBeInTheDocument();
     expect(requests.at(-1)).toEqual({
       method: "POST",
       url: `/api/armies/${armyId}/reports`,
       body: {
         toArmyId: allyId,
-        includesSnapshot: false,
-        includesSightings: false,
         note: "Come to Ligny.",
       },
     });

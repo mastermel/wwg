@@ -77,8 +77,6 @@ test("the Umpire sees a courier on the map and cancels it, saying why", async ({
     await apiAs(bob.page)
   ).post(`/api/armies/${armyId}/reports`, {
     toArmyId: allyArmyId,
-    includesSnapshot: false,
-    includesSightings: false,
     note: "The Guard attacks at seven.",
   });
 
