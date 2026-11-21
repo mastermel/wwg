@@ -9,6 +9,7 @@ import {
   useMoveUnits,
   useSubmitTurn,
   useUndoOrder,
+  useUndoOrders,
 } from "@/api/generated/endpoints/turns/turns";
 import type {
   ArmySummary,
@@ -50,6 +51,7 @@ export function useOrders(campaignId: string) {
   const queryClient = useQueryClient();
   const give = useGiveOrder();
   const undo = useUndoOrder();
+  const undoMany = useUndoOrders();
   const hold = useHoldUnits();
   const move = useMoveUnits();
   const submit = useSubmitTurn();
@@ -80,7 +82,13 @@ export function useOrders(campaignId: string) {
   };
 
   return {
-    busy: give.isPending || undo.isPending || hold.isPending || move.isPending || submit.isPending,
+    busy:
+      give.isPending ||
+      undo.isPending ||
+      undoMany.isPending ||
+      hold.isPending ||
+      move.isPending ||
+      submit.isPending,
     give: (
       armyId: string,
       turnId: string,
@@ -107,6 +115,14 @@ export function useOrders(campaignId: string) {
         () => undo.mutateAsync({ id: turnId, unitId: unit.id }),
         `Took back ${unit.name}'s order.`,
         `${unit.name}'s order couldn't be taken back. Try again.`,
+      ),
+    /** Takes back several units' orders, a hex's stack (step 66g), in one request: all or none. */
+    undoAll: (armyId: string, turnId: string, unitIds: string[]) =>
+      run(
+        armyId,
+        () => undoMany.mutateAsync({ id: turnId, data: { unitIds } }),
+        `Took back the ${String(unitIds.length)} units' orders.`,
+        "The units' orders couldn't be taken back. Try again.",
       ),
     /** Holds a formation's units without orders (step 64), in one request: all or none. */
     holdTheRest: (armyId: string, turnId: string, unitIds: string[], formation: string) =>

@@ -40,9 +40,7 @@ export function stackGroups(
   const armies = [...new Map(units.map((p) => [p.army.id, p.army])).values()];
   return armies.flatMap((army) => {
     const turn = turnOf(army.id);
-    // The Umpire can change a Submitted turn too (decision 0011).
-    if (!turn?.open || !(turn.status === "Draft" || (manager && turn.status === "Submitted")))
-      return [];
+    if (!changeable(turn, manager)) return [];
     const free = units.filter(
       (p) =>
         p.army.id === army.id &&
@@ -52,6 +50,41 @@ export function stackGroups(
     if (free.length < 2) return [];
     const afloat = free.filter((p) => movesAs(p) === "Boat").length;
     return [{ army, units: free, mixed: afloat > 0 && afloat < free.length }];
+  });
+}
+
+/** Whether the viewer can change the turn: open, and a Draft (or Submitted, for the Umpire). */
+const changeable = (turn: ArmyTurnDetails | undefined, manager: boolean): turn is ArmyTurnDetails =>
+  // The Umpire can change a Submitted turn too (decision 0011).
+  !!turn?.open && (turn.status === "Draft" || (manager && turn.status === "Submitted"));
+
+/** One army's units in a hex with an order this turn, whose orders can be taken back together. */
+export interface OrderedGroup {
+  army: ArmySummary;
+  units: PlacedUnit[];
+}
+
+/**
+ * Each army's units in the hex with an order in its open turn, while the viewer can change it,
+ * two or more of them: taken back together (step 66g). Loose boats are left out, as they are of
+ * a stack's moves.
+ */
+export function orderedGroups(
+  units: readonly PlacedUnit[],
+  turnOf: (armyId: string) => ArmyTurnDetails | undefined,
+  manager: boolean,
+): OrderedGroup[] {
+  const armies = [...new Map(units.map((p) => [p.army.id, p.army])).values()];
+  return armies.flatMap((army) => {
+    const turn = turnOf(army.id);
+    if (!changeable(turn, manager)) return [];
+    const ordered = units.filter(
+      (p) =>
+        p.army.id === army.id &&
+        p.unit.type !== "Boat" &&
+        turn.orders.some((o) => o.unitId === p.unit.id),
+    );
+    return ordered.length < 2 ? [] : [{ army, units: ordered }];
   });
 }
 

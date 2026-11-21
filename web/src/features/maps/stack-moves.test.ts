@@ -8,6 +8,7 @@ import type {
 } from "@/api/generated/model";
 import { ratesOf } from "@/features/maps/movement";
 import {
+  orderedGroups,
   stackCanForceMarch,
   stackGroups,
   stackMoveCost,
@@ -78,6 +79,36 @@ describe("stackGroups", () => {
     expect(stackGroups(units, () => submitted, false)).toEqual([]);
     expect(stackGroups(units, () => submitted, true)).toHaveLength(1);
     expect(stackGroups(units, () => undefined, true)).toEqual([]);
+  });
+});
+
+describe("orderedGroups", () => {
+  it("offers an army's units with orders, two or more of them, loose boats aside", () => {
+    const units = [
+      placed("guard"),
+      placed("lancers", "LightCavalry"),
+      placed("free"),
+      placed("barge", "Boat"),
+    ];
+    const ordered = turn({
+      orders: ["guard", "lancers", "barge"].map((unitId) => ({ unitId }) as UnitPosition),
+    });
+
+    const [group] = orderedGroups(units, () => ordered, false);
+
+    expect(group.units.map((p) => p.unit.id)).toEqual(["guard", "lancers"]);
+    expect(orderedGroups(units.slice(1), () => ordered, false)).toEqual([]);
+  });
+
+  it("offers nothing once the turn can't change, but the Umpire a Submitted one", () => {
+    const units = [placed("guard"), placed("lancers")];
+    const submitted = turn({
+      status: "Submitted",
+      orders: units.map((p) => ({ unitId: p.unit.id }) as UnitPosition),
+    });
+
+    expect(orderedGroups(units, () => submitted, false)).toEqual([]);
+    expect(orderedGroups(units, () => submitted, true)).toHaveLength(1);
   });
 });
 

@@ -2,6 +2,7 @@ import { ActionIcon, Alert, Box, Button, Grid, Group, Stack, Switch, Text } from
 import { notifications } from "@mantine/notifications";
 import {
   IconAnchor,
+  IconArrowBackUp,
   IconArrowMoveRight,
   IconCloudOff,
   IconHandStop,
@@ -89,6 +90,8 @@ import {
 } from "@/features/maps/movement";
 import {
   movesAs,
+  orderedGroups,
+  type OrderedGroup,
   stackCanForceMarch,
   stackGroups,
   stackMoveCost,
@@ -329,6 +332,8 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
   const [landing, setLanding] = useState(false);
   // Moving a hex's units together (step 66): all of them, `moving` the first.
   const [together, setTogether] = useState<readonly PlacedUnit[] | null>(null);
+  // A hex's units whose orders are to be taken back together, once confirmed (step 66g).
+  const [takingBack, setTakingBack] = useState<OrderedGroup | null>(null);
   useEffect(() => {
     if (placing || moving) mapArea.current?.scrollIntoView({ block: "start" });
   }, [placing, moving]);
@@ -853,34 +858,44 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
       },
     };
   };
-  // The drawer's Move all (step 66) and Hold all: each army's units in the chosen hex (never a
-  // zoomed-out marker's others) without orders, two or more. Units on boats hold beside units
-  // ashore, but move only with each other.
+  // The drawer's actions for a hex's units together (step 66): each army's units in the chosen
+  // hex (never a zoomed-out marker's others), two or more. Those without orders move or hold
+  // together (units on boats hold beside units ashore, but move only with each other); those
+  // with orders have them taken back together (66g).
   const inChosenHex = chosen && past === null && !setup ? unitsIn(chosen.hex, shownOnMap) : [];
-  const chosenGroups = stackGroups(inChosenHex, turnOf, manager);
-  const stackActions = chosenGroups.length > 0 && (
+  const freeGroups = stackGroups(inChosenHex, turnOf, manager);
+  const withOrders = orderedGroups(inChosenHex, turnOf, manager);
+  const stackArmies = [
+    ...new Map([...freeGroups, ...withOrders].map((g) => [g.army.id, g.army])).values(),
+  ];
+  const stackActions = stackArmies.length > 0 && (
     <Stack gap="xs" align="flex-start">
-      {chosenGroups.map(({ army, units: group, mixed }) => {
+      {stackArmies.map((army) => {
         const turn = turnOf(army.id);
-        // Every one of its units there (loose boats aside), or some have orders already.
-        const all =
-          inChosenHex.filter((p) => p.army.id === army.id && p.unit.type !== "Boat").length ===
-          group.length;
-        const count = String(group.length);
-        const which = all ? `all ${count}` : `the ${count} without orders`;
-        const of = chosenGroups.length > 1 ? ` of ${army.name}` : "";
+        const free = freeGroups.find((g) => g.army.id === army.id);
+        const ordered = withOrders.find((g) => g.army.id === army.id);
+        // Every one of its units there (loose boats aside), or only some of them.
+        const there = inChosenHex.filter(
+          (p) => p.army.id === army.id && p.unit.type !== "Boat",
+        ).length;
+        const of = stackArmies.length > 1 ? ` of ${army.name}` : "";
+        const which = free
+          ? free.units.length === there
+            ? `all ${String(there)}`
+            : `the ${String(free.units.length)} without orders`
+          : "";
         return (
           <Stack key={army.id} gap="xs" align="flex-start">
             <Group gap="xs">
-              {!mixed && (
+              {free && !free.mixed && (
                 <Button
                   variant="light"
                   leftSection={<IconArrowMoveRight size={16} aria-hidden />}
                   onClick={() => {
                     setLanding(false);
                     setForceMarch(false);
-                    setTogether(group);
-                    setMoving(group[0] ?? null);
+                    setTogether(free.units);
+                    setMoving(free.units[0] ?? null);
                     setTarget(null);
                     closeDrawer();
                   }}
@@ -888,40 +903,66 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
                   {`Move ${which}${of}`}
                 </Button>
               )}
-              <Button
-                variant="light"
-                leftSection={<IconHandStop size={16} aria-hidden />}
-                disabled={!turn || orders.busy}
-                onClick={() => {
-                  if (!turn) return;
-                  void orders
-                    .holdAll(
-                      army.id,
-                      turn.id,
-                      group.map((p) => p.unit.id),
-                    )
-                    .then((saved) => {
-                      if (saved) closeDrawer();
-                    });
-                }}
-              >
-                {`Hold ${which}${of}`}
-              </Button>
+              {free && (
+                <Button
+                  variant="light"
+                  leftSection={<IconHandStop size={16} aria-hidden />}
+                  disabled={!turn || orders.busy}
+                  onClick={() => {
+                    if (!turn) return;
+                    void orders
+                      .holdAll(
+                        army.id,
+                        turn.id,
+                        free.units.map((p) => p.unit.id),
+                      )
+                      .then((saved) => {
+                        if (saved) closeDrawer();
+                      });
+                  }}
+                >
+                  {`Hold ${which}${of}`}
+                </Button>
+              )}
+              {ordered && (
+                <Button
+                  variant="light"
+                  color="gray"
+                  leftSection={<IconArrowBackUp size={16} aria-hidden />}
+                  disabled={!turn || orders.busy}
+                  onClick={() => {
+                    setTakingBack(ordered);
+                  }}
+                >
+                  {`Take back ${ordered.units.length === there ? "all " : "the "}${String(ordered.units.length)} orders${of}`}
+                </Button>
+              )}
             </Group>
-            {mixed && (
+            {free?.mixed && (
               <Text size="sm" c="dimmed">
-                {chosenGroups.length > 1 ? `${army.name}: units` : "Units"} on boats and units
-                ashore move separately.
+                {stackArmies.length > 1 ? `${army.name}: units` : "Units"} on boats and units ashore
+                move separately.
               </Text>
             )}
           </Stack>
         );
       })}
-      <Text size="xs" c="dimmed">
-        A move together goes at the slowest one&apos;s pace; each unit still has its own order.
-      </Text>
+      {freeGroups.length > 0 && (
+        <Text size="xs" c="dimmed">
+          A move together goes at the slowest one&apos;s pace; each unit still has its own order.
+        </Text>
+      )}
     </Stack>
   );
+  const takeBack = async () => {
+    const turn = takingBack && turnOf(takingBack.army.id);
+    if (!takingBack || !turn) return;
+    const unitIds = takingBack.units.map((p) => p.unit.id);
+    if (await orders.undoAll(takingBack.army.id, turn.id, unitIds)) {
+      setTakingBack(null);
+      closeDrawer();
+    }
+  };
   const view = (number: number) => {
     setViewing(number);
     stopMoving();
@@ -1446,6 +1487,19 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
       >
         {placingIn ? `${hexName(placingIn)}. ` : ""}It joins its army where the open turn starts,
         and can&apos;t be moved again except by its orders.
+      </ConfirmModal>
+      <ConfirmModal
+        opened={takingBack !== null}
+        onClose={() => {
+          setTakingBack(null);
+        }}
+        title={`Take back ${String(takingBack?.units.length ?? 0)} orders?`}
+        confirmLabel="Take back orders"
+        loading={orders.busy}
+        onConfirm={() => void takeBack()}
+      >
+        {takingBack?.units.map((p) => p.unit.name).join(", ")} will have no orders this turn again,
+        to be given afresh.
       </ConfirmModal>
       <HexDrawer
         hex={chosen && chosenCard ? { hex: chosen.hex, info: chosenCard.info } : null}

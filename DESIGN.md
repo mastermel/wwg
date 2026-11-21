@@ -1380,7 +1380,7 @@ visibility); the data is in §5.1. Built in Phase 8 (§7).
   so a draft survives closing the tab. **Move all** (step 66, decision 0031), from a hex's
   list of units, does the same for one army's units there without orders, at the slowest one's
   pace, along one path; each unit's order is its own afterwards. **Hold all** beside it holds them
-  (step 66e). (Phase 8 measured a straight-line range
+  (step 66e), and **Take back** their orders together, once confirmed (66g). (Phase 8 measured a straight-line range
   instead; decision 0014 replaced it.)
 - **History:** their army's turns, newest first; choosing one shows it as it was
   played, as the open turn is: the units where they started it, and its moves as ghosts
@@ -3081,6 +3081,11 @@ build on positions.
       (as `UndoOrder`), units without one skipped, in one transaction; a unit not in the army
       (404) or a boat tied to a unit (409, naming it) changes nothing. The Umpire's are one Edited
       event, a note per unit ("Order taken back.").
+    - ✅ **66g. Taking back a stack's orders (UI):** the hex drawer's unit list offers **Take back
+      all 3 orders** (or **the 2 orders**, "… of Prussians" as Move all) for each army with two or
+      more units with orders in that hex, in a turn the viewer can change (`orderedGroups`,
+      `stack-moves.ts`; loose boats left out), beside Move all and Hold all for the rest. It asks
+      first, naming the units, then sends `UndoOrders` and closes the drawer.
 67. ✅ **The Commander in Chief** (decision 0032): the Umpire marks one Commander unit in each army
     as its Commander in Chief, where the player is on the map; choosing another replaces it, at
     any time, setting up or started.

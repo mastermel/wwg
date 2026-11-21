@@ -489,9 +489,52 @@ describe("a commander's turn", () => {
           sent.push(await request.json());
           return HttpResponse.json([]);
         }),
+        http.post(`*/api/army-turns/${turnId}/undo`, async ({ request }) => {
+          sent.push(await request.json());
+          return new HttpResponse(null, { status: 204 });
+        }),
       );
       return sent;
     };
+
+    it("takes back all their orders from the hex's drawer, once confirmed", async () => {
+      const ordered = [unitId, lancersId, hussarsId].map((id) => ({ ...hold, unitId: id }));
+      const sent = serveStack(draft({ orders: ordered }));
+      const user = userEvent.setup();
+      await openMap();
+
+      await user.click(await screen.findByRole("button", { name: "Lancers" }));
+      const drawer = await screen.findByRole("dialog");
+      await user.click(within(drawer).getByRole("button", { name: "All 3 units here" }));
+      expect(within(drawer).queryByRole("button", { name: /^(Move|Hold) / })).toBeNull();
+      await user.click(within(drawer).getByRole("button", { name: "Take back all 3 orders" }));
+      const confirm = await screen.findByRole("dialog", { name: "Take back 3 orders?" });
+      expect(sent).toEqual([]);
+      await user.click(within(confirm).getByRole("button", { name: "Take back orders" }));
+
+      expect(await screen.findByText("Took back the 3 units' orders.")).toBeInTheDocument();
+      expect(sent).toEqual([{ unitIds: [unitId, lancersId, hussarsId] }]);
+    });
+
+    it("takes back only those with orders, beside the rest's own actions", async () => {
+      const sent = serveStack(draft({ orders: [hold, { ...hold, unitId: lancersId }] }));
+      const user = userEvent.setup();
+      await openMap();
+
+      await user.click(await screen.findByRole("button", { name: "Lancers" }));
+      const drawer = await screen.findByRole("dialog");
+      await user.click(within(drawer).getByRole("button", { name: "All 3 units here" }));
+      await user.click(within(drawer).getByRole("button", { name: "Take back the 2 orders" }));
+      await user.click(
+        within(await screen.findByRole("dialog", { name: "Take back 2 orders?" })).getByRole(
+          "button",
+          { name: "Take back orders" },
+        ),
+      );
+
+      expect(await screen.findByText("Took back the 2 units' orders.")).toBeInTheDocument();
+      expect(sent).toEqual([{ unitIds: [unitId, lancersId] }]);
+    });
 
     it("holds them all from the hex's drawer", async () => {
       const sent = serveStack(draft());
