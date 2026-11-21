@@ -1,28 +1,17 @@
-import { ActionIcon, Alert, Badge, Button, Group, Stack, Text } from "@mantine/core";
+import { Alert, Badge, Button, Group, Stack, Text } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
-import { IconArrowBackUp, IconMoon, IconSend } from "@tabler/icons-react";
+import { IconMoon, IconSend } from "@tabler/icons-react";
 import { useState } from "react";
 import type { ArmyTurnDetails, ArmyTurnStatus, CampaignTurnSummary } from "@/api/generated/model";
 import { Section } from "@/components/Section";
 import { ArmyBadge } from "@/features/armies/identity/ArmyBadge";
-import { armyColorVar } from "@/features/armies/identity/army-colors";
-import { FormationList } from "@/features/maps/FormationList";
-import { describeOrder } from "@/features/maps/orders";
-import { formationActions, type PickedOut } from "@/features/maps/pick-out";
+import { ArmyOrdersList, type CommandedUnit } from "@/features/maps/ArmyOrdersList";
+import type { PickedOut } from "@/features/maps/pick-out";
 import { SubmitTurnModal } from "@/features/maps/SubmitTurnModal";
 import type { PlacedUnit } from "@/features/maps/stacks";
 import { reviewOf, type OpenArmyTurn, type useOrders } from "@/features/maps/use-orders";
-import { CommanderInChiefBadge } from "@/features/units/CommanderInChiefBadge";
-import { UnitSymbol } from "@/features/units/UnitSymbol";
 import { useOnline } from "@/lib/use-online";
 import { turnPartHours, turnWhen } from "@/features/campaigns/calendar";
-
-/** A commander's unit, and where it is (undefined: the Umpire hasn't placed it yet). */
-export interface CommandedUnit {
-  unit: PlacedUnit["unit"];
-  army: PlacedUnit["army"];
-  placed: PlacedUnit | undefined;
-}
 
 const statusLabels: Record<ArmyTurnStatus, string> = {
   Draft: "Draft",
@@ -150,8 +139,9 @@ function ArmyTurnOrders({
   const online = useOnline();
   const draft = turn.status === "Draft";
   const review = reviewOf(turn);
-  const orderOf = (unitId: string) => turn.orders.find((o) => o.unitId === unitId);
-  const missing = units.filter((u) => u.placed && !orderOf(u.unit.id)).length;
+  const missing = units.filter(
+    (u) => u.placed && !turn.orders.some((o) => o.unitId === u.unit.id),
+  ).length;
 
   return (
     <Stack gap="xs">
@@ -176,104 +166,17 @@ function ArmyTurnOrders({
           </Text>
         </Alert>
       )}
-      <FormationList
-        items={units}
-        unitOf={(u) => u.unit}
-        label={`${army.name}'s orders`}
-        progress={(group) => {
-          // Units not on the map yet can't have orders, and don't hold up Submit.
-          const onMap = group.filter((u) => u.placed);
-          const ordered = onMap.filter((u) => orderOf(u.unit.id)).length;
-          return onMap.length === 0
-            ? "None on the map yet"
-            : `${String(ordered)} of ${String(onMap.length)} ordered`;
-        }}
-        // While giving orders, a group with every unit on the map ordered starts folded; once
-        // submitted, every group is open, to read the orders.
-        complete={(group) =>
-          draft &&
-          group.every((u) => u.placed) &&
-          group.every((u) => orderOf(u.unit.id) !== undefined)
-        }
-        {...formationActions({
-          picked: pickedOut,
-          onPickOut,
-          unitIdOf: (u: CommandedUnit) => u.unit.id,
-          // While giving orders: the units on the map in it without one.
-          holdTheRest: (name, group) => {
-            const rest = group.filter((u) => u.placed && !orderOf(u.unit.id));
-            return draft && rest.length > 0
-              ? {
-                  count: rest.length,
-                  disabled: !online || orders.busy,
-                  onHold: () =>
-                    void orders.holdTheRest(
-                      army.id,
-                      turn.id,
-                      rest.map((u) => u.unit.id),
-                      name,
-                    ),
-                }
-              : undefined;
-          },
-        })}
-        renderItem={({ unit, placed }) => {
-          const order = orderOf(unit.id);
-          const note = review?.unitNotes.find((n) => n.unitId === unit.id);
-          return (
-            <Group justify="space-between" wrap="nowrap" gap="xs">
-              <Group gap="xs" wrap="nowrap" miw={0}>
-                <UnitSymbol
-                  type={unit.type}
-                  commanderInChief={unit.isCommanderInChief}
-                  color={armyColorVar(army.color)}
-                  width={26}
-                />
-                <div style={{ minWidth: 0 }}>
-                  <Group gap={6} wrap="nowrap">
-                    {placed && draft ? (
-                      <Button
-                        variant="transparent"
-                        size="compact-sm"
-                        px={0}
-                        onClick={() => {
-                          onChoose(placed);
-                        }}
-                      >
-                        {unit.name}
-                      </Button>
-                    ) : (
-                      <Text size="sm" truncate>
-                        {unit.name}
-                      </Text>
-                    )}
-                    {unit.isCommanderInChief && <CommanderInChiefBadge />}
-                  </Group>
-                  <Text size="xs" c="dimmed">
-                    {describeOrder(order, placed, night)}
-                    {order?.byUmpire && " · set by the Umpire"}
-                  </Text>
-                  {note && (
-                    <Text size="xs" fw={500}>
-                      Umpire: {note.text}
-                    </Text>
-                  )}
-                </div>
-              </Group>
-              {draft && order && (
-                <ActionIcon
-                  variant="subtle"
-                  color="gray"
-                  aria-label={`Undo ${unit.name}'s order`}
-                  disabled={!online || orders.busy}
-                  onClick={() => void orders.undo(army.id, turn.id, unit)}
-                >
-                  <IconArrowBackUp size={18} aria-hidden />
-                </ActionIcon>
-              )}
-            </Group>
-          );
-        }}
+      <ArmyOrdersList
+        army={army}
+        turn={turn}
+        units={units}
+        orders={orders}
+        editable={draft}
+        night={night}
+        onChoose={onChoose}
+        pickedOut={pickedOut}
+        onPickOut={onPickOut}
+        notes={review?.unitNotes}
       />
       {draft ? (
         <>
