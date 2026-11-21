@@ -3164,9 +3164,12 @@ build on positions.
       "sent" reports leave these out; `ReportResponse.fromUmpire`. The Intelligence panel shows
       "From the Umpire"; `SnapshotMarkers` draws each entry in its own army's colour, and one whose
       army has been deleted in grey.
-    - **70b. In the app:** an Umpire-only "Send intelligence" (army page and turn panel): the
-      recipient, units grouped by army and side with checkboxes, the other side's prefilled as
-      sightings to shape (`SightingsFields`), and a note.
+    - ✅ **70b. In the app:** an Umpire-only "Send intelligence" once under way (the army page's
+      actions, for that army, and the Umpire's turn panel; `SendIntelligenceButton`): in
+      `SendIntelligenceModal`, the recipient, the units of its side (but its own) and of the other
+      side grouped by army with checkboxes (an army's at once), where they stood as the open turn
+      started (`umpire-intel.ts`); the other side's chosen ones become one sighting per hex to
+      shape (`SightingsFields`, adding none by hand), and a note.
     - **70c. End to end:** `intelligence.spec.ts` sends one with an ally's position and an enemy
       sighting, and the recipient sees both.
 71. **A Player commands several armies** (decision 0036): the Umpire can give one Player more

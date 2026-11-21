@@ -30,6 +30,7 @@ import { ArmyBadge } from "@/features/armies/identity/ArmyBadge";
 import { sideOptions } from "@/features/sides/side-options";
 import { useSession } from "@/features/auth/session-context";
 import { UnitsSection } from "@/features/units/UnitsSection";
+import { SendIntelligenceButton } from "@/features/maps/SendIntelligenceButton";
 import { canManage } from "@/features/campaigns/campaign-access";
 import { useOnline } from "@/lib/use-online";
 import { refreshCampaign } from "@/features/campaigns/campaign-cache";
@@ -55,7 +56,15 @@ export function ArmyPage({ campaignId, armyId }: { campaignId: string; armyId: s
         </BackLink>
       }
       summary={details && <ArmySummaryLine army={details} />}
-      actions={details && manager && <EditArmyButton army={details} />}
+      actions={
+        details &&
+        manager && (
+          <Group gap="xs">
+            <SendIntelligenceButton campaignId={campaignId} to={details.id} />
+            <EditArmyButton army={details} />
+          </Group>
+        )
+      }
     >
       <QueryState query={army}>
         {(loaded) => <ArmyDetails army={loaded} manager={manager} />}

@@ -161,7 +161,9 @@ The pre-commit hook runs `eslint --fix` and Prettier on staged files.
   `SendReportModal`, a received one's units `SnapshotMarkers`; the Umpire's couriers are
   `CouriersPanel` (on their way, and the history), worded by `couriers.ts`, cancelled with a note
   in `CancelCourierModal` (step 68, decision 0033), and drawn on the Umpire's map of the open
-  turn by `CourierMarkers` (a popover with the details and Cancel).
+  turn by `CourierMarkers` (a popover with the details and Cancel). The Umpire's own reports
+  (step 70, decision 0035) are `SendIntelligenceModal` (its units by army, `umpire-intel.ts`;
+  sightings shaped in `SightingsFields`), opened by `SendIntelligenceButton`.
 - Towns and victory points (step 50, decision 0021): a settlement's value is `victory.ts`
   (`settlementValue`, by the campaign's mode, mirroring the API's `HexSettlement.ValueIn`; the
   mode is `VictorySection` on the edit page); the scoreboard is the API's,

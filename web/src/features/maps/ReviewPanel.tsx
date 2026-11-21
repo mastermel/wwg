@@ -17,6 +17,7 @@ import { FormationList } from "@/features/maps/FormationList";
 import { HexWarningsList } from "@/features/maps/HexWarningsList";
 import type { TerrainIndex } from "@/features/maps/terrain";
 import { ReviewModal } from "@/features/maps/ReviewModal";
+import { SendIntelligenceButton } from "@/features/maps/SendIntelligenceButton";
 import { StartTurnModal } from "@/features/maps/StartTurnModal";
 import { UnitPlacementRow } from "@/features/maps/UnitPlacementRow";
 import type { PickedOut } from "@/features/maps/pick-out";
@@ -174,6 +175,7 @@ export function ReviewPanel({
             </List>
           </Alert>
         )}
+        <SendIntelligenceButton campaignId={campaignId} />
         <Button
           leftSection={<IconPlayerTrackNext size={16} aria-hidden />}
           disabled={!online || problems.length > 0}

@@ -48,13 +48,31 @@ interface SightingsFieldsProps {
   armies: readonly ArmySummary[];
   /** Where the units will be, for the hexes a sighting can be added for. */
   places: readonly UnitInHex[];
+  /** Whether the Umpire can add a sighting the app didn't find (the start-turn dialog's). */
+  canAdd?: boolean;
+  /** What the list is, under its heading. */
+  intro?: string;
+  /** What's said when there's none. */
+  empty?: string;
+  /** Each sighting's name. */
+  labelOf?: (entry: SightingEntry, armyName: string) => string;
 }
 
 /**
  * The start-turn dialog's sightings (step 49b, decision 0020): each army's sight of the other
- * side's hexes, prefilled, for the Umpire to change, leave out or add to.
+ * side's hexes, prefilled, for the Umpire to change, leave out or add to. Also the Umpire's report's
+ * (step 70b, decision 0035), which adds none by hand.
  */
-export function SightingsFields({ entries, onChange, armies, places }: SightingsFieldsProps) {
+export function SightingsFields({
+  entries,
+  onChange,
+  armies,
+  places,
+  canAdd = true,
+  intro = "What each army sees of the other side as the next turn starts: choose what it learns, or leave one out.",
+  empty = "No army has the other side in sight.",
+  labelOf = (entry, armyName) => `${armyName} sees ${hexName(entry)}`,
+}: SightingsFieldsProps) {
   const [adding, setAdding] = useState<{ armyId: string | null; hex: string | null } | null>(null);
   const change = (index: number, changes: Partial<SightingEntry>) => {
     onChange(entries.map((e, i) => (i === index ? { ...e, ...changes } : e)));
@@ -120,16 +138,15 @@ export function SightingsFields({ entries, onChange, armies, places }: Sightings
         Sightings
       </Text>
       <Text size="xs" c="dimmed">
-        What each army sees of the other side as the next turn starts: choose what it learns, or
-        leave one out.
+        {intro}
       </Text>
       {entries.length === 0 && (
         <Text size="sm" c="dimmed">
-          No army has the other side in sight.
+          {empty}
         </Text>
       )}
       {entries.map((entry, index) => {
-        const label = `${armyName(entry.observingArmyId)} sees ${hexName(entry)}`;
+        const label = labelOf(entry, armyName(entry.observingArmyId));
         return (
           <Stack
             key={`${entry.observingArmyId}-${hexKey(entry)}`}
@@ -257,7 +274,7 @@ export function SightingsFields({ entries, onChange, armies, places }: Sightings
           </Stack>
         );
       })}
-      {adding ? (
+      {!canAdd ? null : adding ? (
         <Stack gap="xs">
           <Select
             size="xs"
