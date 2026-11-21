@@ -31,6 +31,6 @@ The club's campaigns need that one marked, for everyone to see.
 ## Consequences
 
 - New: a column and a partial unique index on `ArmyUnits` (no table rebuild), and the endpoint.
-- Nothing in the rules treats the C-in-C differently yet (where couriers ride from, say); later,
-  if wanted.
+- Nothing in the rules treated the C-in-C differently at first; decision 0033 then made couriers
+  ride from C-in-C to C-in-C.
 - A sighting or a courier's report copies units in as they were, without the flag.

@@ -3039,7 +3039,7 @@ build on positions.
     by hex), and the supply warnings (a few units, by what's wrong). The Umpire's "Hold the
     rest" (64c) still has no menu: no panel lists units for the Umpire during a turn, and
     holding unit by unit from the drawer will do for now (deferred, 2026-11-20).
-66. **Moving a hex's units together** (decision 0031): when the hex drawer lists two or more of
+66. ✅ **Moving a hex's units together** (decision 0031): when the hex drawer lists two or more of
     one army's units without orders this turn, its commander (or the Umpire) can **Move all**: one
     move for all of them, each unit still with its own order.
     - Only one army's units: allies in the hex are their own armies' to move. Units with an
