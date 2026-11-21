@@ -3170,14 +3170,15 @@ build on positions.
       army of the other side, or changing an army's side (`UpdateArmyAsync`) while its commander
       commands one of the other side, is a 409 naming that army. `CampaignMemberResponse.army`
       becomes `armies` (by name). A report to an army with the sender's commander is a 400
-      (`RecipientProblemAsync`). The members list shows a badge per army; the commander picker
-      still offers only Players without one until 71c.
+      (`RecipientProblemAsync`). The members list shows a badge per army.
     - ✅ **71b. Emails:** `TurnStartedEmails` sends one email per commander: the turn and its day,
       then each army's news under its name (`TurnNews.None` for an army with nothing new).
-    - **71c. In the app:** `MembersSection` shows a badge per army; `commanderOptions` offers
-      every Player, greying out those who command an army of the other side and saying why;
-      `SendReportModal` greys out the Player's own armies ("yours"); check the turn panel,
-      legend and army page for wording and layout that assume one army.
+    - ✅ **71c. In the app:** `MembersSection` shows a badge per army; `commanderOptions`
+      (`army-access.ts`) offers every Player for the army's side (the new-army form's as chosen),
+      saying which armies they command, and greys out one commanding an army of the other side,
+      saying which; `SendReportModal` greys out an army of the same commander ("yours too", or
+      "the same commander" for the Umpire); a commander's `TurnList` names each army's status when
+      they have several. The turn panel already listed each commanded army with its own Submit.
     - **71d. End to end:** `armies.spec.ts` gives a Player a second army of their side, and is
       refused one of the other side; `turns.spec.ts` (or `intelligence.spec.ts`) has the Player
       submit both armies' turns.

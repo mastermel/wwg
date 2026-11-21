@@ -1422,6 +1422,7 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
       viewing={past ?? turns.data.openTurn}
       onView={view}
       manager={manager}
+      armyNames={new Map((armies.data ?? []).map((a) => [a.id, a.name]))}
     />
   );
   const legend = (

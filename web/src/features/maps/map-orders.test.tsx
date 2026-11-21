@@ -867,12 +867,18 @@ describe("a commander's turn", () => {
     isCommanderInChief: true,
   });
   /** The commander's army and an ally, each with a Commander in Chief if given. */
-  const serveAlly = (chiefs: { ours: boolean; theirs: boolean }) => {
+  const serveAlly = (chiefs: { ours: boolean; theirs: boolean }, ourOwn = false) => {
     server.use(
       http.get(`*/api/campaigns/${campaignId}/armies`, () =>
         HttpResponse.json([
           army,
-          { ...army, id: allyId, name: "Grouchy's Wing", commander: null, color: "Green" },
+          {
+            ...army,
+            id: allyId,
+            name: "Grouchy's Wing",
+            commander: ourOwn ? army.commander : null,
+            color: "Green",
+          },
         ]),
       ),
       http.get(`*/api/campaigns/${campaignId}/units`, () =>
@@ -905,6 +911,23 @@ describe("a commander's turn", () => {
 
     expect(
       screen.getByRole("option", { name: "Grouchy's Wing (no Commander in Chief)", hidden: true }),
+    ).toHaveAttribute("data-combobox-disabled", "true");
+    expect(within(dialog).getByRole("button", { name: "Send by courier" })).toBeDisabled();
+  });
+
+  it("won't send a report to another army of the same commander", async () => {
+    serveCommander(draft());
+    serveAlly({ ours: true, theirs: true }, true);
+    const user = userEvent.setup();
+    await openMap();
+
+    await user.click(await screen.findByRole("button", { name: "Send a report" }));
+    const dialog = await screen.findByRole("dialog", { name: "Send a report" });
+    await user.click(within(dialog).getByRole("combobox", { name: "To" }));
+
+    // Decision 0036: one Player's armies know what each other knows.
+    expect(
+      screen.getByRole("option", { name: "Grouchy's Wing (yours too)", hidden: true }),
     ).toHaveAttribute("data-combobox-disabled", "true");
     expect(within(dialog).getByRole("button", { name: "Send by courier" })).toBeDisabled();
   });

@@ -134,7 +134,7 @@ export function ArmiesSection({ campaign }: { campaign: CampaignResponse }) {
             nation: "None",
             factionIds: [],
           }}
-          commanders={commanderOptions(members.data ?? [])}
+          commanders={(sideId) => commanderOptions(members.data ?? [], armies.data ?? [], sideId)}
           sides={sideOptions(sides.data)}
           onClose={close}
           onSubmit={async (values) => {

@@ -21,13 +21,28 @@ interface TurnListProps {
   manager: boolean;
   /** The turns with enemy sightings the viewer may see (step 49b), marked with an eye. */
   sighted?: ReadonlySet<number>;
+  /** The armies' names by id: a commander of several sees each one's status by name (0036). */
+  armyNames?: ReadonlyMap<string, string>;
 }
+
+/** A commander's status for the turn: "Draft", or by army when they have several. */
+const ownProgress = (
+  armyTurns: CampaignTurnsResponse["turns"][number]["armyTurns"],
+  names?: ReadonlyMap<string, string>,
+) =>
+  armyTurns
+    .map((a) =>
+      armyTurns.length > 1
+        ? `${names?.get(a.armyId) ?? "An army"}: ${statusLabels[a.status]}`
+        : statusLabels[a.status],
+    )
+    .join(", ") || "—";
 
 /**
  * The campaign's turns, newest first (DESIGN.md §3.13): choosing one shows the units where they
  * were after it. The arrow keys step through them: up and right to newer, down and left to older.
  */
-export function TurnList({ turns, viewing, onView, manager, sighted }: TurnListProps) {
+export function TurnList({ turns, viewing, onView, manager, sighted, armyNames }: TurnListProps) {
   const buttons = useRef(new Map<number, HTMLButtonElement>());
   const newestFirst = [...turns.turns].reverse();
 
@@ -50,7 +65,7 @@ export function TurnList({ turns, viewing, onView, manager, sighted }: TurnListP
               ? "Setup"
               : manager
                 ? `${String(turn.submitted)} of ${String(turn.armies)} submitted`
-                : turn.armyTurns.map((a) => statusLabels[a.status]).join(", ") || "—";
+                : ownProgress(turn.armyTurns, armyNames);
           // When it fell, first: "17 June 1815, Afternoon · 2 of 3 submitted".
           const detail = [turnWhen(turn), progress].filter(Boolean).join(" · ");
           return (

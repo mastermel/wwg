@@ -7,6 +7,7 @@ import {
   useSendReport,
 } from "@/api/generated/endpoints/intelligence/intelligence";
 import type { ArmySummary } from "@/api/generated/model";
+import { useSession } from "@/features/auth/session-context";
 import { errorMessage } from "@/lib/errors";
 import { useOnline } from "@/lib/use-online";
 
@@ -35,12 +36,24 @@ export function SendReportModal({
   onClose,
 }: SendReportModalProps) {
   const online = useOnline();
+  const { user } = useSession();
   const queryClient = useQueryClient();
   const send = useSendReport();
   const [fromId, setFromId] = useState(from[0]?.id ?? "");
   const sender = armies.find((a) => a.id === fromId);
   const allies = armies.filter((a) => a.side.id === sender?.side.id && a.id !== sender.id);
-  const [toId, setToId] = useState<string | null>(allies.find((a) => chiefs.has(a.id))?.id ?? null);
+  // One commander's armies already know what each other knows (decision 0036): no couriers.
+  const sameCommander = (army: ArmySummary) =>
+    !!army.commander && army.commander.memberId === sender?.commander?.memberId;
+  const why = (army: ArmySummary) =>
+    sameCommander(army)
+      ? army.commander?.userId === user?.id
+        ? "yours too"
+        : "the same commander"
+      : chiefs.has(army.id)
+        ? null
+        : "no Commander in Chief";
+  const [toId, setToId] = useState<string | null>(allies.find((a) => !why(a))?.id ?? null);
   const noChief = !chiefs.has(fromId);
   const [snapshot, setSnapshot] = useState(false);
   const [sightings, setSightings] = useState(false);
@@ -114,11 +127,12 @@ export function SendReportModal({
             <Select
               label="To"
               description="A courier rides it from your Commander in Chief to theirs: it takes a turn or more."
-              data={allies.map((a) =>
-                chiefs.has(a.id)
-                  ? { value: a.id, label: a.name }
-                  : { value: a.id, label: `${a.name} (no Commander in Chief)`, disabled: true },
-              )}
+              data={allies.map((a) => {
+                const reason = why(a);
+                return reason
+                  ? { value: a.id, label: `${a.name} (${reason})`, disabled: true }
+                  : { value: a.id, label: a.name };
+              })}
               value={toId}
               allowDeselect={false}
               onChange={setToId}

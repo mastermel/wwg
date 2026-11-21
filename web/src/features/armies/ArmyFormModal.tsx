@@ -21,6 +21,7 @@ import { NationFlag } from "@/features/armies/identity/NationFlag";
 import { nationOptions } from "@/features/armies/identity/nations";
 import { applyServerErrors } from "@/lib/form-errors";
 import { useOnline } from "@/lib/use-online";
+import type { CommanderOption } from "@/features/armies/army-access";
 
 // Everything an army is; the commander only when it's created (the army page changes it). The
 // form always sends its factions (the API also takes null, for "leave them").
@@ -42,8 +43,10 @@ interface ArmyFormModalProps {
   title: string;
   submitLabel: string;
   defaultValues: ArmyValues;
-  /** Offer a commander to choose (creating an army); editing leaves this out. */
-  commanders?: { value: string; label: string }[];
+  /**
+   * Offer a commander to choose (creating an army), for the side chosen; editing leaves this out.
+   */
+  commanders?: (sideId: string) => CommanderOption[];
   /** The campaign's sides, to put the army on one. */
   sides: { value: string; label: string }[];
   onSubmit: (values: ArmyValues) => Promise<void>;
@@ -69,6 +72,8 @@ export function ArmyFormModal({
   const form = useForm<ArmyValues>({ resolver: zodResolver(ArmyForm), defaultValues });
   const { errors, isSubmitting } = form.formState;
   const color = useWatch({ control: form.control, name: "color" });
+  const sideId = useWatch({ control: form.control, name: "sideId" });
+  const players = commanders?.(sideId);
   // A Manager may have added one since: the library is fetched afresh each time the form opens.
   const factions = useListFactions({ query: { refetchOnMount: "always" } });
 
@@ -107,20 +112,20 @@ export function ArmyFormModal({
             error={errors.name?.message}
             {...form.register("name", { setValueAs: (value: string) => value.trim() })}
           />
-          {commanders && (
+          {players && (
             <Controller
               control={form.control}
               name="commanderMemberId"
               render={({ field }) => (
                 <Select
                   label="Commander"
-                  description="Optional. Players who don't command an army yet."
-                  placeholder={commanders.length ? "Unassigned" : "No Players are free"}
-                  data={commanders}
+                  description="Optional. A Player's armies are all on one side."
+                  placeholder={players.length ? "Unassigned" : "No Players yet"}
+                  data={players}
                   value={field.value}
                   onChange={field.onChange}
                   clearable
-                  disabled={commanders.length === 0}
+                  disabled={players.length === 0}
                   error={errors.commanderMemberId?.message}
                   comboboxProps={{ withinPortal: false }}
                 />

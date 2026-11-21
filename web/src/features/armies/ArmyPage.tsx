@@ -9,6 +9,7 @@ import {
   useAssignCommander,
   useDeleteArmy,
   useGetArmy,
+  useListArmies,
   useUpdateArmy,
   useUnassignCommander,
 } from "@/api/generated/endpoints/armies/armies";
@@ -120,6 +121,7 @@ function CommanderControl({ army }: { army: ArmyResponse }) {
   const online = useOnline();
   const queryClient = useQueryClient();
   const members = useListCampaignMembers(army.campaignId);
+  const armies = useListArmies(army.campaignId);
   const assign = useAssignCommander();
   const unassign = useUnassignCommander();
 
@@ -156,12 +158,12 @@ function CommanderControl({ army }: { army: ArmyResponse }) {
     }
   };
 
-  const options = commanderOptions(members.data ?? [], army.id);
+  const options = commanderOptions(members.data ?? [], armies.data ?? [], army.side.id, army.id);
   return (
     <Stack gap="sm" align="flex-start">
       <Select
         label={army.commander ? "Change commander" : "Choose a commander"}
-        placeholder={options.length ? "Choose a Player" : "No Players are free"}
+        placeholder={options.length ? "Choose a Player" : "No Players yet"}
         data={options}
         value={army.commander?.memberId ?? null}
         onChange={(value) => void choose(value)}

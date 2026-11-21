@@ -23,7 +23,7 @@ const groups: {
       {
         kind: "TurnStarted",
         label: "A new turn",
-        description: "When you can give orders again, with what's new for your army.",
+        description: "When you can give orders again, with what's new for each army you command.",
       },
       {
         kind: "TurnReviewed",

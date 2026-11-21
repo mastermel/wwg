@@ -150,8 +150,13 @@ describe("armies on the campaign page", () => {
     const dialog = await screen.findByRole("dialog");
     await user.type(within(dialog).getByRole("textbox", { name: "Name" }), " Second Corps ");
     await user.click(within(dialog).getByRole("combobox", { name: "Commander" }));
-    // Only Players without an army are offered.
-    expect(within(dialog).queryByRole("option", { name: "Mel Green", hidden: true })).toBeNull();
+    // A Player with an army of the same side can have another (decision 0036).
+    expect(
+      within(dialog).getByRole("option", {
+        name: "Mel Green (commands First Corps)",
+        hidden: true,
+      }),
+    ).toBeEnabled();
     await user.click(
       await within(dialog).findByRole("option", { name: "Arthur Wellesley", hidden: true }),
     );
@@ -177,7 +182,11 @@ describe("armies on the campaign page", () => {
     server.use(
       http.post(`*/api/campaigns/${campaignId}/armies`, () =>
         HttpResponse.json(
-          { status: 409, title: "Already a commander", detail: "That Player already commands X." },
+          {
+            status: 409,
+            title: "Commands the other side",
+            detail: "That Player commands X, of the other side.",
+          },
           { status: 409, headers: { "Content-Type": "application/problem+json" } },
         ),
       ),
@@ -191,8 +200,33 @@ describe("armies on the campaign page", () => {
     await user.click(within(dialog).getByRole("button", { name: "Add army" }));
 
     expect(await within(dialog).findByRole("alert")).toHaveTextContent(
-      "That Player already commands X.",
+      "That Player commands X, of the other side.",
     );
+  });
+
+  it("greys out a Player who commands an army of the other side", async () => {
+    serveCampaign("Umpire");
+    server.use(http.get(`*/api/campaigns/${campaignId}/sides`, () => HttpResponse.json(sides)));
+    const user = userEvent.setup();
+    await renderApp(`/campaigns/${campaignId}`);
+
+    await user.click(await screen.findByRole("button", { name: "New army" }));
+    const dialog = await screen.findByRole("dialog");
+    await user.click(within(dialog).getByRole("combobox", { name: "Side" }));
+    await user.click(
+      await within(dialog).findByRole("option", { name: "French Empire", hidden: true }),
+    );
+    await user.click(within(dialog).getByRole("combobox", { name: "Commander" }));
+
+    expect(
+      await within(dialog).findByRole("option", {
+        name: "Mel Green (commands First Corps, of the other side)",
+        hidden: true,
+      }),
+    ).toHaveAttribute("data-combobox-disabled", "true");
+    expect(
+      within(dialog).getByRole("option", { name: "Arthur Wellesley", hidden: true }),
+    ).toBeEnabled();
   });
 });
 
