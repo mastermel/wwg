@@ -73,8 +73,8 @@ internal static class MemberEndpoints
     }
 
     /// <summary>
-    /// The campaign's members, with the army each Player commands: the Umpire first, then Players
-    /// by name.
+    /// The campaign's members, with the armies each Player commands (by name): the Umpire first,
+    /// then Players by name.
     /// </summary>
     internal static async Task<Ok<List<CampaignMemberResponse>>> ListMembersAsync(
         Guid id,
@@ -89,19 +89,43 @@ internal static class MemberEndpoints
             .ThenBy(m => m.User.LastName)
             .ThenBy(m => m.User.FirstName)
             .ThenBy(m => m.Id)
-            .Select(m => new CampaignMemberResponse(
+            .Select(m => new
+            {
                 m.Id,
                 m.UserId,
                 m.User.FirstName,
                 m.User.LastName,
                 m.Role,
                 m.CreatedAt,
-                db.Armies.Where(a => a.CommanderId == m.Id)
-                    .Select(a => new MemberArmy(a.Id, a.Name, a.Color, a.Nation))
-                    .FirstOrDefault()
-            ))
+            })
             .ToListAsync(cancellationToken);
-        return TypedResults.Ok(members);
+        // A list per member would need SQL APPLY, which SQLite lacks: the armies come flat.
+        var armies = (
+            await db
+                .Armies.AsNoTracking()
+                .Where(a => a.CampaignId == id && a.CommanderId != null)
+                .OrderBy(a => a.Name)
+                .ThenBy(a => a.Id)
+                .Select(a => new
+                {
+                    a.CommanderId,
+                    Army = new MemberArmy(a.Id, a.Name, a.Color, a.Nation),
+                })
+                .ToListAsync(cancellationToken)
+        ).ToLookup(a => a.CommanderId, a => a.Army);
+        return TypedResults.Ok(
+            members
+                .Select(m => new CampaignMemberResponse(
+                    m.Id,
+                    m.UserId,
+                    m.FirstName,
+                    m.LastName,
+                    m.Role,
+                    m.CreatedAt,
+                    [.. armies[m.Id]]
+                ))
+                .ToList()
+        );
     }
 
     /// <summary>

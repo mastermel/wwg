@@ -510,6 +510,27 @@ public sealed class IntelTests : ApiTest
         await sent.AssertValidationProblemAsync("toArmyId");
     }
 
+    [Theory]
+    [InlineData(Role.Commander)]
+    [InlineData(Role.Umpire)]
+    public async Task SendReport_ToAnotherArmyOfTheSameCommander_IsAValidationError(Role role)
+    {
+        var (scenario, ally) = await StartedAsync(new Hex(1, 0));
+        using var _ = scenario;
+        using var given = await scenario
+            .As(Role.Umpire)
+            .PutAsJsonAsync(
+                new Uri($"/api/armies/{ally}/commander", UriKind.Relative),
+                new AssignCommanderRequest(scenario.CommanderMemberId),
+                Token
+            );
+        given.EnsureSuccessStatusCode();
+
+        using var sent = await SendAsync(scenario, Everything(ally), role);
+
+        await sent.AssertValidationProblemAsync("toArmyId");
+    }
+
     [Fact]
     public async Task SendReport_WithNothingInIt_IsAValidationError()
     {

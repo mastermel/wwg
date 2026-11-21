@@ -70,7 +70,7 @@ public sealed record JoinCodeResponse(string JoinCode);
 /// <param name="LastName">Last name.</param>
 /// <param name="Role">Their role in the campaign.</param>
 /// <param name="JoinedAt">When they joined (UTC).</param>
-/// <param name="Army">The army they command, or null.</param>
+/// <param name="Armies">The armies they command, by name (none for most; decision 0036).</param>
 public sealed record CampaignMemberResponse(
     Guid Id,
     Guid UserId,
@@ -78,7 +78,7 @@ public sealed record CampaignMemberResponse(
     string LastName,
     CampaignRole Role,
     DateTime JoinedAt,
-    MemberArmy? Army
+    IReadOnlyList<MemberArmy> Armies
 );
 
 /// <summary>The army a member commands.</summary>

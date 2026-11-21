@@ -939,7 +939,7 @@
         "tags": [
           "Intelligence"
         ],
-        "summary": "Sends an ally a report (the army's commander, or the Umpire on its behalf): any of a\nsnapshot of the army's units, every sighting it has received so far, and a note. A courier\nsets out from the army's Commander in Chief for the ally's (both armies need one); within\ntwo turns' ride, it arrives as the next turn starts.",
+        "summary": "Sends an ally a report (the army's commander, or the Umpire on its behalf): any of a\nsnapshot of the army's units, every sighting it has received so far, and a note. A courier\nsets out from the army's Commander in Chief for the ally's (both armies need one); within\ntwo turns' ride, it arrives as the next turn starts. Not to an army with the same commander\n(decision 0036).",
         "operationId": "SendReport",
         "parameters": [
           {
@@ -2639,7 +2639,7 @@
         "tags": [
           "Campaigns"
         ],
-        "summary": "The campaign's members, with the army each Player commands: the Umpire first, then Players\nby name.",
+        "summary": "The campaign's members, with the armies each Player commands (by name): the Umpire first,\nthen Players by name.",
         "operationId": "ListCampaignMembers",
         "parameters": [
           {
@@ -3080,7 +3080,7 @@
         "tags": [
           "Armies"
         ],
-        "summary": "Changes an army's name, side, colour, nation and factions (Umpire or Admin). A faction the\narmy has units from can't be dropped (409).",
+        "summary": "Changes an army's name, side, colour, nation and factions (Umpire or Admin). A faction the\narmy has units from can't be dropped (409), nor the side changed while its commander\ncommands an army of the new side's enemy (409; decision 0036).",
         "operationId": "UpdateArmy",
         "parameters": [
           {
@@ -3175,7 +3175,7 @@
         "tags": [
           "Armies"
         ],
-        "summary": "Makes a Player the army's commander, replacing any other (Umpire or Admin), and emails them\n(decision 0023). A Player commands at most one army: 409 if they already command another.",
+        "summary": "Makes a Player the army's commander, replacing any other (Umpire or Admin), and emails them\n(decision 0023). A Player's armies are all on one side (decision 0036): 409 if they command\none of the other side.",
         "operationId": "AssignCommander",
         "parameters": [
           {
@@ -6715,7 +6715,7 @@
           "lastName",
           "role",
           "joinedAt",
-          "army"
+          "armies"
         ],
         "type": "object",
         "properties": {
@@ -6746,16 +6746,12 @@
             "description": "When they joined (UTC).",
             "format": "date-time"
           },
-          "army": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "description": "The army they command, or null.",
-                "$ref": "#/components/schemas/MemberArmy"
-              }
-            ]
+          "armies": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MemberArmy"
+            },
+            "description": "The armies they command, by name (none for most; decision 0036)."
           }
         },
         "description": "A member of a campaign."

@@ -115,6 +115,38 @@ public sealed class ConcurrencyTests : ApiTest
     }
 
     [Fact]
+    public async Task AssignCommander_OtherArmyMovedToTheOtherSideBeforeTheSave_Returns409()
+    {
+        using var scenario = await CreateCampaignScenarioAsync();
+        using var created = await scenario
+            .As(Role.Umpire)
+            .PostAsJsonAsync(
+                new Uri($"/api/campaigns/{scenario.CampaignId}/armies", UriKind.Relative),
+                new CreateArmyRequest("Second Corps", null, scenario.SideId),
+                CancellationToken
+            );
+        var second = await created.Content.ReadAsAsync<ArmyResponse>();
+        // What changing First Corps's side does meanwhile, past the handler's check.
+        _interceptor.BeforeNext(
+            sql => sql.StartsWith("UPDATE \"Armies\"", StringComparison.Ordinal),
+            $"""
+            UPDATE "Armies" SET "SideId" = '{Sql(scenario.OtherSideId)}'
+            WHERE "Id" = '{Sql(scenario.ArmyId)}';
+            """
+        );
+
+        using var response = await scenario
+            .As(Role.Umpire)
+            .PutAsJsonAsync(
+                new Uri($"/api/armies/{second!.Id}/commander", UriKind.Relative),
+                new AssignCommanderRequest(scenario.CommanderMemberId),
+                CancellationToken
+            );
+
+        await response.AssertProblemAsync(HttpStatusCode.Conflict);
+    }
+
+    [Fact]
     public async Task UpdateMe_UserChangedBeforeTheSave_Returns409()
     {
         using var client = await CreateUserClientAsync("mel@example.com");

@@ -25,7 +25,7 @@ const me: CampaignMemberResponse = {
   lastName: "Green",
   role: "Player",
   joinedAt: "2026-09-01T12:00:00Z",
-  army: { id: armyId, name: "First Corps", color: "Red", nation: "None" },
+  armies: [{ id: armyId, name: "First Corps", color: "Red", nation: "None" }],
 };
 
 const arthur: CampaignMemberResponse = {
@@ -35,7 +35,7 @@ const arthur: CampaignMemberResponse = {
   lastName: "Wellesley",
   role: "Player",
   joinedAt: "2026-09-02T12:00:00Z",
-  army: null,
+  armies: [],
 };
 
 const commander = (member: CampaignMemberResponse) => ({

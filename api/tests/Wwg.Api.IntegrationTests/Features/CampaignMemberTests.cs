@@ -22,11 +22,11 @@ public sealed class CampaignMemberTests : ApiTest
         // The Players have the same name, so they're in the order they joined (their IDs).
         Assert.Equal(
             [
-                (scenario.UmpireMemberId, CampaignRole.Umpire, null),
+                (scenario.UmpireMemberId, CampaignRole.Umpire, ""),
                 (scenario.CommanderMemberId, CampaignRole.Player, "First Corps"),
-                (scenario.PlayerMemberId, CampaignRole.Player, null),
+                (scenario.PlayerMemberId, CampaignRole.Player, ""),
             ],
-            members?.Select(m => (m.Id, m.Role, m.Army?.Name))
+            members?.Select(m => (m.Id, m.Role, string.Join(", ", m.Armies.Select(a => a.Name))))
         );
         Assert.All(members!, m => Assert.Equal("Test", m.FirstName));
     }

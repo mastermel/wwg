@@ -35,6 +35,7 @@ public sealed class DatabaseTests : ApiTest
 
         Assert.Equal(
             "Armies_CommanderIsAPlayer_Insert, Armies_CommanderIsAPlayer_Update, "
+                + "Armies_CommanderOnOneSide_Insert, Armies_CommanderOnOneSide_Update, "
                 + "CampaignMembers_UmpireCommandsNoArmy",
             string.Join(", ", triggers.Order(StringComparer.Ordinal)),
             StringComparer.Ordinal

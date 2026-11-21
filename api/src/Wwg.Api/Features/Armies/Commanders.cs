@@ -40,27 +40,32 @@ internal static class Commanders
     }
 
     /// <summary>
-    /// 409 if the member already commands an army other than <paramref name="armyId"/>: a Player
-    /// commands one at most. Null otherwise. (The unique index on the commander is the final
-    /// guarantee if two requests race.)
+    /// 409 if the member commands an army other than <paramref name="armyId"/> that isn't on
+    /// <paramref name="sideId"/>: a Player's armies are all on one side (decision 0036). Null
+    /// otherwise. <paramref name="who"/> starts the message ("That Player", "Its commander"). (A
+    /// trigger is the final guarantee if two requests race.)
     /// </summary>
     public static async Task<ProblemHttpResult?> ConflictAsync(
         WwgDbContext db,
         Guid memberId,
         Guid? armyId,
+        Guid sideId,
+        string who,
         CancellationToken cancellationToken
     )
     {
-        var commanded = await db
-            .Armies.Where(a => a.CommanderId == memberId && a.Id != armyId)
+        var other = await db
+            .Armies.Where(a => a.CommanderId == memberId && a.Id != armyId && a.SideId != sideId)
+            .OrderBy(a => a.Name)
             .Select(a => a.Name)
             .FirstOrDefaultAsync(cancellationToken);
-        return commanded is null
+        return other is null
             ? null
             : TypedResults.Problem(
                 statusCode: StatusCodes.Status409Conflict,
-                title: "Already a commander",
-                detail: $"That Player already commands {commanded}. A Player commands one army at most."
+                title: "Commands the other side",
+                detail: $"{who} commands {other}, of the other side. "
+                    + "A Player's armies are all on one side."
             );
     }
 }

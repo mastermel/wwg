@@ -17,7 +17,7 @@ const umpire: CampaignMemberResponse = {
   lastName: "Admin",
   role: "Umpire",
   joinedAt: "2026-09-01T12:00:00Z",
-  army: null,
+  armies: [],
 };
 
 const player: CampaignMemberResponse = {
@@ -27,7 +27,7 @@ const player: CampaignMemberResponse = {
   lastName: "Wellesley",
   role: "Player",
   joinedAt: "2026-09-02T12:00:00Z",
-  army: null,
+  armies: [],
 };
 
 const me = (role: CampaignMemberResponse["role"]): CampaignMemberResponse => ({

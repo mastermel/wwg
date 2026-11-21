@@ -1852,9 +1852,8 @@ IntelReport (new fields)
 - **At most one Umpire per campaign**: a partial unique index on `CampaignId`
   where `Role = 'Umpire'`. A campaign can have *no* Umpire if the Umpire's
   account was deleted (see below).
-- A Player commands **at most one Army** per campaign: a unique index on
-  `Army.CommanderId` (SQLite allows many NULLs, so there can be many unassigned
-  armies).
+- A Player can command **several armies, all of one side** (step 71, decision 0036; before it,
+  at most one, a unique index on `Army.CommanderId`, now a plain one).
 - `Army.CommanderId` points at a **member**, not a user. That keeps the
   commander inside the same campaign.
 - **Triggers** back up the commander rules, which span two tables, so no index
@@ -1862,9 +1861,11 @@ IntelReport (new fields)
   - an army's commander must be a **Player in the army's campaign** (on insert,
     and on a change to `CommanderId` or `CampaignId`);
   - a member who commands an army **can't become the Umpire** (Set Umpire
-    unassigns the army first).
+    unassigns their armies first);
+  - a commander's armies are **all on one side** (on insert, and on a change to
+    `CommanderId` or `SideId`; migration `AllowSeveralArmiesPerPlayer`, step 71a).
 
-  The handlers check both first and give clear errors. The triggers only catch
+  The handlers check them first and give clear errors. The triggers only catch
   two requests racing (a Player made Umpire while being given an army), which
   gets a **409**. EF rebuilds a SQLite table for some migrations, which drops
   its triggers, so a test fails if they're missing.
@@ -2085,7 +2086,7 @@ asks for a new confirmation email (step 52b); confirming an email (`POST
 | DELETE | `/api/campaigns/{id}` | Delete campaign and everything in it |
 | GET | `/api/campaigns/{id}/join-code` | Current join code (Umpire) |
 | POST | `/api/campaigns/{id}/join-code` | Regenerate join code (Umpire) |
-| GET | `/api/campaigns/{id}/members` | Members with role and commanded army (id, name) |
+| GET | `/api/campaigns/{id}/members` | Members with role and the armies they command (`armies`: id, name, colour, nation; by name; step 71a) |
 | DELETE | `/api/campaigns/{id}/members/{memberId}` | Remove a Player (Umpire/Admin) |
 | DELETE | `/api/campaigns/{id}/members/me` | Leave the campaign (Players) |
 | GET | `/api/join/{code}` | **Anonymous** preview: campaign name, Umpire name |
@@ -2100,7 +2101,7 @@ asks for a new confirmation email (step 52b); confirming an email (`POST
 | GET | `/api/armies/{id}` | Army + commander + units (403 for other Players) |
 | PUT | `/api/armies/{id}` | Rename (name only) |
 | DELETE | `/api/armies/{id}` | Delete army and units |
-| PUT | `/api/armies/{id}/commander` | Assign commander `{ memberId }` |
+| PUT | `/api/armies/{id}/commander` | Assign commander `{ memberId }` (a Player commanding an army of the other side: 409; step 71a) |
 | DELETE | `/api/armies/{id}/commander` | Unassign commander |
 | POST | `/api/armies/{id}/units` | Add unit `{ name, type, fightingFactor, points }` |
 | PUT | `/api/units/{id}` | Edit unit (the same four fields) |
@@ -2148,7 +2149,7 @@ one, as a campaign is made with both)
 | GET / PUT / DELETE | `/api/factions/{id}` | A faction with its units / rename / delete (in use: 409) |
 | POST | `/api/factions/{id}/units` | Create a library unit `{ name, type, fightingFactor, points, division, brigade }` (the last two from step 54; null or empty: none) |
 | PUT / DELETE | `/api/units/{id}` | Edit / delete a library unit (in a campaign: 409) |
-| PUT | `/api/armies/{id}` | `UpdateArmy` gains `factionIds`: the library factions it takes units from |
+| PUT | `/api/armies/{id}` | `UpdateArmy` gains `factionIds`: the library factions it takes units from (step 71a: a new side while its commander commands an army of the other: 409) |
 | POST | `/api/armies/{id}/units` | Add library units `{ unitIds }` (from the army's factions; one already in the campaign: 409) |
 | PUT | `/api/admin/users/{id}/manager` | Make a user a Manager, or not `{ manager }` (Admins) |
 | PUT / DELETE | `/api/army-units/{id}` | Edit the campaign's copy / remove it from the army (setup only) |
@@ -2173,7 +2174,7 @@ one, as a campaign is made with both)
 | GET | `/api/campaigns/{id}/supply` | Each unit's supply as the open turn began and by its orders as given, and each intermediate depot's, as the viewer may see (step 48c) |
 | GET | `/api/campaigns/{id}/sightings/due` | The sightings the open turn's orders give, per observing army, possible screens flagged, for the Umpire to shape (step 49a); from step 56, a screened hex's hidden units apart (`screenedUnits`) |
 | GET | `/api/campaigns/{id}/sightings` | The sightings the viewer may see, every turn's, oldest first (step 49b) |
-| POST | `/api/armies/{id}/reports` | Send an ally a report `{ toArmyId, includesSnapshot, includesSightings, note }` (201; not an ally, or nothing to send: 400; not under way, or an army off the map: 409; from step 68, either army without a Commander in Chief: 409) (step 49c) |
+| POST | `/api/armies/{id}/reports` | Send an ally a report `{ toArmyId, includesSnapshot, includesSightings, note }` (201; not an ally, an army of the same commander (step 71a), or nothing to send: 400; not under way, or an army off the map: 409; from step 68, either army without a Commander in Chief: 409) (step 49c) |
 | GET | `/api/campaigns/{id}/reports` | The reports the viewer may see, newest first |
 | GET | `/api/campaigns/{id}/couriers` | The couriers on their way, flagged where the other side's units are in their hex; from step 68, every courier, newest first, with its status, both C-in-Cs, the turns still to ride, why it waits, and why it was cancelled |
 | POST | `/api/reports/{id}/stop` | Stop a courier (204; not on its way: 409); from step 68, cancel it `{ note }` (required, ≤500) |
@@ -3162,13 +3163,14 @@ build on positions.
     each on its own, send no couriers between them, and get one "turn started" email for them
     all. Not started; update §5.1 (the one-army rule and its index), §5.2 ("own army" becomes
     "armies they command") and §5.3 as it's built.
-    - **71a. The API:** the unique index on `Army.CommanderId` becomes a plain one, and a trigger
+    - ✅ **71a. The API:** the unique index on `Army.CommanderId` becomes a plain one, and a trigger
       (beside `AddCommanderRules`, kept by the test for dropped triggers) holds a commander's
       armies to one side. `Commanders.ConflictAsync` becomes the side check: giving a Player an
       army of the other side, or changing an army's side (`UpdateArmyAsync`) while its commander
       commands one of the other side, is a 409 naming that army. `CampaignMemberResponse.army`
       becomes `armies` (by name). A report to an army with the sender's commander is a 400
-      (`RecipientProblemAsync`).
+      (`RecipientProblemAsync`). The members list shows a badge per army; the commander picker
+      still offers only Players without one until 71c.
     - **71b. Emails:** `TurnStartedEmails` sends one email per commander: the turn and its day,
       then each army's news under its name (`TurnNews.None` for an army with nothing new).
     - **71c. In the app:** `MembersSection` shows a badge per army; `commanderOptions` offers

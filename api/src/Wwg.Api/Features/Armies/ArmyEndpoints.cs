@@ -125,6 +125,7 @@ internal static class ArmyEndpoints
             db,
             id,
             request.CommanderMemberId,
+            request.SideId,
             cancellationToken
         );
         if (invalid is not null)
@@ -164,7 +165,8 @@ internal static class ArmyEndpoints
 
     /// <summary>
     /// Changes an army's name, side, colour, nation and factions (Umpire or Admin). A faction the
-    /// army has units from can't be dropped (409).
+    /// army has units from can't be dropped (409), nor the side changed while its commander
+    /// commands an army of the new side's enemy (409; decision 0036).
     /// </summary>
     internal static async Task<
         Results<Ok<ArmyResponse>, ValidationProblem, ProblemHttpResult>
@@ -182,6 +184,11 @@ internal static class ArmyEndpoints
         )
         {
             return badSide;
+        }
+
+        if (await SideConflictAsync(db, army, request.SideId, cancellationToken) is { } otherSide)
+        {
+            return otherSide;
         }
 
         if (request.FactionIds is { } requested)
@@ -230,6 +237,27 @@ internal static class ArmyEndpoints
         return TypedResults.Ok(await LoadAsync(db, id, cancellationToken));
     }
 
+    /// <summary>
+    /// 409 if moving the army to <paramref name="sideId"/> would leave its commander with armies
+    /// on both sides (decision 0036); null otherwise.
+    /// </summary>
+    private static async Task<ProblemHttpResult?> SideConflictAsync(
+        WwgDbContext db,
+        Army army,
+        Guid sideId,
+        CancellationToken cancellationToken
+    ) =>
+        army.CommanderId is { } commander && sideId != army.SideId
+            ? await Commanders.ConflictAsync(
+                db,
+                commander,
+                army.Id,
+                sideId,
+                "Its commander",
+                cancellationToken
+            )
+            : null;
+
     /// <summary>A validation problem on <c>sideId</c> unless it's one of the campaign's.</summary>
     private static async Task<ValidationProblem?> InvalidSideAsync(
         WwgDbContext db,
@@ -266,7 +294,10 @@ internal static class ArmyEndpoints
                 }
             );
 
-    /// <summary>Why the member can't command the new army (not a Player, or commanding one), or null.</summary>
+    /// <summary>
+    /// Why the member can't command the new army (not a Player, or commanding one of the other
+    /// side), or null.
+    /// </summary>
     private static async Task<(
         ValidationProblem? Invalid,
         ProblemHttpResult? Conflict
@@ -274,6 +305,7 @@ internal static class ArmyEndpoints
         WwgDbContext db,
         Guid campaignId,
         Guid? memberId,
+        Guid sideId,
         CancellationToken cancellationToken
     )
     {
@@ -291,7 +323,17 @@ internal static class ArmyEndpoints
         );
         return invalid is not null
             ? (invalid, null)
-            : (null, await Commanders.ConflictAsync(db, member, null, cancellationToken));
+            : (
+                null,
+                await Commanders.ConflictAsync(
+                    db,
+                    member,
+                    null,
+                    sideId,
+                    "That Player",
+                    cancellationToken
+                )
+            );
     }
 
     private static ProblemHttpResult TooManyArmies() =>
@@ -350,7 +392,8 @@ internal static class ArmyEndpoints
 
     /// <summary>
     /// Makes a Player the army's commander, replacing any other (Umpire or Admin), and emails them
-    /// (decision 0023). A Player commands at most one army: 409 if they already command another.
+    /// (decision 0023). A Player's armies are all on one side (decision 0036): 409 if they command
+    /// one of the other side.
     /// </summary>
     internal static async Task<
         Results<Ok<ArmyResponse>, ValidationProblem, ProblemHttpResult>
@@ -377,7 +420,14 @@ internal static class ArmyEndpoints
         }
 
         if (
-            await Commanders.ConflictAsync(db, request.MemberId, id, cancellationToken) is
+            await Commanders.ConflictAsync(
+                db,
+                request.MemberId,
+                id,
+                army.SideId,
+                "That Player",
+                cancellationToken
+            ) is
             { } conflict
         )
         {

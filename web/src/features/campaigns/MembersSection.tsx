@@ -1,4 +1,4 @@
-import { Badge, Button, Table, Text, VisuallyHidden } from "@mantine/core";
+import { Badge, Button, Group, Table, Text, VisuallyHidden } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -97,8 +97,12 @@ export function MembersSection({ campaign }: { campaign: CampaignResponse }) {
                     </Badge>
                   </Table.Td>
                   <Table.Td>
-                    {member.army ? (
-                      <ArmyBadge army={member.army} />
+                    {member.armies.length > 0 ? (
+                      <Group gap={4}>
+                        {member.armies.map((army) => (
+                          <ArmyBadge key={army.id} army={army} />
+                        ))}
+                      </Group>
                     ) : (
                       <Text span c="dimmed" inherit>
                         {member.role === "Player" ? "None" : "–"}

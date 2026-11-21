@@ -14,13 +14,14 @@ public sealed class ArmyTests : ApiTest
     private static Task<HttpResponseMessage> CreateAsync(
         CampaignScenario scenario,
         string name,
-        Guid? commanderMemberId = null
+        Guid? commanderMemberId = null,
+        Guid? sideId = null
     ) =>
         scenario
             .As(Role.Umpire)
             .PostAsJsonAsync(
                 new Uri($"/api/campaigns/{scenario.CampaignId}/armies", UriKind.Relative),
-                new CreateArmyRequest(name, commanderMemberId, scenario.SideId),
+                new CreateArmyRequest(name, commanderMemberId, sideId ?? scenario.SideId),
                 TestContext.Current.CancellationToken
             );
 
@@ -93,7 +94,7 @@ public sealed class ArmyTests : ApiTest
     }
 
     [Fact]
-    public async Task CreateArmy_CommandedBySomeoneWhoAlreadyCommands_Returns409()
+    public async Task CreateArmy_CommandedByAPlayerWithAnArmyOfTheSameSide_IsCreated()
     {
         using var scenario = await CreateCampaignScenarioAsync();
 
@@ -101,6 +102,23 @@ public sealed class ArmyTests : ApiTest
             scenario,
             "Second Corps",
             scenario.CommanderMemberId
+        );
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        var army = await response.Content.ReadAsAsync<ArmyResponse>();
+        Assert.Equal(scenario.CommanderMemberId, army?.Commander?.MemberId);
+    }
+
+    [Fact]
+    public async Task CreateArmy_CommandedByAPlayerWithAnArmyOfTheOtherSide_Returns409()
+    {
+        using var scenario = await CreateCampaignScenarioAsync();
+
+        using var response = await CreateAsync(
+            scenario,
+            "Prussian Corps",
+            scenario.CommanderMemberId,
+            scenario.OtherSideId
         );
 
         await response.AssertProblemAsync(HttpStatusCode.Conflict);
@@ -242,7 +260,7 @@ public sealed class ArmyTests : ApiTest
     }
 
     [Fact]
-    public async Task AssignCommander_APlayerWhoCommandsAnotherArmy_Returns409()
+    public async Task AssignCommander_APlayerWhoCommandsAnArmyOfTheSameSide_GivesThemBoth()
     {
         using var scenario = await CreateCampaignScenarioAsync();
         using var created = await CreateAsync(scenario, "Second Corps");
@@ -250,7 +268,76 @@ public sealed class ArmyTests : ApiTest
 
         using var response = await AssignAsync(scenario, second!.Id, scenario.CommanderMemberId);
 
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var members = await scenario
+            .As(Role.Player)
+            .GetAsAsync<List<CampaignMemberResponse>>(
+                $"/api/campaigns/{scenario.CampaignId}/members"
+            );
+        Assert.Equal(
+            ["First Corps", "Second Corps"],
+            members!.Single(m => m.Id == scenario.CommanderMemberId).Armies.Select(a => a.Name),
+            StringComparer.Ordinal
+        );
+    }
+
+    [Fact]
+    public async Task AssignCommander_APlayerWhoCommandsAnArmyOfTheOtherSide_Returns409()
+    {
+        using var scenario = await CreateCampaignScenarioAsync();
+        using var created = await CreateAsync(
+            scenario,
+            "Prussian Corps",
+            sideId: scenario.OtherSideId
+        );
+        var prussians = await created.Content.ReadAsAsync<ArmyResponse>();
+
+        using var response = await AssignAsync(scenario, prussians!.Id, scenario.CommanderMemberId);
+
         await response.AssertProblemAsync(HttpStatusCode.Conflict);
+    }
+
+    [Fact]
+    public async Task UpdateArmy_ToTheOtherSideWhileItsCommanderCommandsAnother_Returns409()
+    {
+        using var scenario = await CreateCampaignScenarioAsync();
+        (await CreateAsync(scenario, "Second Corps", scenario.CommanderMemberId)).Dispose();
+
+        using var response = await scenario
+            .As(Role.Umpire)
+            .PutAsJsonAsync(
+                new Uri($"/api/armies/{scenario.ArmyId}", UriKind.Relative),
+                new UpdateArmyRequest(
+                    "First Corps",
+                    scenario.OtherSideId,
+                    ArmyColor.Red,
+                    Nation.None
+                ),
+                CancellationToken
+            );
+
+        await response.AssertProblemAsync(HttpStatusCode.Conflict);
+    }
+
+    [Fact]
+    public async Task UpdateArmy_ToTheOtherSideWithItsCommandersOnlyArmy_MovesIt()
+    {
+        using var scenario = await CreateCampaignScenarioAsync();
+
+        using var response = await scenario
+            .As(Role.Umpire)
+            .PutAsJsonAsync(
+                new Uri($"/api/armies/{scenario.ArmyId}", UriKind.Relative),
+                new UpdateArmyRequest(
+                    "First Corps",
+                    scenario.OtherSideId,
+                    ArmyColor.Red,
+                    Nation.None
+                ),
+                CancellationToken
+            );
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
     [Fact]
@@ -380,7 +467,7 @@ public sealed class ArmyTests : ApiTest
     }
 
     [Fact]
-    public async Task ListMembers_ShowsTheArmyEachPlayerCommands()
+    public async Task ListMembers_ShowsTheArmiesEachPlayerCommands()
     {
         using var scenario = await CreateCampaignScenarioAsync();
 
@@ -392,8 +479,8 @@ public sealed class ArmyTests : ApiTest
 
         var commander = members!.Single(m => m.Id == scenario.CommanderMemberId);
         Assert.Equal(
-            new MemberArmy(scenario.ArmyId, "First Corps", ArmyColor.Red, Nation.None),
-            commander.Army
+            [new MemberArmy(scenario.ArmyId, "First Corps", ArmyColor.Red, Nation.None)],
+            commander.Armies
         );
     }
 }

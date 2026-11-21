@@ -38,7 +38,8 @@ internal static class IntelEndpoints
     /// Sends an ally a report (the army's commander, or the Umpire on its behalf): any of a
     /// snapshot of the army's units, every sighting it has received so far, and a note. A courier
     /// sets out from the army's Commander in Chief for the ally's (both armies need one); within
-    /// two turns' ride, it arrives as the next turn starts.
+    /// two turns' ride, it arrives as the next turn starts. Not to an army with the same commander
+    /// (decision 0036).
     /// </summary>
     internal static async Task<
         Results<Created<ReportResponse>, ValidationProblem, ProblemHttpResult>
@@ -281,7 +282,10 @@ internal static class IntelEndpoints
             );
     }
 
-    /// <summary>Why a report to that army won't do, or null: an ally, with something to send.</summary>
+    /// <summary>
+    /// Why a report to that army won't do, or null: an ally with another commander, with something
+    /// to send.
+    /// </summary>
     private static async Task<ValidationProblem?> RecipientProblemAsync(
         WwgDbContext db,
         Guid campaignId,
@@ -290,17 +294,23 @@ internal static class IntelEndpoints
         CancellationToken cancellationToken
     )
     {
-        var sides = await db
+        var armies = await db
             .Armies.AsNoTracking()
             .Where(a => a.CampaignId == campaignId && (a.Id == armyId || a.Id == request.ToArmyId))
-            .ToDictionaryAsync(a => a.Id, a => a.SideId, cancellationToken);
+            .ToDictionaryAsync(a => a.Id, a => new { a.SideId, a.CommanderId }, cancellationToken);
         if (
             request.ToArmyId == armyId
-            || !sides.TryGetValue(request.ToArmyId, out var side)
-            || side != sides[armyId]
+            || !armies.TryGetValue(request.ToArmyId, out var to)
+            || to.SideId != armies[armyId].SideId
         )
         {
             return Invalid("toArmyId", "Send it to another army of your side.");
+        }
+
+        // One Player's armies already know what each other knows (decision 0036).
+        if (to.CommanderId is not null && to.CommanderId == armies[armyId].CommanderId)
+        {
+            return Invalid("toArmyId", "You command that army too: it knows what yours does.");
         }
 
         return

@@ -11,8 +11,8 @@ internal sealed class ArmyConfiguration : IEntityTypeConfiguration<Army>
         // Sorted on in the army list.
         builder.Property(a => a.Name).HasMaxLength(100).UseCollation("NOCASE");
 
-        // A Player commands at most one army. (SQLite allows many NULLs: unassigned armies.)
-        builder.HasIndex(a => a.CommanderId).IsUnique();
+        // A Player can command several armies, all of one side (decision 0036; a trigger).
+        builder.HasIndex(a => a.CommanderId);
 
         builder.Property(a => a.Color).HasMaxLength(16);
         builder.Property(a => a.Nation).HasMaxLength(32);

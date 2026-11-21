@@ -270,8 +270,7 @@ namespace Wwg.Api.Data.Migrations
 
                     b.HasIndex("CampaignId");
 
-                    b.HasIndex("CommanderId")
-                        .IsUnique();
+                    b.HasIndex("CommanderId");
 
                     b.HasIndex("SideId");
 
