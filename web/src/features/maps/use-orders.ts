@@ -118,6 +118,14 @@ export function useOrders(campaignId: string) {
           : `The other ${String(unitIds.length)} units in ${formation} will hold.`,
         `The rest of ${formation} couldn't be told to hold. Try again.`,
       ),
+    /** Holds a hex's units without orders, in one request: all or none. */
+    holdAll: (armyId: string, turnId: string, unitIds: string[]) =>
+      run(
+        armyId,
+        () => hold.mutateAsync({ id: turnId, data: { unitIds } }),
+        `The ${String(unitIds.length)} units will hold.`,
+        "The units couldn't be told to hold. Try again.",
+      ),
     /** Moves a hex's units without orders together (step 66), in one request: all or none. */
     moveAll: (armyId: string, turnId: string, order: MoveUnitsRequest) =>
       run(

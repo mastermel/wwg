@@ -4,6 +4,7 @@ import {
   IconAnchor,
   IconArrowMoveRight,
   IconCloudOff,
+  IconHandStop,
   IconHistory,
   IconMap,
   IconMapPin,
@@ -852,43 +853,72 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
       },
     };
   };
-  // The drawer's Move all (step 66): each army's units in the chosen hex (never a zoomed-out
-  // marker's others) without orders, two or more, on boats or ashore alike.
+  // The drawer's Move all (step 66) and Hold all: each army's units in the chosen hex (never a
+  // zoomed-out marker's others) without orders, two or more. Units on boats hold beside units
+  // ashore, but move only with each other.
   const inChosenHex = chosen && past === null && !setup ? unitsIn(chosen.hex, shownOnMap) : [];
   const chosenGroups = stackGroups(inChosenHex, turnOf, manager);
-  const moveAllActions = chosenGroups.length > 0 && (
+  const stackActions = chosenGroups.length > 0 && (
     <Stack gap="xs" align="flex-start">
       {chosenGroups.map(({ army, units: group, mixed }) => {
+        const turn = turnOf(army.id);
         // Every one of its units there (loose boats aside), or some have orders already.
         const all =
           inChosenHex.filter((p) => p.army.id === army.id && p.unit.type !== "Boat").length ===
           group.length;
-        const label = `${all ? `Move all ${String(group.length)}` : `Move the ${String(group.length)} without orders`}${chosenGroups.length > 1 ? ` of ${army.name}` : ""}`;
-        return mixed ? (
-          <Text key={army.id} size="sm" c="dimmed">
-            {chosenGroups.length > 1 ? `${army.name}: units` : "Units"} on boats and units ashore
-            move separately.
-          </Text>
-        ) : (
-          <Button
-            key={army.id}
-            variant="light"
-            leftSection={<IconArrowMoveRight size={16} aria-hidden />}
-            onClick={() => {
-              setLanding(false);
-              setForceMarch(false);
-              setTogether(group);
-              setMoving(group[0] ?? null);
-              setTarget(null);
-              closeDrawer();
-            }}
-          >
-            {label}
-          </Button>
+        const count = String(group.length);
+        const which = all ? `all ${count}` : `the ${count} without orders`;
+        const of = chosenGroups.length > 1 ? ` of ${army.name}` : "";
+        return (
+          <Stack key={army.id} gap="xs" align="flex-start">
+            <Group gap="xs">
+              {!mixed && (
+                <Button
+                  variant="light"
+                  leftSection={<IconArrowMoveRight size={16} aria-hidden />}
+                  onClick={() => {
+                    setLanding(false);
+                    setForceMarch(false);
+                    setTogether(group);
+                    setMoving(group[0] ?? null);
+                    setTarget(null);
+                    closeDrawer();
+                  }}
+                >
+                  {`Move ${which}${of}`}
+                </Button>
+              )}
+              <Button
+                variant="light"
+                leftSection={<IconHandStop size={16} aria-hidden />}
+                disabled={!turn || orders.busy}
+                onClick={() => {
+                  if (!turn) return;
+                  void orders
+                    .holdAll(
+                      army.id,
+                      turn.id,
+                      group.map((p) => p.unit.id),
+                    )
+                    .then((saved) => {
+                      if (saved) closeDrawer();
+                    });
+                }}
+              >
+                {`Hold ${which}${of}`}
+              </Button>
+            </Group>
+            {mixed && (
+              <Text size="sm" c="dimmed">
+                {chosenGroups.length > 1 ? `${army.name}: units` : "Units"} on boats and units
+                ashore move separately.
+              </Text>
+            )}
+          </Stack>
         );
       })}
       <Text size="xs" c="dimmed">
-        Together, at the slowest one&apos;s pace; each still has its own order.
+        A move together goes at the slowest one&apos;s pace; each unit still has its own order.
       </Text>
     </Stack>
   );
@@ -1436,7 +1466,7 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
           const found = supply.data?.units.find((s) => s.unitId === unit.unit.id);
           return found && past === null ? describeSupply(found, depots.data ?? []) : undefined;
         }}
-        listActions={moveAllActions}
+        listActions={stackActions}
         actions={
           past !== null
             ? undefined

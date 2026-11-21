@@ -1,4 +1,4 @@
-import { screen, within } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -485,9 +485,44 @@ describe("a commander's turn", () => {
           sent.push(await request.json());
           return HttpResponse.json([]);
         }),
+        http.post(`*/api/army-turns/${turnId}/hold`, async ({ request }) => {
+          sent.push(await request.json());
+          return HttpResponse.json([]);
+        }),
       );
       return sent;
     };
+
+    it("holds them all from the hex's drawer", async () => {
+      const sent = serveStack(draft());
+      const user = userEvent.setup();
+      await openMap();
+
+      await user.click(await screen.findByRole("button", { name: "Lancers" }));
+      const drawer = await screen.findByRole("dialog");
+      await user.click(within(drawer).getByRole("button", { name: "All 3 units here" }));
+      await user.click(within(drawer).getByRole("button", { name: "Hold all 3" }));
+
+      expect(await screen.findByText("The 3 units will hold.")).toBeInTheDocument();
+      expect(sent).toEqual([{ unitIds: [unitId, lancersId, hussarsId] }]);
+      await waitFor(() => {
+        expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+      });
+    });
+
+    it("holds only those without orders", async () => {
+      const sent = serveStack(draft({ orders: [hold] }));
+      const user = userEvent.setup();
+      await openMap();
+
+      await user.click(await screen.findByRole("button", { name: "Lancers" }));
+      const drawer = await screen.findByRole("dialog");
+      await user.click(within(drawer).getByRole("button", { name: "All 3 units here" }));
+      await user.click(within(drawer).getByRole("button", { name: "Hold the 2 without orders" }));
+
+      expect(await screen.findByText("The 2 units will hold.")).toBeInTheDocument();
+      expect(sent).toEqual([{ unitIds: [lancersId, hussarsId] }]);
+    });
 
     it("moves them all from the hex's drawer, then confirms", async () => {
       const sent = serveStack(draft());
@@ -537,6 +572,7 @@ describe("a commander's turn", () => {
       await user.click(within(drawer).getByRole("button", { name: "All 3 units here" }));
 
       expect(within(drawer).queryByRole("button", { name: /^Move / })).not.toBeInTheDocument();
+      expect(within(drawer).queryByRole("button", { name: /^Hold / })).not.toBeInTheDocument();
     });
   });
 

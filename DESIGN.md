@@ -1379,7 +1379,8 @@ visibility); the data is in §5.1. Built in Phase 8 (§7).
   with what it costs; **Confirm** or **Cancel**. Each order saves straight away,
   so a draft survives closing the tab. **Move all** (step 66, decision 0031), from a hex's
   list of units, does the same for one army's units there without orders, at the slowest one's
-  pace, along one path; each unit's order is its own afterwards. (Phase 8 measured a straight-line range
+  pace, along one path; each unit's order is its own afterwards. **Hold all** beside it holds them
+  (step 66e). (Phase 8 measured a straight-line range
   instead; decision 0014 replaced it.)
 - **History:** their army's turns, newest first; choosing one shows it as it was
   played, as the open turn is: the units where they started it, and its moves as ghosts
@@ -3070,6 +3071,10 @@ build on positions.
       `MoveUnits`. Each unit's order is then its own, in the turn panel and the drawer.
     - ✅ **66d. Shared ghost lines:** moves along the same path from the same hex are drawn as
       one dashed line, wider the more units take it (`sharedLines`, `ghost-lines.ts`).
+    - ✅ **66e. Hold all:** beside each army's **Move all**, the drawer offers **Hold all 3** (or
+      **Hold the 2 without orders**, "… of Prussians" as Move all), through `HoldUnits` (64c's
+      endpoint), all or none; units on boats hold beside units ashore, so it's offered for a mix
+      too. The drawer closes once they're held.
     - Later, if wanted: taking back a stack's orders at once.
 67. ✅ **The Commander in Chief** (decision 0032): the Umpire marks one Commander unit in each army
     as its Commander in Chief, where the player is on the map; choosing another replaces it, at
