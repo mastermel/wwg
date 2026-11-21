@@ -148,7 +148,10 @@ The pre-commit hook runs `eslint --fix` and Prettier on staged files.
   order (`livingOffTheLand` in `MapPage`). The settings are `SupplySection` on the edit page.
 - What's in a hex (step 57, decision 0027): a click or tap on a hex or a unit's marker opens
   `HexDrawer` (its units, one in full with its orders, then its sightings, then its terrain from
-  `hex-info.ts`'s `describeHex`, a pure function), its units by id from the positions; hover is
+  `hex-info.ts`'s `describeHex`, a pure function), its units by id from the positions. It isn't modal
+  (decision 0038: no overlay, from the left on a computer); a unit chosen from a list goes through
+  `MapPage`'s `chooseUnit`, which centres its hex (`centreOn`, by `mapRef`) and moves focus into
+  the drawer (`focusRequest`). Hover is
   `CampaignMap`'s `onHover` (mouse only), shown by `HexInfoPopup` (a MapLibre popup in the app's
   colours): the hex's units, else its sightings, else its ground (`hoverLines`). The
   legend is `MapLegend`. The theme choice is `ThemeMenuItems` (Mantine keeps it in localStorage;

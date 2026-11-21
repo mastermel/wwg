@@ -1268,7 +1268,11 @@ visibility); the data is in §5.1. Built in Phase 8 (§7).
   outlined: first its units (one in full; several listed, each opening in full, with a way back),
   then what was sighted there, then its terrain: its ground and forest, its town, city or
   fortress, the roads, rivers, bridges and waterways on its six sides, its actual terrain if
-  they've been shown it, and the depots there they may see. With a mouse, a label follows the
+  they've been shown it, and the depots there they may see. The drawer doesn't hold the page
+  (decision 0038): it opens from the left on a computer (from the bottom on a phone, at most half
+  the screen), the map stays in use beneath it, and choosing another hex changes it. A unit
+  chosen from the turn panel (or the Umpire's review panel) brings its hex to the middle of the
+  map's open part, zoomed in to the game map if needed, and outlined. With a mouse, a label follows the
   pointer from hex to hex: the units in the hex, if any; else what was sighted there (the turn
   shown and the 3 before, as drawn); else its ground.
 - **The Map page's layout:** on a computer (62em and wider), the map takes the width with the turn

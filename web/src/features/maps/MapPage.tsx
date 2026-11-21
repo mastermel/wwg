@@ -19,6 +19,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useMediaQuery } from "@mantine/hooks";
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { MapRef } from "react-map-gl/maplibre";
 import { useListArmies } from "@/api/generated/endpoints/armies/armies";
 import {
   useGetCampaign,
@@ -814,6 +815,53 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
     setChosen(null);
     setSelected(null);
   };
+  // A unit chosen from the turn panel: its hex's drawer, with focus in it, and the hex brought
+  // into the middle of the map, in view.
+  const [drawerFocus, setDrawerFocus] = useState(0);
+  const chooseUnit = (placed: PlacedUnit) => {
+    openHex(placed.hex, undefined, placed);
+    setDrawerFocus((n) => n + 1);
+    centreOn(placed.hex);
+  };
+  const mapRef = useRef<MapRef>(null);
+  // The hex in the middle of the part of the map the drawer leaves (its left on a computer, its
+  // top on a phone), zoomed in to the game map if the view is wider, with the map scrolled into
+  // view. MapLibre skips the animation for those who prefer reduced motion.
+  const centreOn = (hex: Hex) => {
+    const map = mapRef.current;
+    if (!map) return;
+    const phone = window.matchMedia("(max-width: 48em)").matches;
+    mapArea.current?.scrollIntoView({ block: phone ? "start" : "nearest", behavior: "instant" });
+    const box = map.getContainer().getBoundingClientRect();
+    const rem = parseFloat(getComputedStyle(document.documentElement).fontSize);
+    // The drawer's size (HexDrawer: Mantine's "sm", 23.75rem; a phone's, half the screen at most).
+    const covered = phone
+      ? Math.max(0, box.bottom - window.innerHeight / 2)
+      : Math.max(0, 23.75 * rem - box.left);
+    // Not when it would leave too little of the map to centre in.
+    const offset: [number, number] = phone
+      ? [0, covered < box.height - 80 ? -covered / 2 : 0]
+      : [covered < box.width - 80 ? covered / 2 : 0, 0];
+    const view = map.getBounds();
+    const across = hexesAcross(
+      {
+        west: view.getWest(),
+        south: view.getSouth(),
+        east: view.getEast(),
+        north: view.getNorth(),
+      },
+      settings.hexSize,
+    );
+    const { longitude, latitude } = grid.centre(hex);
+    map.easeTo({
+      center: [longitude, latitude],
+      offset,
+      zoom:
+        across > gameMaxHexesAcross
+          ? map.getZoom() + Math.log2(across / (gameMaxHexesAcross / 2))
+          : undefined,
+    });
+  };
   // In the unit's drawer: boarding its army's free boats, landing from them, or building one.
   const boatOptions = (unit: PlacedUnit, turn: ArmyTurnDetails): BoatOptions => {
     const aboard = unit.boats?.length ?? 0;
@@ -1145,6 +1193,7 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
             ))}
         </Group>
         <CampaignMap
+          mapRef={mapRef}
           settings={shownSettings}
           grid={showGame("grid")}
           onHover={canHover ? hoverAt : undefined}
@@ -1319,9 +1368,7 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
           .filter((u) => !tied.has(u.unit.id))
           .map((u) => ({ ...u, placed: onMap.find((p) => p.unit.id === u.unit.id) }))}
         orders={orders}
-        onChoose={(placed) => {
-          openHex(placed.hex, undefined, placed);
-        }}
+        onChoose={chooseUnit}
         pickedOut={pickedOut}
         onPickOut={pickOut}
       />
@@ -1333,9 +1380,7 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
           .filter((u) => myArmies.some((a) => a.id === u.army.id) && !tied.has(u.unit.id))
           .map((u) => ({ ...u, placed: onMap.find((p) => p.unit.id === u.unit.id) }))}
         orders={orders}
-        onChoose={(placed) => {
-          openHex(placed.hex, undefined, placed);
-        }}
+        onChoose={chooseUnit}
         pickedOut={pickedOut}
         onPickOut={pickOut}
       />
@@ -1520,6 +1565,7 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
           setSelected(unit?.unit.id ?? null);
         }}
         onClose={closeDrawer}
+        focusRequest={drawerFocus}
         showsMarches={(unit) => manager || myArmies.some((a) => a.id === unit.army.id)}
         screeningOf={(unit) =>
           manager || myArmies.some((a) => a.id === unit.army.id)

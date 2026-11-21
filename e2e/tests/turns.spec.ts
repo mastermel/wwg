@@ -30,7 +30,7 @@ test("a commander moves one unit, holds another and submits the turn", async ({ 
     .getByRole("button", { name: "Move" })
     .click();
   await expect(page.getByText(/Tap a shaded hex/)).toBeInViewport();
-  // The drawer's overlay fades out: wait, or the click lands on it.
+  // The drawer fades out: wait, or the click can land on it.
   await expect(page.getByRole("dialog")).toHaveCount(0);
   // The unit is in the middle of the map: a little to the right of it is well inside its range.
   // The Guard is in the middle hex; a fifth of the map's height up is the next hex north.

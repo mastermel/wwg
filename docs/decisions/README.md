@@ -78,3 +78,4 @@ A reversal gets a new entry.
 | [0035](0035-umpire-intelligence-reports.md) | The Umpire sends an army intelligence: allies' positions, enemy sightings, a note | 2026-11-21 |
 | [0036](0036-a-player-commands-several-armies.md) | A Player can command several armies, all of one side | 2026-11-21 |
 | [0037](0037-reports-between-allies-are-messages-only.md) | Reports between allies are hand-written messages only | 2026-11-21 |
+| [0038](0038-the-hex-drawer-leaves-the-map-in-use.md) | The hex drawer leaves the map in use, and a unit chosen from a list is centred | 2026-11-21 |

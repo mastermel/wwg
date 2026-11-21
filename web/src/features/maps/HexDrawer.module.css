@@ -1,0 +1,17 @@
+/* The drawer doesn't hold the page (step 57, amended): no overlay, and the layer Mantine lays
+   over the window lets clicks through to the map, the turn panel and the rest, but not on the
+   drawer itself. */
+.inner {
+  pointer-events: none;
+}
+
+.inner .content {
+  pointer-events: auto;
+}
+
+/* A phone's drawer, from the bottom, leaves the top half of the screen to the map. */
+@media (max-width: 48em) {
+  .inner .content {
+    max-height: 50dvh;
+  }
+}

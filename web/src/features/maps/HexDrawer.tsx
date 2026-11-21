@@ -1,7 +1,7 @@
 import { Button, Drawer, Group, List, NavLink, Stack, Table, Text, Title } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
 import { IconChevronLeft } from "@tabler/icons-react";
-import { useId, type ReactNode } from "react";
+import { useEffect, useId, useRef, type ReactNode } from "react";
 import { ArmyBadge } from "@/features/armies/identity/ArmyBadge";
 import { armyColorVar } from "@/features/armies/identity/army-colors";
 import { hexKey, hexName, type Hex } from "@/features/maps/hex-grid";
@@ -16,6 +16,7 @@ import { useListMarches } from "@/api/generated/endpoints/turns/turns";
 import { describeMarch } from "@/features/maps/marches";
 import { UnitPointsHistory } from "@/features/maps/UnitPointsHistory";
 import { UnitScreening } from "@/features/maps/UnitScreening";
+import classes from "@/features/maps/HexDrawer.module.css";
 
 interface HexDrawerProps {
   /** The hex chosen on the map, and what the viewer knows of its terrain; closed when null. */
@@ -42,12 +43,19 @@ interface HexDrawerProps {
    * change it now; undefined for anyone else.
    */
   screeningOf?: (unit: PlacedUnit) => { canChange: boolean } | undefined;
+  /**
+   * Changed to move focus into the drawer (a unit chosen from a list); focus goes back where it
+   * was once the drawer closes. A click on the map leaves focus where it is.
+   */
+  focusRequest?: number;
 }
 
 /**
  * Everything the viewer knows of a hex, opened by choosing it or a unit in it on the map (step
  * 57): its units (one shown in full, several listed to choose from), what was sighted there, and
- * its terrain. From the side on wide screens, from the bottom on phones (DESIGN.md §3.13).
+ * its terrain. From the left on wide screens (the turn panel is on the right), from the bottom on
+ * phones (DESIGN.md §3.13). It doesn't hold the page: the map and the panels stay in use, and
+ * choosing another hex changes what it shows.
  */
 export function HexDrawer({
   hex,
@@ -61,21 +69,52 @@ export function HexDrawer({
   showsMarches,
   supplyOf,
   screeningOf,
+  focusRequest = 0,
 }: HexDrawerProps) {
   const phone = useMediaQuery("(max-width: 48em)");
   const shown = selected ?? (units.length === 1 ? units[0] : undefined);
+  const opened = hex !== null;
+  // Focus moves in only when asked, and goes back once closed if it's still in the drawer (or
+  // lost with it), without scrolling the page back to where it was.
+  const focus = useRef({
+    handled: 0,
+    dialog: null as HTMLElement | null,
+    returnTo: null as HTMLElement | null,
+  });
+  const takeFocus = (dialog: HTMLElement) => {
+    if (focus.current.handled === focusRequest) return;
+    focus.current.handled = focusRequest;
+    const active = document.activeElement;
+    if (active instanceof HTMLElement && !dialog.contains(active)) focus.current.returnTo = active;
+    focus.current.dialog = dialog;
+    dialog.focus({ preventScroll: true });
+  };
+  useEffect(() => {
+    if (opened) return;
+    const { dialog, returnTo } = focus.current;
+    focus.current.returnTo = null;
+    const active = document.activeElement;
+    if (returnTo?.isConnected && (active === document.body || dialog?.contains(active))) {
+      returnTo.focus({ preventScroll: true });
+    }
+  }, [opened]);
 
   return (
     <Drawer
-      opened={hex !== null}
+      opened={opened}
       onClose={onClose}
-      position={phone ? "bottom" : "right"}
+      position={phone ? "bottom" : "left"}
       size={phone ? "auto" : "sm"}
       title={hex?.info.title}
       closeButtonProps={{ "aria-label": "Close" }}
+      withOverlay={false}
+      closeOnClickOutside={false}
+      lockScroll={false}
+      trapFocus={false}
+      classNames={{ inner: classes.inner, content: classes.content }}
     >
       {hex && (
-        <Stack gap="lg">
+        <FocusTaker request={focusRequest} onFocus={takeFocus}>
           {shown ? (
             <Part title={shown.unit.name}>
               {units.length > 1 && (
@@ -159,9 +198,35 @@ export function HexDrawer({
               ))}
             </List>
           </Part>
-        </Stack>
+        </FocusTaker>
       )}
     </Drawer>
+  );
+}
+
+/**
+ * The drawer's contents, which hand its dialog over to be focused once it's there: the drawer's
+ * portal mounts after the drawer opens, so the drawer itself can't reach it at once.
+ */
+function FocusTaker({
+  request,
+  onFocus,
+  children,
+}: {
+  request: number;
+  onFocus: (dialog: HTMLElement) => void;
+  children: ReactNode;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  // `onFocus` skips a request it has handled, so it can run after every render.
+  useEffect(() => {
+    const dialog = ref.current?.closest<HTMLElement>('[role="dialog"]');
+    if (request > 0 && dialog) onFocus(dialog);
+  }, [request, onFocus]);
+  return (
+    <Stack gap="lg" ref={ref}>
+      {children}
+    </Stack>
   );
 }
 

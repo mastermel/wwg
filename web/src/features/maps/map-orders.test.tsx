@@ -17,21 +17,43 @@ import { testUser } from "@/test/session";
 // Where a click on the stand-in map lands; each test can move it.
 const click = vi.hoisted(() => ({ at: { longitude: 4.4, latitude: 50.72 } }));
 
+// Where the page asked the stand-in map to go.
+const eased = vi.hoisted(() => [] as { center: [number, number]; zoom?: number }[]);
+
 // MapLibre needs WebGL, which jsdom lacks: the map is a stand-in whose button clicks `click.at`.
 // Its children (markers, ghosts, the range) need a real map, so they aren't drawn: e2e covers them.
-vi.mock("@/features/maps/CampaignMap", () => ({
-  CampaignMap: ({
-    onMapClick,
-  }: {
-    onMapClick?: (point: { longitude: number; latitude: number }) => void;
-  }) => (
-    <div role="application" aria-label="Campaign map">
-      <button type="button" onClick={() => onMapClick?.(click.at)}>
-        Click the map
-      </button>
-    </div>
-  ),
-}));
+// Through its `mapRef` it's looking at much of Belgium, at zoom 8, and records where it's sent.
+vi.mock("@/features/maps/CampaignMap", async () => {
+  const { useImperativeHandle } = await import("react");
+  return {
+    CampaignMap: ({
+      mapRef,
+      onMapClick,
+    }: {
+      mapRef?: React.Ref<unknown>;
+      onMapClick?: (point: { longitude: number; latitude: number }) => void;
+    }) => {
+      useImperativeHandle(mapRef, () => ({
+        getContainer: () => document.createElement("div"),
+        getBounds: () => ({
+          getWest: () => 3,
+          getSouth: () => 50,
+          getEast: () => 6,
+          getNorth: () => 51.5,
+        }),
+        getZoom: () => 8,
+        easeTo: (options: { center: [number, number]; zoom?: number }) => eased.push(options),
+      }));
+      return (
+        <div role="application" aria-label="Campaign map">
+          <button type="button" onClick={() => onMapClick?.(click.at)}>
+            Click the map
+          </button>
+        </div>
+      );
+    },
+  };
+});
 
 const campaignId = "0192f5c1-0000-7000-8000-00000000c001";
 const armyId = "0192f5c1-0000-7000-8000-00000000a001";
@@ -808,6 +830,45 @@ describe("a commander's turn", () => {
     expect(
       screen.getByRole("button", { name: /^Turn 1 \(open\):.*, enemy sighted$/ }),
     ).toBeInTheDocument();
+  });
+
+  it("centres the map on a unit chosen from the turn panel, zoomed in, and opens its drawer", async () => {
+    serveCommander(draft());
+    eased.length = 0;
+    const user = userEvent.setup();
+    await openMap();
+
+    const choose = await screen.findByRole("button", { name: "Imperial Guard" });
+    await user.click(choose);
+
+    const drawer = await screen.findByRole("dialog", { name: "Hex (0, 0)" });
+    expect(drawer).toHaveFocus();
+    expect(within(drawer).getByRole("region", { name: "Imperial Guard" })).toBeInTheDocument();
+    expect(eased).toHaveLength(1);
+    const [longitude, latitude] = eased[0]?.center ?? [];
+    expect(longitude).toBeCloseTo(4.45, 1);
+    expect(latitude).toBeCloseTo(50.675, 1);
+    expect(eased[0]?.zoom).toBeGreaterThan(8);
+
+    // Closed, focus goes back to the unit in the panel.
+    await user.keyboard("{Escape}");
+    await waitFor(() => {
+      expect(choose).toHaveFocus();
+    });
+  });
+
+  it("keeps the map in use while a drawer is open: another hex changes it", async () => {
+    serveCommander(draft());
+    const user = userEvent.setup();
+    await openMap();
+    await user.click(await screen.findByRole("button", { name: "Imperial Guard" }));
+    await screen.findByRole("dialog", { name: "Hex (0, 0)" });
+
+    // Hex (0, -1), north of the Guard's.
+    await user.click(screen.getByRole("button", { name: "Click the map" }));
+
+    expect(await screen.findByRole("dialog", { name: "Hex (0, −1)" })).toBeInTheDocument();
+    expect(screen.queryByRole("dialog", { name: "Hex (0, 0)" })).not.toBeInTheDocument();
   });
 
   it("opens a tapped hex's drawer: its units, what was seen there, then its terrain", async () => {
