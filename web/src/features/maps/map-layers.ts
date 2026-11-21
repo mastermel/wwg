@@ -67,7 +67,7 @@ export const defaultHidden = (page: LayersFor = "map"): HiddenLayers =>
 const savedVersion = 2;
 
 /** The game map is drawn once the view's longest side spans this many hexes or fewer. */
-export const gameMaxHexesAcross = 20;
+export const gameMaxHexesAcross = 40;
 
 /** How many hexes the view's longest side spans. */
 export function hexesAcross(view: MapBounds, hexSize: number) {

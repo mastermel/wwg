@@ -451,10 +451,10 @@ describe("the map's layers", () => {
     },
   );
 
-  it("draws the game map only once zoomed in to 20 hexes or fewer", async () => {
+  it("draws the game map only once zoomed in to 40 hexes or fewer", async () => {
     localStorage.clear();
-    // 1 km hexes: about 35 across the area, as the map opens.
-    serveCampaign("Player", { ...settings(waterloo), hexSize: 1000 });
+    // 500 m hexes: about 70 across the area as the map opens, 35 zoomed in once.
+    serveCampaign("Player", { ...settings(waterloo), hexSize: 500 });
     const user = userEvent.setup();
     await renderApp(`/campaigns/${campaignId}/map`);
 

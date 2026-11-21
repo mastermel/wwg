@@ -1255,7 +1255,7 @@ visibility); the data is in §5.1. Built in Phase 8 (§7).
   layers' switches as they were for when it's back. Remembered on that device, per campaign
   (`localStorage`). Rivers along the hexsides start hidden on the Map page, as the waterways show
   the same rivers less busily (the terrain editor starts with everything, as the Umpire edits
-  both); "Back to the defaults" puts them back. The game map is drawn only once the view's longest side spans 20 hexes
+  both); "Back to the defaults" puts them back. The game map is drawn only once the view's longest side spans 40 hexes
   or fewer. On the Map page, a **Units & markers** switch hides the game's pieces (units,
   sightings, reports' units, depots, couriers, towns' holders, ghost moves and the Umpire's
   warnings; hover then names only the ground), for Players and the Umpire alike, to see the
