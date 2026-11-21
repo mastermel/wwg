@@ -616,6 +616,10 @@ describe("the terrain page", () => {
     expect(
       within(game).queryByRole("switch", { name: "Contact & concentration", hidden: true }),
     ).not.toBeInTheDocument();
+    // No units here to hide.
+    expect(
+      screen.queryByRole("switch", { name: "Units & markers", hidden: true }),
+    ).not.toBeInTheDocument();
     await user.click(within(game).getByRole("switch", { name: "Grid", hidden: true }));
 
     expect(screen.getByText("Grid off")).toBeInTheDocument();

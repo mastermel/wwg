@@ -1,3 +1,4 @@
+import type { Page } from "@playwright/test";
 import { apiAs, waterlooMap } from "./support/api.ts";
 import { scan } from "./support/axe.ts";
 import { createCampaign, join, joinLink } from "./support/campaigns.ts";
@@ -133,6 +134,11 @@ test("the Umpire places the units, stacking two, and starts the campaign", async
   const stack = page.getByRole("button", { name: "2 units: Imperial Guard, Reserve Artillery" });
   await expect(stack).toBeVisible();
   expect(await scan(page, "map, setting up")).toEqual([]);
+  // The units can be hidden, leaving the map, and come back.
+  await toggleUnits(page);
+  await expect(stack).toHaveCount(0);
+  await toggleUnits(page);
+  await expect(stack).toBeVisible();
   await stack.click();
   await page
     .getByRole("dialog")
@@ -148,15 +154,26 @@ test("the Umpire places the units, stacking two, and starts the campaign", async
   await expect(page.getByText("The campaign has started: turn 1 is open.")).toBeVisible();
   await expect(page.getByRole("heading", { level: 2, name: "Turn 1" })).toBeVisible();
 
-  // Bob sees his army's units; Cai, in no army, sees none.
+  // Bob sees his army's units, and can hide them too; Cai, in no army, sees none.
   await commander.page.goto(`${campaignUrl}/map`);
-  await expect(
-    commander.page.getByRole("button", { name: "2 units: Imperial Guard, Reserve Artillery" }),
-  ).toBeVisible();
+  const bobsStack = commander.page.getByRole("button", {
+    name: "2 units: Imperial Guard, Reserve Artillery",
+  });
+  await expect(bobsStack).toBeVisible();
+  await toggleUnits(commander.page);
+  await expect(bobsStack).toHaveCount(0);
   await other.page.goto(`${campaignUrl}/map`);
   await expect(other.page.getByRole("heading", { level: 2, name: "Turn 1" })).toBeVisible();
   await expect(other.page.getByRole("button", { name: /Imperial Guard/ })).toHaveCount(0);
 });
+
+/** Turns the Layers panel's "Units & markers" switch over, and closes the panel. */
+async function toggleUnits(page: Page) {
+  await page.getByRole("button", { name: "Map layers" }).click();
+  await page.getByRole("switch", { name: "Units & markers" }).click();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+}
 
 test("on a phone, one finger scrolls the page past the map", async ({ signUp, isMobile }) => {
   test.skip(!isMobile, "Two-finger panning is for touch screens only.");

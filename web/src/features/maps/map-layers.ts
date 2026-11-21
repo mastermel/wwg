@@ -6,9 +6,10 @@ import { distanceMetres } from "@/features/maps/geo";
  * What each viewer shows on the map (the Map page's Layers panel): the real map's layers, from
  * OpenStreetMap, and the game map's, which the app draws from the campaign's terrain. A viewer
  * can hide what the campaign's map settings show, never show what they hide, one by one or a
- * whole map at once (keeping which of its layers they'd hidden). Rivers along the hexsides start
- * hidden on the Map page, where the waterways show the same rivers less busily. The game map is
- * drawn only once the view is close enough to read it.
+ * whole map at once (keeping which of its layers they'd hidden). On the Map page they can also
+ * hide the game's pieces (units, sightings and the rest drawn over the maps), to see the ground.
+ * Rivers along the hexsides start hidden on the Map page, where the waterways show the same
+ * rivers less busily. The game map is drawn only once the view is close enough to read it.
  */
 
 export const realLayers = [
@@ -35,10 +36,13 @@ export const gameLayers = [
 
 export type GameLayer = (typeof gameLayers)[number]["key"];
 
-/** The two maps, each of which a viewer can hide whole. */
-export type LayerGroup = "real" | "game";
+/**
+ * What a viewer can hide whole: either map, or (on the Map page) the pieces over them: units,
+ * sightings, reports' units, depots, couriers, towns' holders, ghost moves and warnings.
+ */
+export type LayerGroup = "real" | "game" | "pieces";
 
-/** What a viewer has hidden: layers one by one, and whole maps. */
+/** What a viewer has hidden: layers one by one, and whole maps (or the pieces). */
 export interface HiddenLayers {
   real: RealLayer[];
   game: GameLayer[];
@@ -46,7 +50,7 @@ export interface HiddenLayers {
 }
 
 const nothingHidden: HiddenLayers = { real: [], game: [], groups: [] };
-const layerGroups: readonly string[] = ["real", "game"];
+const layerGroups: readonly string[] = ["real", "game", "pieces"];
 
 /**
  * What a viewer sees hidden before they change anything: on the Map page, rivers along the
@@ -82,6 +86,9 @@ export function hexesAcross(view: MapBounds, hexSize: number) {
 /** Whether a game map layer is shown: the campaign has a game map, and neither it nor the layer is hidden. */
 export const showsGameLayer = (campaign: MapLayers, hidden: HiddenLayers, key: GameLayer) =>
   campaign.grid && !hidden.groups.includes("game") && !hidden.game.includes(key);
+
+/** Whether the game's pieces (units, sightings, markers and the like) are drawn over the maps. */
+export const showsPieces = (hidden: HiddenLayers) => !hidden.groups.includes("pieces");
 
 /** The real map's layers the campaign shows, less those the viewer hid (all, with the map). */
 export const shownRealLayers = (campaign: MapLayers, hidden: HiddenLayers): MapLayers => ({

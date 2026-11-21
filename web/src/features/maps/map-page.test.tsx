@@ -424,6 +424,33 @@ describe("the map's layers", () => {
     });
   });
 
+  it.each(["Player", "Umpire"] as const)(
+    "lets the %s hide the units and markers, leaving the maps",
+    async (role) => {
+      localStorage.clear();
+      serveCampaign(role, settings(waterloo));
+      const user = userEvent.setup();
+      await renderApp(`/campaigns/${campaignId}/map`);
+
+      await user.click(await screen.findByRole("button", { name: "Map layers" }));
+      const pieces = await screen.findByRole("switch", { name: "Units & markers", hidden: true });
+      expect(pieces).toBeChecked();
+      await user.click(pieces);
+
+      expect(pieces).not.toBeChecked();
+      // The maps are drawn as they were.
+      expect(screen.getByText(/^Drawn:/)).toHaveTextContent(
+        "Drawn: roads, places, water, forests, hills; grid on",
+      );
+      expect(JSON.parse(localStorage.getItem(`wwg:map-layers:${campaignId}`) ?? "{}")).toEqual({
+        real: [],
+        game: ["rivers"],
+        groups: ["pieces"],
+        version: 2,
+      });
+    },
+  );
+
   it("draws the game map only once zoomed in to 20 hexes or fewer", async () => {
     localStorage.clear();
     // 1 km hexes: about 35 across the area, as the map opens.

@@ -72,12 +72,16 @@ describe("loadHidden", () => {
       JSON.stringify({
         real: ["roads", "railways"],
         game: ["bridges", "units"],
-        groups: ["game", "both"],
+        groups: ["game", "pieces", "both"],
         version: 2,
       }),
     );
 
-    expect(loadHidden("c")).toEqual({ real: ["roads"], game: ["bridges"], groups: ["game"] });
+    expect(loadHidden("c")).toEqual({
+      real: ["roads"],
+      game: ["bridges"],
+      groups: ["game", "pieces"],
+    });
   });
 
   it("brings what was saved before rivers and waterways were apart up to date", () => {

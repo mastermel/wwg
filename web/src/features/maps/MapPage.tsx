@@ -136,6 +136,7 @@ import {
   hexesAcross,
   shownRealLayers,
   showsGameLayer,
+  showsPieces,
   useHiddenLayers,
   type GameLayer,
 } from "@/features/maps/map-layers";
@@ -471,6 +472,9 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
   );
   const showGame = (key: GameLayer) =>
     zoomedIn && showsGameLayer(settings.layers, layers.hidden, key);
+  // The pieces over the maps (units, sightings, markers, orders), which a viewer can hide to see
+  // the ground. The reach while choosing where to move stays: it's the choice being made.
+  const pieces = showsPieces(layers.hidden);
   const terrain = useGetCampaignGrid(campaignId, live);
   const movementTable = useGetMovementTable(campaignId, live);
   const calendar = useGetCampaignCalendar(campaignId, live);
@@ -1046,6 +1050,7 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
             layers={layers}
             zoomedIn={zoomedIn}
             warnings={manager}
+            pieces
           />
           {desktop &&
             (full ? (
@@ -1105,9 +1110,13 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
               }}
             />
           )}
-          <HexWarningsLayer grid={grid} warnings={warnings} visible={showGame("warnings")} />
+          <HexWarningsLayer
+            grid={grid}
+            warnings={warnings}
+            visible={pieces && showGame("warnings")}
+          />
           <OrderOverlay
-            moves={moves}
+            moves={pieces ? moves : []}
             reachable={
               landingAt
                 ? landingAt.map((hex) => grid.corners(hex))
@@ -1119,33 +1128,38 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
             }
           />
           <SelectedHexLayer grid={grid} hex={idle ? (chosen?.hex ?? null) : null} />
-          <DepotMarkers depots={depots.data ?? []} armies={armies.data ?? []} />
-          {showGame("towns") && (
+          {pieces && <DepotMarkers depots={depots.data ?? []} armies={armies.data ?? []} />}
+          {pieces && showGame("towns") && (
             <HoldingFlags
               settlements={scoreboard.data?.settlements ?? []}
               armies={armies.data ?? []}
             />
           )}
-          <SightingMarkers sightings={drawnSightings} armies={armies.data ?? []} />
-          <SnapshotMarkers
-            report={reports.data?.find((r) => r.id === shownReport)}
-            armies={armies.data ?? []}
-          />
+          {pieces && (
+            <>
+              <SightingMarkers sightings={drawnSightings} armies={armies.data ?? []} />
+              <SnapshotMarkers
+                report={reports.data?.find((r) => r.id === shownReport)}
+                armies={armies.data ?? []}
+              />
+            </>
+          )}
           {hoveredHex && hoverCard && (
             <HexInfoPopup
               at={grid.centre(hoveredHex)}
               title={hoverCard.info.title}
+              // With the pieces hidden, the ground alone.
               lines={hoverLines(
                 hoverCard.info,
-                unitsIn(hoveredHex, shownOnMap),
-                hoverCard.sightings,
+                pieces ? unitsIn(hoveredHex, shownOnMap) : [],
+                pieces ? hoverCard.sightings : [],
               )}
               // Above the sighting's eye, which is above the hex's centre.
-              offset={hoverCard.sightings.length > 0 ? 34 : 12}
+              offset={pieces && hoverCard.sightings.length > 0 ? 34 : 12}
             />
           )}
           <UnitMarkers
-            units={shownOnMap}
+            units={pieces ? shownOnMap : []}
             outOfSupply={past === null ? outOfSupply : undefined}
             highlight={standingOut}
             onSelect={(stack) => {
@@ -1174,7 +1188,7 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
             }}
           />
           {/* Over the units: a stack's count would cover it. */}
-          {manager && past === null && (
+          {pieces && manager && past === null && (
             <CourierMarkers
               campaignId={campaignId}
               couriers={couriers.data ?? []}

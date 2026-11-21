@@ -6,6 +6,7 @@ import {
   gameLayers,
   gameMaxHexesAcross,
   realLayers,
+  type LayerGroup,
   type useHiddenLayers,
 } from "@/features/maps/map-layers";
 
@@ -17,15 +18,27 @@ interface MapLayersControlProps {
   zoomedIn: boolean;
   /** Whether the viewer sees the Umpire's warnings (contact and concentration). */
   warnings: boolean;
+  /**
+   * Whether the panel offers to hide the pieces (units, sightings and the like): on the Map page,
+   * not in the terrain editor, which has none.
+   */
+  pieces?: boolean;
 }
 
 /**
  * The Map page's Layers panel, from a button over the map's top-left corner (a popover; on a phone, a
  * sheet from the bottom): the viewer shows or hides the real map's layers and the game map's, of
- * those the campaign's map settings show, or either map whole by its own switch. Remembered on
+ * those the campaign's map settings show, or either map whole by its own switch; on the Map page,
+ * the pieces over them too (units, sightings and the like), leaving the ground. Remembered on
  * this device.
  */
-export function MapLayersControl({ campaign, layers, zoomedIn, warnings }: MapLayersControlProps) {
+export function MapLayersControl({
+  campaign,
+  layers,
+  zoomedIn,
+  warnings,
+  pieces = false,
+}: MapLayersControlProps) {
   const { hidden, changed, toggleReal, toggleGame, toggleGroup, reset } = layers;
   const realShown = !hidden.groups.includes("real");
   const gameShown = !hidden.groups.includes("game");
@@ -33,7 +46,7 @@ export function MapLayersControl({ campaign, layers, zoomedIn, warnings }: MapLa
   // The game map is all or nothing in the campaign's settings (its grid).
   const game = campaign.grid ? gameLayers.filter(({ key }) => key !== "warnings" || warnings) : [];
   // A map's own switch: off hides all its layers, keeping theirs as they were for when it's on.
-  const groupSwitch = (group: "real" | "game", label: string, shown: boolean) => (
+  const groupSwitch = (group: LayerGroup, label: string, shown: boolean) => (
     <Switch
       size="sm"
       label={label}
@@ -59,6 +72,18 @@ export function MapLayersControl({ campaign, layers, zoomedIn, warnings }: MapLa
   );
   const panel = (
     <Stack gap="sm">
+      {pieces && (
+        <>
+          <Stack gap={4}>
+            {groupSwitch("pieces", "Units & markers", !hidden.groups.includes("pieces"))}
+            <Text size="xs" c="dimmed">
+              Units, sightings, depots, couriers, towns&apos; holders and orders. Off, only the maps
+              show.
+            </Text>
+          </Stack>
+          <Divider />
+        </>
+      )}
       {real.length > 0 && (
         <Stack gap={6} role="group" aria-label="Real map">
           {groupSwitch("real", "Real map", realShown)}
