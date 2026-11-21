@@ -50,6 +50,11 @@ export interface HexGrid {
   hexAt: (point: Point) => Hex;
   /** A hex's centre. */
   centre: (hex: Hex) => Point;
+  /**
+   * The middle of a hex's west or east half: a quarter of its width (half a side) from its
+   * centre, so a unit's symbol there stays in the hex at any zoom (decision 0039).
+   */
+  half: (hex: Hex, side: "west" | "east") => Point;
   /** A hex's six corners, as [longitude, latitude] (GeoJSON's order), clockwise from east. */
   corners: (hex: Hex) => [number, number][];
   /** Whether a hex is in the grid (its centre inside the bounds). */
@@ -144,6 +149,10 @@ export function hexGrid(bounds: MapBounds, size: number): HexGrid {
       return { q: q === 0 ? 0 : q, r: r === 0 ? 0 : r };
     },
     centre,
+    half(hex, which) {
+      const { x, y } = centreXY(hex);
+      return unproject(x + (which === "west" ? -side : side) / 2, y);
+    },
     corners(hex) {
       const { x, y } = centreXY(hex);
       return Array.from({ length: 6 }, (_, i) => {

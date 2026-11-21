@@ -79,6 +79,7 @@ import { CampaignMap } from "@/features/maps/CampaignMap";
 import { afterOrders, depotThreats, hexWarnings } from "@/features/maps/contact";
 import type { Point } from "@/features/maps/geo";
 import { hexGrid, hexKey, hexName, type Hex } from "@/features/maps/hex-grid";
+import { sideBySide } from "@/features/maps/hex-halves";
 import {
   budgetFor,
   classOf,
@@ -665,6 +666,7 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
         ? [
             {
               placed,
+              toHex: { q: order.q, r: order.r },
               to: order,
               // A move from before the grid has no path: a straight line.
               line: lineOf(
@@ -678,6 +680,7 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
     ...(moving && target && targetPath
       ? movingUnits.map((placed) => ({
           placed,
+          toHex: target,
           to: grid.centre(target),
           line: lineOf(moving.hex, targetPath),
         }))
@@ -686,6 +689,8 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
 
   // A picked-out army's or formation's moves only; the rest would clutter it.
   const moves = standingOut ? allMoves.filter((m) => standingOut(m.placed)) : allMoves;
+  // Where they're drawn: side by side in a hex with both units and ghosts (decision 0039).
+  const drawn = sideBySide(pieces ? shownOnMap : [], pieces ? moves : [], grid);
 
   const movingName = together ? `all ${String(together.length)} units` : moving?.unit.name;
   const stopMoving = () => {
@@ -1236,7 +1241,7 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
             visible={pieces && showGame("warnings")}
           />
           <OrderOverlay
-            moves={pieces ? moves : []}
+            moves={drawn.moves}
             reachable={
               landingAt
                 ? landingAt.map((hex) => grid.corners(hex))
@@ -1279,7 +1284,7 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
             />
           )}
           <UnitMarkers
-            units={pieces ? shownOnMap : []}
+            units={drawn.units}
             outOfSupply={past === null ? outOfSupply : undefined}
             highlight={standingOut}
             onSelect={(stack) => {
@@ -1311,7 +1316,12 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
           {pieces && manager && past === null && (
             <CourierMarkers
               campaignId={campaignId}
-              couriers={couriers.data ?? []}
+              // Beside its hex's units, in their west half when ghosts share it.
+              couriers={(couriers.data ?? []).map((courier) =>
+                drawn.split.has(hexKey(courier))
+                  ? { ...courier, ...grid.half(courier, "west") }
+                  : courier,
+              )}
               armies={armies.data ?? []}
             />
           )}

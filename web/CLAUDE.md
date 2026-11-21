@@ -89,7 +89,9 @@ The pre-commit hook runs `eslint --fix` and Prettier on staged files.
   `stackGroups`; whose orders can be taken back together: `orderedGroups`; each unit's budget:
   `stackMovers`) and `movement.ts`' `stackReach`; `MapPage`'s
   `together` holds the units, `moving` the first of them. Ghost moves along one path share a
-  line (`ghost-lines.ts`).
+  line (`ghost-lines.ts`) and stack as units do (`useStacks`, which both markers use). A hex
+  with both units and ghosts coming in draws them side by side (decision 0039): `sideBySide`
+  (`hex-halves.ts`, by `HexGrid.half`) moves where they're drawn, never their hex.
   The hex grid (decision 0014) is `hex-grid.ts`: its arithmetic matches the API's `HexGrid.cs`,
   and both are tested against `testdata/hex-grid.json` (from an independent Python reference;
   the Dockerfile copies it into the web build). `HexGridLayer` draws it, and nothing past

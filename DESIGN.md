@@ -1367,7 +1367,9 @@ visibility); the data is in §5.1. Built in Phase 8 (§7).
 - Their units where they started the open turn (after the last closed one), and each move
   ordered in it, whatever the army turn's status, as a **ghost** icon at the destination with a
   dashed line along its path (decision 0029; before step 59, an approved army's units showed at
-  their destinations, without ghosts).
+  their destinations, without ghosts). Ghosts going to one place stack with a count, as units
+  do; a hex with both units and ghosts coming in draws its units in its west half and the
+  ghosts in its east half (decision 0039).
 - **Turn panel:** the turn number and its status; each unit Moved, Held or
   without an order, with an **undo** button for those with one, in the army's order of battle
   (step 62: corps, divisions and brigades, each heading counting the units with orders, and
@@ -3205,3 +3207,9 @@ build on positions.
     `{ toArmyId, note }`, the note required; `SendReportModal` is the recipient and a message.
     Reports already sent keep their snapshot and sightings (a courier on its way still delivers
     them), as do the Umpire's.
+73. ✅ **Units and ghosts side by side** (decision 0039): a hex with both units in it and ghosts
+    of units moving into it draws the units in its west half and the ghosts in its east half,
+    a quarter of the hex's width either side of its centre (`HexGrid.half`, `sideBySide` in
+    `hex-halves.ts`); a hex with only one or the other keeps them at its centre. Ghosts stack
+    where they'd overlap, as units do (`useStacks`), with a dashed count. A courier in a split
+    hex sits beside its units, in the west half.

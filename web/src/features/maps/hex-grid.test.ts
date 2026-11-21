@@ -39,6 +39,20 @@ describe.each(expected.cases)(
       }
       expect(grid.corners({ q: 0, r: 0 })).toHaveLength(6);
     });
+
+    it("puts a hex's halves a quarter of its width either side of its centre, inside it", () => {
+      const hex = { q: 2, r: -1 };
+      const centre = grid.centre(hex);
+      // Corner to corner is two sides, a side being the size across the flats over √3.
+      const quarter = hexSize / Math.sqrt(3) / 2;
+      for (const which of ["west", "east"] as const) {
+        const half = grid.half(hex, which);
+        expect(distanceMetres(centre, half) / quarter).toBeCloseTo(1, 2);
+        expect(half.latitude).toBeCloseTo(centre.latitude, 9);
+        expect(half.longitude < centre.longitude).toBe(which === "west");
+        expect(grid.hexAt(half)).toEqual(hex);
+      }
+    });
   },
 );
 

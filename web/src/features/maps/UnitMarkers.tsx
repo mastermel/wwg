@@ -1,15 +1,14 @@
 import { IconSailboat } from "@tabler/icons-react";
-import { useEffect, useState } from "react";
-import { Marker, useMap } from "react-map-gl/maplibre";
+import { Marker } from "react-map-gl/maplibre";
 import { armyColorVar } from "@/features/armies/identity/army-colors";
 import {
   describeUnit,
   nameWithRank,
-  stackUnits,
   type PlacedUnit,
   type UnitStack,
 } from "@/features/maps/stacks";
 import classes from "@/features/maps/UnitMarkers.module.css";
+import { useStacks } from "@/features/maps/use-stacks";
 import { UnitSymbol } from "@/features/units/UnitSymbol";
 
 interface UnitMarkersProps {
@@ -27,25 +26,10 @@ interface UnitMarkersProps {
 /**
  * The units on the map, as buttons: one per unit, or one per stack where they'd overlap, which
  * shows how many and opens the list to choose from (DESIGN.md §3.13). Restacked as the zoom
- * changes. Inside a CampaignMap.
+ * changes (`useStacks`). Inside a CampaignMap.
  */
 export function UnitMarkers({ units, onSelect, highlight, outOfSupply }: UnitMarkersProps) {
-  const { current: map } = useMap();
-  const [stacks, setStacks] = useState<UnitStack[]>([]);
-
-  // Restacked when the units change and on zoom (the distances in pixels change); panning moves
-  // every marker together.
-  useEffect(() => {
-    if (!map) return;
-    const restack = () => {
-      setStacks(stackUnits(units, (lngLat) => map.project(lngLat)));
-    };
-    restack();
-    map.on("zoomend", restack);
-    return () => {
-      map.off("zoomend", restack);
-    };
-  }, [map, units]);
+  const stacks = useStacks(units);
 
   return stacks.map((stack) => {
     const [top, ...under] = stack.units as [PlacedUnit, ...PlacedUnit[]];

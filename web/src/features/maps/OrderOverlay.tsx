@@ -1,17 +1,22 @@
 import { useComputedColorScheme } from "@mantine/core";
 import type { FeatureCollection, Polygon } from "geojson";
+import { useMemo } from "react";
 import { Layer, Marker, Source } from "react-map-gl/maplibre";
 import { armyColorVar } from "@/features/armies/identity/army-colors";
 import type { Point } from "@/features/maps/geo";
 import { mapPalettes } from "@/features/maps/map-style";
 import { sharedLines } from "@/features/maps/ghost-lines";
+import type { Hex } from "@/features/maps/hex-grid";
 import classes from "@/features/maps/OrderOverlay.module.css";
 import type { PlacedUnit } from "@/features/maps/stacks";
+import { useStacks } from "@/features/maps/use-stacks";
 import { UnitSymbol } from "@/features/units/UnitSymbol";
 
 /** A unit's move this turn, not yet approved: from where it is along `line` to `to`. */
 export interface PendingMove {
   placed: PlacedUnit;
+  /** Where it's going: the hex, and where its ghost is drawn (its centre, or its east half). */
+  toHex: Hex;
   to: Point;
   /** The hex centres it passes through, as [longitude, latitude], from where it is to `to`. */
   line: [number, number][];
@@ -24,14 +29,20 @@ interface OrderOverlayProps {
 }
 
 /**
- * Moves not yet approved (DESIGN.md §3.13): a ghost of each unit where it's going, with a dashed
- * line along its path (one for units going together, the wider the more of them); and while
+ * Moves not yet approved (DESIGN.md §3.13): a ghost of each unit where it's going, stacked with
+ * a count where they'd overlap as units are (step 73), with a dashed line along its path (one for
+ * units going together, the wider the more of them); and while
  * moving, the hexes within reach, shaded. Inside a CampaignMap. Drawn for sight only: the turn
  * panel lists the same orders for screen readers and keyboards.
  */
 export function OrderOverlay({ moves, reachable = [] }: OrderOverlayProps) {
   const ink = mapPalettes[useComputedColorScheme("light")].label;
   const lines = sharedLines(moves);
+  const ghosts = useMemo(
+    () => moves.map(({ placed, toHex, to }) => ({ ...placed, hex: toHex, ...to })),
+    [moves],
+  );
+  const stacks = useStacks(ghosts);
   const area: FeatureCollection<Polygon> = {
     type: "FeatureCollection",
     features: reachable.map((corners) => ({
@@ -67,24 +78,41 @@ export function OrderOverlay({ moves, reachable = [] }: OrderOverlayProps) {
           }}
         />
       </Source>
-      {moves.map(({ placed, to }) => (
-        <Marker
-          key={placed.unit.id}
-          longitude={to.longitude}
-          latitude={to.latitude}
-          anchor="center"
-          style={{ pointerEvents: "none" }}
-        >
-          <span className={classes.ghost} aria-hidden>
-            <UnitSymbol
-              type={placed.unit.type}
-              commanderInChief={placed.unit.isCommanderInChief}
-              color={armyColorVar(placed.army.color)}
-              width={30}
-            />
-          </span>
-        </Marker>
-      ))}
+      {stacks.map((stack) => {
+        const [top, ...under] = stack.units as [PlacedUnit, ...PlacedUnit[]];
+        const next = under.at(0);
+        return (
+          <Marker
+            key={stack.key}
+            longitude={stack.longitude}
+            latitude={stack.latitude}
+            anchor="center"
+            style={{ pointerEvents: "none" }}
+          >
+            <span className={classes.ghost} aria-hidden>
+              {next && (
+                <span className={classes.under}>
+                  <UnitSymbol
+                    type={next.unit.type}
+                    commanderInChief={next.unit.isCommanderInChief}
+                    color={armyColorVar(next.army.color)}
+                    width={30}
+                  />
+                </span>
+              )}
+              <span className={classes.top}>
+                <UnitSymbol
+                  type={top.unit.type}
+                  commanderInChief={top.unit.isCommanderInChief}
+                  color={armyColorVar(top.army.color)}
+                  width={30}
+                />
+              </span>
+              {under.length > 0 && <span className={classes.count}>{stack.units.length}</span>}
+            </span>
+          </Marker>
+        );
+      })}
     </>
   );
 }
