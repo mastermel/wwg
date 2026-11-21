@@ -1,7 +1,7 @@
-import { Alert, Badge, Button, Group, List, Stack, Text } from "@mantine/core";
+import { Alert, Badge, Box, Button, Group, List, Stack, Text } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
-import { IconCheck, IconPlayerTrackNext, IconSend } from "@tabler/icons-react";
-import { useState } from "react";
+import { IconCheck, IconChevronRight, IconPlayerTrackNext, IconSend } from "@tabler/icons-react";
+import { useId, useState, type ReactNode } from "react";
 import type {
   ArmyTurnDetails,
   ArmyTurnStatus,
@@ -10,6 +10,7 @@ import type {
 } from "@/api/generated/model";
 import { Section } from "@/components/Section";
 import { ArmyBadge } from "@/features/armies/identity/ArmyBadge";
+import { ArmyOrdersList, type CommandedUnit } from "@/features/maps/ArmyOrdersList";
 import type { DepotThreat, HexWarning, UnitInHex } from "@/features/maps/contact";
 import type { PlacedUnit } from "@/features/maps/stacks";
 import { FormationList } from "@/features/maps/FormationList";
@@ -18,7 +19,8 @@ import type { TerrainIndex } from "@/features/maps/terrain";
 import { ReviewModal } from "@/features/maps/ReviewModal";
 import { StartTurnModal } from "@/features/maps/StartTurnModal";
 import { UnitPlacementRow } from "@/features/maps/UnitPlacementRow";
-import type { OpenArmyTurn } from "@/features/maps/use-orders";
+import type { PickedOut } from "@/features/maps/pick-out";
+import { reviewOf, type OpenArmyTurn, type useOrders } from "@/features/maps/use-orders";
 import type { useReview } from "@/features/maps/use-review";
 import { formatDateTime } from "@/lib/format";
 import { useOnline } from "@/lib/use-online";
@@ -49,6 +51,14 @@ interface ReviewPanelProps {
   /** The unit being placed, if one is. */
   placing: string | null;
   onPlace: (unitId: string) => void;
+  /** Every army's units, and where they are, for each army's list of units and orders (step 64d). */
+  armyUnits: readonly CommandedUnit[];
+  orders: ReturnType<typeof useOrders>;
+  /** Opens a unit on the map (its drawer, with Move and Hold). */
+  onChoose: (placed: PlacedUnit) => void;
+  /** The formation picked out on the map, if one is (step 64). */
+  pickedOut: PickedOut | null;
+  onPickOut: (formation: PickedOut | null) => void;
 }
 
 /**
@@ -71,6 +81,11 @@ export function ReviewPanel({
   unplaced,
   placing,
   onPlace,
+  armyUnits,
+  orders,
+  onChoose,
+  pickedOut,
+  onPickOut,
 }: ReviewPanelProps) {
   const online = useOnline();
   const [reviewing, setReviewing] = useState<{
@@ -134,6 +149,18 @@ export function ReviewPanel({
               onReview={(kind, turn) => {
                 setReviewing({ kind, entry, turn });
               }}
+              units={
+                <ArmyUnitsFold
+                  army={entry.army}
+                  turn={entry.turn}
+                  units={armyUnits.filter((u) => u.army.id === entry.army.id)}
+                  orders={orders}
+                  night={open.part === "Night"}
+                  onChoose={onChoose}
+                  pickedOut={pickedOut}
+                  onPickOut={onPickOut}
+                />
+              }
             />
           ) : null,
         )}
@@ -193,9 +220,11 @@ interface ArmyTurnReviewProps {
   turn: ArmyTurnDetails;
   review: ReturnType<typeof useReview>;
   onReview: (kind: "send-back" | "revert", turn: ArmyTurnDetails) => void;
+  /** Its units and their orders, folded away. */
+  units: ReactNode;
 }
 
-function ArmyTurnReview({ entry: { army }, turn, review, onReview }: ArmyTurnReviewProps) {
+function ArmyTurnReview({ entry: { army }, turn, review, onReview, units }: ArmyTurnReviewProps) {
   const online = useOnline();
   const moves = turn.orders.filter((o) => o.kind === "Move").length;
   const holds = turn.orders.length - moves;
@@ -235,6 +264,7 @@ function ArmyTurnReview({ entry: { army }, turn, review, onReview }: ArmyTurnRev
           </Text>
         </Alert>
       )}
+      {units}
       {turn.status === "Draft" && (
         <Group gap="xs">
           <Button
@@ -289,5 +319,64 @@ function ArmyTurnReview({ entry: { army }, turn, review, onReview }: ArmyTurnRev
         </Group>
       )}
     </Stack>
+  );
+}
+
+interface ArmyUnitsFoldProps {
+  army: OpenArmyTurn["army"];
+  turn: ArmyTurnDetails;
+  units: readonly CommandedUnit[];
+  orders: ReturnType<typeof useOrders>;
+  night: boolean;
+  onChoose: (placed: PlacedUnit) => void;
+  pickedOut: PickedOut | null;
+  onPickOut: (formation: PickedOut | null) => void;
+}
+
+/**
+ * An army's units and their orders, folded away until the Umpire opens them (step 64d): its
+ * order of battle, each formation's menu (pick out, hold the rest), and undo, while the turn can
+ * change (a Draft or Submitted, decision 0011).
+ */
+function ArmyUnitsFold({ army, turn, units, ...list }: ArmyUnitsFoldProps) {
+  const [opened, { toggle }] = useDisclosure(false);
+  const id = useId();
+  const onMap = units.filter((u) => u.placed);
+  const ordered = onMap.filter((u) => turn.orders.some((o) => o.unitId === u.unit.id)).length;
+  if (units.length === 0) return null;
+
+  return (
+    <Box>
+      <Button
+        variant="subtle"
+        color="gray"
+        size="compact-sm"
+        px={4}
+        aria-expanded={opened}
+        aria-controls={id}
+        leftSection={
+          <IconChevronRight
+            size={14}
+            aria-hidden
+            style={{ transform: opened ? "rotate(90deg)" : undefined }}
+          />
+        }
+        onClick={toggle}
+      >
+        {`Units (${String(ordered)} of ${String(onMap.length)} ordered)`}
+      </Button>
+      {opened && (
+        <Box id={id} mt={4}>
+          <ArmyOrdersList
+            army={army}
+            turn={turn}
+            units={units}
+            editable={turn.status !== "Completed"}
+            notes={reviewOf(turn)?.unitNotes}
+            {...list}
+          />
+        </Box>
+      )}
+    </Box>
   );
 }

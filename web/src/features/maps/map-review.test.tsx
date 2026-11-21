@@ -393,6 +393,70 @@ describe("the Umpire's turn", () => {
   });
 });
 
+describe("the Umpire's list of an army's units", () => {
+  const lancersId = "0192f5c1-0000-7000-8000-00000000b002";
+  /** The Guard and the Lancers, one brigade, beside the Umpire's usual campaign. */
+  const serveBrigade = (nordTurn: ArmyTurnDetails) => {
+    const requests = serveUmpire(nordTurn, waiting, []);
+    server.use(
+      http.get(`*/api/campaigns/${campaignId}/units`, () =>
+        HttpResponse.json(
+          [
+            { id: guardId, name: "Imperial Guard", type: "LineInfantry" },
+            { id: lancersId, name: "Lancers", type: "LightCavalry" },
+          ].map((u) => ({ ...u, armyId: nord.id, brigade: "Guard", fightingFactor: 4, points: 9 })),
+        ),
+      ),
+      http.get(`*/api/campaigns/${campaignId}/positions`, () =>
+        HttpResponse.json([at(guardId, nord.id, 0, 0), at(lancersId, nord.id, 0, 0)]),
+      ),
+    );
+    return requests;
+  };
+
+  it("unfolds them, and holds the rest of a brigade from its heading", async () => {
+    const requests = serveBrigade(armyTurn(nord, {}));
+    const user = userEvent.setup();
+    await openMap();
+
+    const panel = await screen.findByRole("region", { name: "Turn 1" });
+    const fold = await within(panel).findByRole("button", { name: "Units (0 of 2 ordered)" });
+    expect(fold).toHaveAttribute("aria-expanded", "false");
+    expect(within(panel).queryByText("Lancers")).not.toBeInTheDocument();
+    await user.click(fold);
+    expect(within(panel).getByRole("button", { name: "Lancers" })).toBeInTheDocument();
+    await user.click(within(panel).getByRole("button", { name: "Guard: actions" }));
+    await user.click(
+      await screen.findByRole("menuitem", { name: "Hold the 2 without orders", hidden: true }),
+    );
+
+    expect(await screen.findByText("The other 2 units in Guard will hold.")).toBeInTheDocument();
+    expect(requests).toEqual([
+      {
+        url: `/api/army-turns/${armyTurn(nord, {}).id}/hold`,
+        body: { unitIds: [guardId, lancersId] },
+      },
+    ]);
+    await expectNoAxeViolations(document.body);
+  });
+
+  it("leaves an approved turn's orders as they are", async () => {
+    serveBrigade(approved);
+    const user = userEvent.setup();
+    await openMap();
+
+    const panel = await screen.findByRole("region", { name: "Turn 1" });
+    await user.click(await within(panel).findByRole("button", { name: /^Units/ }));
+    await user.click(within(panel).getByRole("button", { name: "Guard: actions" }));
+
+    expect(
+      await screen.findByRole("menuitem", { name: "Pick out on the map", hidden: true }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: /^Hold/, hidden: true })).not.toBeInTheDocument();
+    expect(within(panel).queryByRole("button", { name: "Lancers" })).not.toBeInTheDocument();
+  });
+});
+
 describe("the Umpire's couriers", () => {
   const courier = {
     reportId: "0192f5c1-0000-7000-8000-00000000f101",

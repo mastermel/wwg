@@ -1315,6 +1315,15 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
         unplaced={unplaced}
         placing={placing}
         onPlace={setPlacing}
+        armyUnits={everyUnit
+          .filter((u) => !tied.has(u.unit.id))
+          .map((u) => ({ ...u, placed: onMap.find((p) => p.unit.id === u.unit.id) }))}
+        orders={orders}
+        onChoose={(placed) => {
+          openHex(placed.hex, undefined, placed);
+        }}
+        pickedOut={pickedOut}
+        onPickOut={pickOut}
       />
     ) : !setup && commanded.length > 0 && openTurn ? (
       <TurnPanel

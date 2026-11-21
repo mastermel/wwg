@@ -1397,7 +1397,8 @@ visibility); the data is in §5.1. Built in Phase 8 (§7).
   its moves as ghosts; decision 0029), and each army's turn
   under it: status, submitted and completed times, and **Approve**, **Send
   back** or **Revert** (the last two with a note for the turn and for units),
-  for the open turn only. A Submitted turn shows the commander's note to the Umpire (the latest
+  for the open turn only; its units, folded away, with their orders and each formation's
+  menu (step 64d). A Submitted turn shows the commander's note to the Umpire (the latest
   submission's); past turns list it in their history, for the Umpire and for the commander's own army.
 - **Start turn N+1**, with confirmation, once every army's turn is Completed.
 - **On a commander's behalf** (decision 0011): Move, Hold and Take back in the drawer for any
@@ -3030,7 +3031,12 @@ build on positions.
       without orders** while any unit in the formation on the map has none (`useOrders`'
       `holdTheRest`). No confirmation: each hold can be undone like any other. The Umpire's
       review panel lists no units (orders are the drawer's, step 36), so the Umpire has the
-      endpoint but no menu yet; step 65 can add one where units are listed.
+      endpoint but no menu yet; step 65 can add one where units are listed (64d did).
+    - ✅ **64d. The Umpire's units (UI):** each army in the Umpire's turn panel has its units
+      folded away under **Units (3 of 12 ordered)**: the commander's list (`ArmyOrdersList`,
+      shared with the turn panel), its order of battle with each unit's order, undo, and each
+      heading's menu (Pick out, **Hold the 3 without orders**), while the turn can change (a
+      Draft or Submitted, decision 0011); an approved turn's are there to read.
 65. ✅ **The order of battle everywhere units are listed:** the review dialog's notes per unit
     (sending a turn back or reopening it) are a `FormationList`, each note still sent for its own
     unit; the notes in a turn's history (`PastTurnPanel`) come one after another in the order of
@@ -3038,8 +3044,8 @@ build on positions.
     units and **Add units** already had `OrderOfBattleTable`. What stays as it was: a hex's few
     units (the drawer, the stack lists, a sighting's units and **Add a sighting**'s hexes, all
     by hex), and the supply warnings (a few units, by what's wrong). The Umpire's "Hold the
-    rest" (64c) still has no menu: no panel lists units for the Umpire during a turn, and
-    holding unit by unit from the drawer will do for now (deferred, 2026-11-20).
+    rest" (64c) had no menu then, as no panel listed units for the Umpire during a turn; 64d
+    added one.
 66. ✅ **Moving a hex's units together** (decision 0031): when the hex drawer lists two or more of
     one army's units without orders this turn, its commander (or the Umpire) can **Move all**: one
     move for all of them, each unit still with its own order.
