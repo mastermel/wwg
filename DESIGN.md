@@ -3157,3 +3157,24 @@ build on positions.
       1 starts (or only once under way); whether to send one to several armies at once (one report
       each); whether the Umpire can delete one sent by mistake; and whether it emails the
       recipient or waits for the next turn's email.
+71. **A Player commands several armies** (decision 0036): the Umpire can give one Player more
+    than one army, all of one side. They see what all of them see, give orders and submit for
+    each on its own, send no couriers between them, and get one "turn started" email for them
+    all. Not started; update §5.1 (the one-army rule and its index), §5.2 ("own army" becomes
+    "armies they command") and §5.3 as it's built.
+    - **71a. The API:** the unique index on `Army.CommanderId` becomes a plain one, and a trigger
+      (beside `AddCommanderRules`, kept by the test for dropped triggers) holds a commander's
+      armies to one side. `Commanders.ConflictAsync` becomes the side check: giving a Player an
+      army of the other side, or changing an army's side (`UpdateArmyAsync`) while its commander
+      commands one of the other side, is a 409 naming that army. `CampaignMemberResponse.army`
+      becomes `armies` (by name). A report to an army with the sender's commander is a 400
+      (`RecipientProblemAsync`).
+    - **71b. Emails:** `TurnStartedEmails` sends one email per commander: the turn and its day,
+      then each army's news under its name (`TurnNews.None` for an army with nothing new).
+    - **71c. In the app:** `MembersSection` shows a badge per army; `commanderOptions` offers
+      every Player, greying out those who command an army of the other side and saying why;
+      `SendReportModal` greys out the Player's own armies ("yours"); check the turn panel,
+      legend and army page for wording and layout that assume one army.
+    - **71d. End to end:** `armies.spec.ts` gives a Player a second army of their side, and is
+      refused one of the other side; `turns.spec.ts` (or `intelligence.spec.ts`) has the Player
+      submit both armies' turns.
