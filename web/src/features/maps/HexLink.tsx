@@ -22,6 +22,9 @@ export function HexLink({ hex, children }: HexLinkProps) {
       component="button"
       type="button"
       inherit
+      // The text's own colour, underlined: the theme's link colour fails contrast on a warning.
+      c="inherit"
+      underline="always"
       title="Show it on the map"
       style={{ verticalAlign: "baseline" }}
       onClick={() => {

@@ -326,6 +326,52 @@ test("the Umpire is warned where the orders bring the two sides together", async
   await expect(commander.page.getByText("Contact and concentration")).toHaveCount(0);
 });
 
+test("a commander is warned of their own hex over a concentration limit", async ({ signUp }) => {
+  const umpire = await signUp("Ada");
+  const commander = await signUp("Bob");
+  // Both units (60 points of infantry) in one hex, over a limit of 50.
+  const { campaignUrl, campaignId } = await startedCampaign(
+    umpire,
+    commander,
+    "Mont-Saint-Jean",
+    4828,
+    { stacked: true },
+  );
+  const api = await apiAs(umpire.page);
+  await api.put(`/api/campaigns/${campaignId}/concentration`, {
+    infantryTypes: ["LineInfantry", "FootArtillery"],
+    cavalryTypes: ["HeavyCavalry"],
+    infantryLimit: 50,
+    cavalryLimit: 160,
+  });
+
+  const page = commander.page;
+  await page.goto(`${campaignUrl}/map`);
+  const warnings = page
+    .getByRole("region", { name: "Turn 1" })
+    .getByRole("list", { name: "Over the concentration limits" });
+  await expect(warnings).toContainText(
+    "Hex (0, 0): French Empire has 60 points of infantry, over 50.",
+  );
+
+  // Its hex is a link: the hex's drawer, with its points against the limits.
+  await warnings.getByRole("button", { name: "Hex (0, 0)" }).click();
+  const counted = page
+    .getByRole("dialog", { name: "Hex (0, 0)" })
+    .getByRole("region", { name: "Concentration" });
+  await expect(counted.getByRole("row", { name: /Infantry/ })).toContainText("60 of 50 points");
+  await expect(counted.getByText("Over the limit")).toBeVisible();
+  // With one of the hex's units shown, as the totals stay.
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: /^Imperial Guard/ })
+    .click();
+  await expect(counted.getByText("Over the limit")).toBeVisible();
+  expect(await scan(page, "map, concentration")).toEqual([]);
+  await page.emulateMedia({ colorScheme: "dark" });
+  expect(await scan(page, "map, concentration, dark")).toEqual([]);
+});
+
 test("the Umpire confirms a forced march's attrition, and it's in the unit's history", async ({
   signUp,
 }) => {
