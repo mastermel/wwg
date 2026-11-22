@@ -3,6 +3,7 @@ import type { ArmySummary, ScoreboardResponse } from "@/api/generated/model";
 import { Section } from "@/components/Section";
 import { ArmyBadge } from "@/features/armies/identity/ArmyBadge";
 import { hexName } from "@/features/maps/hex-grid";
+import { HexLink } from "@/features/maps/HexLink";
 import { victoryPoints } from "@/features/maps/victory";
 
 interface ScoreboardPanelProps {
@@ -67,7 +68,7 @@ export function ScoreboardPanel({ scoreboard, armies }: ScoreboardPanelProps) {
                   <List.Item key={`${String(s.q)},${String(s.r)}`}>
                     <Group gap="xs" wrap="nowrap" justify="space-between">
                       <Text size="sm">
-                        {placeName(s)} ({victoryPoints(s.value)})
+                        <HexLink hex={s}>{placeName(s)}</HexLink> ({victoryPoints(s.value)})
                       </Text>
                       {holder ? (
                         <Text size="sm" span>

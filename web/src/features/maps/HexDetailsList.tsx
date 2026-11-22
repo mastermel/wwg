@@ -2,7 +2,7 @@ import { List, Text } from "@mantine/core";
 import { useListHexDetails } from "@/api/generated/endpoints/maps/maps";
 import { Section } from "@/components/Section";
 import { describeDetail } from "@/features/maps/hex-detail";
-import { hexName } from "@/features/maps/hex-grid";
+import { HexLink } from "@/features/maps/HexLink";
 
 const live = { query: { meta: { persist: false } } } as const;
 
@@ -20,7 +20,7 @@ export function HexDetailsList({ campaignId }: { campaignId: string }) {
         {details.data.map((detail) => (
           <List.Item key={`${String(detail.q)},${String(detail.r)}`}>
             <Text size="sm" fw={500}>
-              {hexName(detail)}
+              <HexLink hex={detail} />
             </Text>
             <Text size="sm">{describeDetail(detail)}</Text>
           </List.Item>

@@ -158,6 +158,7 @@ import { TurnPanel } from "@/features/maps/TurnPanel";
 import { standsOut, type PickedOut } from "@/features/maps/pick-out";
 import { unitsIn, type PlacedUnit } from "@/features/maps/stacks";
 import { HexDrawer } from "@/features/maps/HexDrawer";
+import { ShowHexContext } from "@/features/maps/show-hex";
 import { UnitMarkers } from "@/features/maps/UnitMarkers";
 import { useOpenTurns, useOrders } from "@/features/maps/use-orders";
 import { useReview } from "@/features/maps/use-review";
@@ -851,6 +852,12 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
     openHex(placed.hex, undefined, placed);
     setDrawerFocus((n) => n + 1);
     centreOn(placed.hex);
+  };
+  // A hex named in a panel (decision 0040): its drawer, with focus in it, and the hex centred.
+  const showHex = (hex: Hex) => {
+    openHex(hex);
+    setDrawerFocus((n) => n + 1);
+    centreOn(hex);
   };
   const mapRef = useRef<MapRef>(null);
   // The hex in the middle of the part of the map the drawer leaves (its left on a computer, its
@@ -1704,33 +1711,37 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
 
   // On a computer: the map with the turn panel and legend beside it, and the rest in columns
   // beneath. On a phone or tablet: one column, the map first and the legend last.
-  return desktop ? (
-    <>
-      <Stack gap="xl">
-        <Group align="flex-start" wrap="nowrap" gap="xl">
-          <Box style={{ flex: 1, minWidth: 0 }}>{mapColumn}</Box>
-          <Stack gap="xl" className={classes.side}>
-            {turnPanel}
-            {turnsList}
-            {legend}
+  return (
+    <ShowHexContext value={showHex}>
+      {desktop ? (
+        <>
+          <Stack gap="xl">
+            <Group align="flex-start" wrap="nowrap" gap="xl">
+              <Box style={{ flex: 1, minWidth: 0 }}>{mapColumn}</Box>
+              <Stack gap="xl" className={classes.side}>
+                {turnPanel}
+                {turnsList}
+                {legend}
+              </Stack>
+            </Group>
+            <div className={classes.panels}>{otherPanels}</div>
           </Stack>
-        </Group>
-        <div className={classes.panels}>{otherPanels}</div>
-      </Stack>
-      {overlays}
-    </>
-  ) : (
-    <Grid gap="xl">
-      <Grid.Col span={12}>{mapColumn}</Grid.Col>
-      <Grid.Col span={12}>
-        <Stack gap="xl">
-          {turnPanel}
-          {turnsList}
-          {otherPanels}
-          {legend}
-        </Stack>
-      </Grid.Col>
-      {overlays}
-    </Grid>
+          {overlays}
+        </>
+      ) : (
+        <Grid gap="xl">
+          <Grid.Col span={12}>{mapColumn}</Grid.Col>
+          <Grid.Col span={12}>
+            <Stack gap="xl">
+              {turnPanel}
+              {turnsList}
+              {otherPanels}
+              {legend}
+            </Stack>
+          </Grid.Col>
+          {overlays}
+        </Grid>
+      )}
+    </ShowHexContext>
   );
 }

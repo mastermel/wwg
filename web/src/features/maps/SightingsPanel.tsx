@@ -1,7 +1,8 @@
 import { List, Text } from "@mantine/core";
 import type { ArmySummary, SightingResponse } from "@/api/generated/model";
 import { Section } from "@/components/Section";
-import { describeSighting } from "@/features/maps/sightings";
+import { HexLink } from "@/features/maps/HexLink";
+import { sightedForce, sightingPlace } from "@/features/maps/sightings";
 
 interface SightingsPanelProps {
   /** The viewer's sightings (the Umpire's, every army's). */
@@ -30,7 +31,12 @@ export function SightingsPanel({ sightings, armies, turn, manager }: SightingsPa
                 {armies.find((a) => a.id === sighting.observingArmyId)?.name ?? "An army"} saw{" "}
               </Text>
             )}
-            {describeSighting(sighting, armies)}
+            {sighting.q !== null && sighting.r !== null ? (
+              <HexLink hex={{ q: sighting.q, r: sighting.r }} />
+            ) : (
+              sightingPlace(sighting)
+            )}
+            : {sightedForce(sighting, armies)}.
           </List.Item>
         ))}
       </List>

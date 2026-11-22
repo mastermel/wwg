@@ -929,8 +929,6 @@ describe("a commander's turn", () => {
         }),
       ),
     );
-    // In the Guard's hex, (0, 0), in the middle of the area.
-    click.at = { longitude: 4.45, latitude: 50.675 };
     const user = userEvent.setup();
     await openMap();
 
@@ -943,9 +941,16 @@ describe("a commander's turn", () => {
     ).toBeInTheDocument();
     await expectNoAxeViolations(document.body);
 
-    await user.click(screen.getByRole("button", { name: "Click the map" }));
+    // The warning's hex is a link: its drawer, with focus in it, and the map centred on it.
+    eased.length = 0;
+    await user.click(within(warnings).getByRole("button", { name: "Hex (0, 0)" }));
 
-    const drawer = within(await screen.findByRole("dialog", { name: "Hex (0, 0)" }));
+    const dialog = await screen.findByRole("dialog", { name: "Hex (0, 0)" });
+    expect(dialog).toHaveFocus();
+    const [longitude, latitude] = eased[0]?.center ?? [];
+    expect(longitude).toBeCloseTo(4.45, 1);
+    expect(latitude).toBeCloseTo(50.675, 1);
+    const drawer = within(dialog);
     const counted = within(drawer.getByRole("region", { name: "Concentration" }));
     expect(counted.getByRole("row", { name: /Infantry/ })).toHaveTextContent(
       "30 of 25 pointsOver the limit",

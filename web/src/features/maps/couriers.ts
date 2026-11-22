@@ -22,18 +22,22 @@ export function courierRoute(courier: CourierResponse, armies: readonly ArmySumm
 
 /** Where a courier on its way is, and how its ride goes: arriving, turns to ride, or waiting. */
 export function courierProgress(courier: CourierResponse, armies: readonly ArmySummary[]): string {
-  const where = hexName(courier);
+  const ride = courierRide(courier, armies);
+  return ride ? `${hexName(courier)}, ${ride}` : hexName(courier);
+}
+
+/** How a courier's ride goes, without where it is: arriving, turns to ride, waiting, or nothing. */
+export function courierRide(courier: CourierResponse, armies: readonly ArmySummary[]) {
   if (courier.waiting === "NoCommanderInChief") {
-    return `${where}, waiting: ${armyName(armies, courier.toArmyId)} has no Commander in Chief on the map`;
+    return `waiting: ${armyName(armies, courier.toArmyId)} has no Commander in Chief on the map`;
   }
-  if (courier.waiting === "NoWay")
-    return `${where}, waiting: no way reaches their Commander in Chief`;
-  if (courier.arrivesNext) return `${where}, arriving next turn`;
+  if (courier.waiting === "NoWay") return "waiting: no way reaches their Commander in Chief";
+  if (courier.arrivesNext) return "arriving next turn";
   if (courier.turnsToRide != null) {
     const turns = Math.max(1, Math.ceil(courier.turnsToRide));
-    return `${where}, about ${plural(turns, "turn", "turns")} to ride`;
+    return `about ${plural(turns, "turn", "turns")} to ride`;
   }
-  return where;
+  return null;
 }
 
 /** What a courier's report carries. */

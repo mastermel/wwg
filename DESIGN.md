@@ -3225,3 +3225,8 @@ build on positions.
     - ✅ **74b. Commanders' warnings:** a commander's turn panel (and a past turn's) lists their
       hexes over a limit ("Over the concentration limits"), and the map outlines them; their
       layer switch and legend entry ("Over a concentration limit") come with them.
+    - ✅ **74c. Hexes as links:** a hex named in the panels beside the map (contact and
+      concentration, sightings, couriers, depots, hex details, settlements held) is a link
+      (`HexLink`) that opens its drawer, with focus in it, and centres the map on it, as choosing
+      a unit does; the Map page gives it `showHex` through `ShowHexContext`. Elsewhere (the
+      campaign page's scoreboard) it's only the name.

@@ -41,11 +41,14 @@ export function describeTypes(types: readonly UnitType[]) {
 
 /** A sighting in a sentence: where, whose, what, how strong, and how it came. */
 export function describeSighting(sighting: SightingResponse, armies: readonly ArmySummary[]) {
-  const where =
-    sighting.q !== null && sighting.r !== null
-      ? hexName({ q: sighting.q, r: sighting.r })
-      : sighting.whereabouts;
-  return `${where}: ${sightedForce(sighting, armies)}.`;
+  return `${sightingPlace(sighting)}: ${sightedForce(sighting, armies)}.`;
+}
+
+/** Where a sighting was: its hex, or the Umpire's words for where. */
+export function sightingPlace(sighting: SightingResponse) {
+  return sighting.q !== null && sighting.r !== null
+    ? hexName({ q: sighting.q, r: sighting.r })
+    : sighting.whereabouts;
 }
 
 /**
@@ -67,7 +70,7 @@ export function sightingsIn(
 }
 
 /** Whose, what, how strong, and how it came: a sighting without where. */
-function sightedForce(sighting: SightingResponse, armies: readonly ArmySummary[]) {
+export function sightedForce(sighting: SightingResponse, armies: readonly ArmySummary[]) {
   const whose = sighting.armyIds
     ? sighting.armyIds.map((id) => armies.find((a) => a.id === id)?.name ?? "an army").join(" and ")
     : "Enemy troops";

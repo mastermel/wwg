@@ -4,12 +4,8 @@ import { useState } from "react";
 import type { ArmySummary, CourierResponse } from "@/api/generated/model";
 import { Section } from "@/components/Section";
 import { CancelCourierModal } from "@/features/maps/CancelCourierModal";
-import {
-  courierCargo,
-  courierOutcome,
-  courierProgress,
-  courierRoute,
-} from "@/features/maps/couriers";
+import { HexLink } from "@/features/maps/HexLink";
+import { courierCargo, courierOutcome, courierRide, courierRoute } from "@/features/maps/couriers";
 import { useOnline } from "@/lib/use-online";
 
 /**
@@ -44,43 +40,47 @@ export function CouriersPanel({
           </Text>
         ) : (
           <List size="sm" spacing={8} listStyleType="none" p={0} aria-label="Couriers">
-            {onTheirWay.map((courier) => (
-              <List.Item key={courier.reportId}>
-                <Group justify="space-between" wrap="nowrap" gap="xs" align="flex-start">
-                  <Stack gap={2}>
-                    <Text size="sm">
-                      {courierRoute(courier, armies)}: {courierProgress(courier, armies)}.
-                    </Text>
-                    <Text size="xs" c="dimmed">
-                      {courierOutcome(courier)} {courierCargo(courier)}
-                    </Text>
-                    {courier.note && (
-                      <Text size="xs" c="dimmed" style={{ whiteSpace: "pre-wrap" }}>
-                        “{courier.note}”
+            {onTheirWay.map((courier) => {
+              const ride = courierRide(courier, armies);
+              return (
+                <List.Item key={courier.reportId}>
+                  <Group justify="space-between" wrap="nowrap" gap="xs" align="flex-start">
+                    <Stack gap={2}>
+                      <Text size="sm">
+                        {courierRoute(courier, armies)}: <HexLink hex={courier} />
+                        {ride && `, ${ride}`}.
                       </Text>
-                    )}
-                  </Stack>
-                  <Group gap={4} wrap="nowrap">
-                    {courier.amongTheEnemy && (
-                      <Badge color="orange" variant="light">
-                        Among the enemy
-                      </Badge>
-                    )}
-                    <ActionIcon
-                      variant="subtle"
-                      color="red"
-                      aria-label={`Cancel the courier from ${courierRoute(courier, armies)}`}
-                      disabled={!online}
-                      onClick={() => {
-                        setCancelling(courier);
-                      }}
-                    >
-                      <IconHandStop size={16} aria-hidden />
-                    </ActionIcon>
+                      <Text size="xs" c="dimmed">
+                        {courierOutcome(courier)} {courierCargo(courier)}
+                      </Text>
+                      {courier.note && (
+                        <Text size="xs" c="dimmed" style={{ whiteSpace: "pre-wrap" }}>
+                          “{courier.note}”
+                        </Text>
+                      )}
+                    </Stack>
+                    <Group gap={4} wrap="nowrap">
+                      {courier.amongTheEnemy && (
+                        <Badge color="orange" variant="light">
+                          Among the enemy
+                        </Badge>
+                      )}
+                      <ActionIcon
+                        variant="subtle"
+                        color="red"
+                        aria-label={`Cancel the courier from ${courierRoute(courier, armies)}`}
+                        disabled={!online}
+                        onClick={() => {
+                          setCancelling(courier);
+                        }}
+                      >
+                        <IconHandStop size={16} aria-hidden />
+                      </ActionIcon>
+                    </Group>
                   </Group>
-                </Group>
-              </List.Item>
-            ))}
+                </List.Item>
+              );
+            })}
           </List>
         )}
         {done.length > 0 && (

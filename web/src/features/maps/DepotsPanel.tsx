@@ -3,7 +3,7 @@ import { IconArrowsMove, IconBuildingWarehouse, IconPencil, IconTrash } from "@t
 import type { ArmySummary, DepotResponse } from "@/api/generated/model";
 import { Section } from "@/components/Section";
 import { ArmyBadge } from "@/features/armies/identity/ArmyBadge";
-import { hexName } from "@/features/maps/hex-grid";
+import { HexLink } from "@/features/maps/HexLink";
 import { depotName } from "@/features/maps/use-depots";
 import { useOnline } from "@/lib/use-online";
 
@@ -64,7 +64,7 @@ export function DepotsPanel({
                         <Text span size="xs" c="dimmed">
                           {" "}
                           · {depot.name ? `${kindLabel(depot)}, ` : ""}
-                          {hexName(depot)}
+                          <HexLink hex={depot} />
                         </Text>
                       </Text>
                       {manager && (

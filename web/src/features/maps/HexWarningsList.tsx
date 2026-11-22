@@ -7,6 +7,7 @@ import {
   type DepotThreat,
   type HexWarning,
 } from "@/features/maps/contact";
+import { HexLink } from "@/features/maps/HexLink";
 import type { TerrainIndex } from "@/features/maps/terrain";
 
 interface HexWarningsListProps {
@@ -44,7 +45,7 @@ export function HexWarningsList({
         {warnings.map((warning) => (
           <List.Item key={`${String(warning.hex.q)},${String(warning.hex.r)}`}>
             <Text size="sm" fw={600} span>
-              {warningPlace(warning, terrain)}:
+              <HexLink hex={warning.hex}>{warningPlace(warning, terrain)}</HexLink>:
             </Text>{" "}
             {describeWarning(warning).join(" ")}
           </List.Item>

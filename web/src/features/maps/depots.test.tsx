@@ -159,7 +159,12 @@ describe("depots", () => {
     await openMap();
 
     const list = await screen.findByRole("list", { name: "Armée du Nord's depots" });
-    expect(within(list).queryByRole("button")).not.toBeInTheDocument();
+    // Only its hex, to show on the map.
+    expect(
+      within(list)
+        .getAllByRole("button")
+        .map((b) => b.textContent),
+    ).toEqual(["Hex (0, 0)"]);
     expect(screen.queryByRole("button", { name: "Add depot" })).not.toBeInTheDocument();
   });
 
