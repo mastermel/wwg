@@ -81,6 +81,21 @@ export function MapLayersControl({
               show.
             </Text>
           </Stack>
+          <Stack gap={4}>
+            <Switch
+              size="sm"
+              ml="md"
+              label="Other moves while a hex is chosen"
+              disabled={hidden.groups.includes("pieces")}
+              checked={!hidden.groups.includes("otherMoves")}
+              onChange={() => {
+                toggleGroup("otherMoves");
+              }}
+            />
+            <Text size="xs" c="dimmed" ml="md">
+              Off, choosing a hex hides every other move, instead of fading it.
+            </Text>
+          </Stack>
           <Divider />
         </>
       )}

@@ -438,6 +438,10 @@ describe("the map's layers", () => {
       await user.click(pieces);
 
       expect(pieces).not.toBeChecked();
+      // The moves go with the pieces, so there are no others to hide.
+      expect(
+        screen.getByRole("switch", { name: "Other moves while a hex is chosen", hidden: true }),
+      ).toBeDisabled();
       // The maps are drawn as they were.
       expect(screen.getByText(/^Drawn:/)).toHaveTextContent(
         "Drawn: roads, places, water, forests, hills; grid on",
@@ -450,6 +454,29 @@ describe("the map's layers", () => {
       });
     },
   );
+
+  it("lets a viewer hide other hexes' moves while one is chosen, instead of fading them", async () => {
+    localStorage.clear();
+    serveCampaign("Player", settings(waterloo));
+    const user = userEvent.setup();
+    await renderApp(`/campaigns/${campaignId}/map`);
+
+    await user.click(await screen.findByRole("button", { name: "Map layers" }));
+    const others = await screen.findByRole("switch", {
+      name: "Other moves while a hex is chosen",
+      hidden: true,
+    });
+    expect(others).toBeChecked();
+    await user.click(others);
+
+    expect(others).not.toBeChecked();
+    expect(JSON.parse(localStorage.getItem(`wwg:map-layers:${campaignId}`) ?? "{}")).toEqual({
+      real: [],
+      game: ["rivers"],
+      groups: ["otherMoves"],
+      version: 2,
+    });
+  });
 
   it("draws the game map only once zoomed in to 40 hexes or fewer", async () => {
     localStorage.clear();

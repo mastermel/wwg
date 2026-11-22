@@ -38,9 +38,10 @@ export type GameLayer = (typeof gameLayers)[number]["key"];
 
 /**
  * What a viewer can hide whole: either map, or (on the Map page) the pieces over them: units,
- * sightings, reports' units, depots, couriers, towns' holders, ghost moves and warnings.
+ * sightings, reports' units, depots, couriers, towns' holders, ghost moves and warnings; and,
+ * while a hex is chosen, the other hexes' moves (`otherMoves`, step 75d), which otherwise fade.
  */
-export type LayerGroup = "real" | "game" | "pieces";
+export type LayerGroup = "real" | "game" | "pieces" | "otherMoves";
 
 /** What a viewer has hidden: layers one by one, and whole maps (or the pieces). */
 export interface HiddenLayers {
@@ -50,7 +51,7 @@ export interface HiddenLayers {
 }
 
 const nothingHidden: HiddenLayers = { real: [], game: [], groups: [] };
-const layerGroups: readonly string[] = ["real", "game", "pieces"];
+const layerGroups: readonly string[] = ["real", "game", "pieces", "otherMoves"];
 
 /**
  * What a viewer sees hidden before they change anything: on the Map page, rivers along the
@@ -89,6 +90,12 @@ export const showsGameLayer = (campaign: MapLayers, hidden: HiddenLayers, key: G
 
 /** Whether the game's pieces (units, sightings, markers and the like) are drawn over the maps. */
 export const showsPieces = (hidden: HiddenLayers) => !hidden.groups.includes("pieces");
+
+/**
+ * Whether other hexes' moves stay, faded, while a hex's moves stand out (decision 0041), or go
+ * (step 75d).
+ */
+export const showsOtherMoves = (hidden: HiddenLayers) => !hidden.groups.includes("otherMoves");
 
 /** The real map's layers the campaign shows, less those the viewer hid (all, with the map). */
 export const shownRealLayers = (campaign: MapLayers, hidden: HiddenLayers): MapLayers => ({

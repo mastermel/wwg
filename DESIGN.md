@@ -1381,7 +1381,8 @@ visibility); the data is in §5.1. Built in Phase 8 (§7).
   same. Tapping a ghost opens the drawer of the hex its units left, so their moves stand out
   (step 75b); a ghost gathering units from several hexes (zoomed out) opens those units. With a
   mouse, while no hex is chosen, hovering over a unit's marker or a ghost shows the same until
-  the pointer leaves (step 75c).
+  the pointer leaves (step 75c). A viewer can hide the other moves while a hex is chosen,
+  instead of fading them (the layers' **Other moves while a hex is chosen**, step 75d).
 - **Turn panel:** the turn number and its status; each unit Moved, Held or
   without an order, with an **undo** button for those with one, in the army's order of battle
   (step 62: corps, divisions and brigades, each heading counting the units with orders, and
@@ -3256,7 +3257,9 @@ build on positions.
       leaves, or strays more than a hex from the marker (a marker restacked from under the
       pointer never says it left). Only while no hex is chosen: a chosen hex keeps its moves
       standing out wherever the mouse goes.
-    - **75d. Only the chosen moves:** a switch in the map's layers (`map-layers.ts`) hides every
-      move but the chosen hex's. Not started.
+    - ✅ **75d. Only the chosen moves:** **Other moves while a hex is chosen** in the map's
+      layers, under Units & markers (the `otherMoves` group, `showsOtherMoves`): off, choosing a
+      hex with moves hides every other move, line and ghost, instead of fading it. Nothing
+      chosen, or a hex without moves, shows them all as before; a hover only fades them.
     - Spreading overlapping paths apart (transit-map style) was considered and is held back:
       see decision 0041.

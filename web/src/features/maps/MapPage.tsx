@@ -149,6 +149,7 @@ import {
   hexesAcross,
   shownRealLayers,
   showsGameLayer,
+  showsOtherMoves,
   showsPieces,
   useHiddenLayers,
   type GameLayer,
@@ -732,11 +733,15 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
   ];
 
   // A picked-out army's or formation's moves only; the rest would clutter it.
-  const moves = standingOut ? allMoves.filter((m) => standingOut(m.placed)) : allMoves;
+  const pickedMoves = standingOut ? allMoves.filter((m) => standingOut(m.placed)) : allMoves;
   // The chosen hex's moves stand out, or those a mouse previews, and where they go is outlined
   // (decision 0041); not while placing or moving, which draw their own.
   const focusUnits = idle ? (chosen ? chosenUnits : previewUnits) : [];
   const focusIds = focusUnits.length > 0 ? new Set(focusUnits.map((p) => p.unit.id)) : null;
+  // The rest fade, or, for a viewer who'd rather (step 75d), go while a hex is chosen with moves.
+  const chosenMoves =
+    idle && chosen && !showsOtherMoves(layers.hidden) ? focusedMoves(pickedMoves, focusIds) : [];
+  const moves = chosenMoves.length > 0 ? chosenMoves : pickedMoves;
   // Where they're drawn: side by side in a hex with both units and ghosts (decision 0039).
   const drawn = sideBySide(pieces ? shownOnMap : [], pieces ? moves : [], grid);
   const focused = focusedMoves(drawn.moves, focusIds);
