@@ -121,9 +121,12 @@ const place = (p: Palette, radius: number, fill: string, stroke: string, strokeW
  */
 export function MapLegend({
   umpire,
+  warnings = umpire,
   collapsible = false,
 }: {
   umpire: boolean;
+  /** Whether the viewer sees warnings: the Umpire's of contact or concentration, a commander's of their concentration. */
+  warnings?: boolean;
   /** Each group opens and closes, one at a time (beside the map, on a computer). */
   collapsible?: boolean;
 }) {
@@ -227,7 +230,7 @@ export function MapLegend({
           }
           label="Where a unit can move"
         />
-        {umpire && (
+        {warnings && (
           <Item
             sample={
               <Sample p={p}>
@@ -241,7 +244,7 @@ export function MapLegend({
                 />
               </Sample>
             }
-            label="Contact or concentration"
+            label={umpire ? "Contact or concentration" : "Over a concentration limit"}
           />
         )}
       </LegendGroup>

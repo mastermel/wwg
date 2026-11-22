@@ -917,6 +917,42 @@ describe("a commander's turn", () => {
     expect(drawer.getByRole("button", { name: "Hold" })).toBeInTheDocument();
   });
 
+  it("warns of their hexes over a concentration limit, and totals a hex's in its drawer", async () => {
+    serveCommander(draft());
+    server.use(
+      http.get(`*/api/campaigns/${campaignId}/concentration`, () =>
+        HttpResponse.json({
+          infantryTypes: ["LineInfantry"],
+          cavalryTypes: ["HeavyCavalry"],
+          infantryLimit: 25,
+          cavalryLimit: 160,
+        }),
+      ),
+    );
+    // In the Guard's hex, (0, 0), in the middle of the area.
+    click.at = { longitude: 4.45, latitude: 50.675 };
+    const user = userEvent.setup();
+    await openMap();
+
+    const warnings = await screen.findByRole("list", { name: "Over the concentration limits" });
+    expect(warnings).toHaveTextContent("Hex (0, 0): Coalition has 30 points of infantry, over 25.");
+    expect(
+      within(screen.getByRole("region", { name: "Legend" })).getByText(
+        "Over a concentration limit",
+      ),
+    ).toBeInTheDocument();
+    await expectNoAxeViolations(document.body);
+
+    await user.click(screen.getByRole("button", { name: "Click the map" }));
+
+    const drawer = within(await screen.findByRole("dialog", { name: "Hex (0, 0)" }));
+    const counted = within(drawer.getByRole("region", { name: "Concentration" }));
+    expect(counted.getByRole("row", { name: /Infantry/ })).toHaveTextContent(
+      "30 of 25 pointsOver the limit",
+    );
+    expect(counted.getByRole("row", { name: /Cavalry/ })).toHaveTextContent("0 of 160 points");
+  });
+
   const allyId = "0192f5c1-0000-7000-8000-00000000a002";
   const chief = (armyOf: string, name: string) => ({
     id: `0192f5c1-0000-7000-8000-0000000c${armyOf.slice(-4)}`,

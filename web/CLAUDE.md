@@ -129,8 +129,10 @@ The pre-commit hook runs `eslint --fix` and Prettier on staged files.
   `TurnParts`. The march itself is `movement.ts`'s `budgetFor`, as the API's.
 - Contact and concentration (step 46, decision 0017) is `features/maps/contact.ts`: `hexWarnings`
   per hex and side, by the campaign's concentration settings (`features/campaigns/concentration.ts`
-  has the usual ones); `afterOrders` for the turn shown. The Umpire's only: `HexWarningsList` in
-  the turn panels, `HexWarningsLayer` on the map. Name a hex with `hexName` (`hex-grid.ts`).
+  has the usual ones); `afterOrders` for the turn shown. `HexWarningsList` in the turn panels,
+  `HexWarningsLayer` on the map: the Umpire's of every side, a commander's of their own units'
+  hexes (decision 0040). A hex's drawer totals its points (`hexConcentration`,
+  `ConcentrationSummary`). Name a hex with `hexName` (`hex-grid.ts`).
 - The Map page's layers (`map-layers.ts`, `MapLayersControl`): each viewer hides what the
   campaign's map settings show, layer by layer or a whole map by its own switch (`groups`, which
   leaves its layers' switches as they were; on the Map page, `"pieces"` hides everything drawn

@@ -6,8 +6,11 @@ import type { ArmyTurnDetails, ArmyTurnStatus, CampaignTurnSummary } from "@/api
 import { Section } from "@/components/Section";
 import { ArmyBadge } from "@/features/armies/identity/ArmyBadge";
 import { ArmyOrdersList, type CommandedUnit } from "@/features/maps/ArmyOrdersList";
+import { commanderWarnings, type HexWarning } from "@/features/maps/contact";
+import { HexWarningsList } from "@/features/maps/HexWarningsList";
 import type { PickedOut } from "@/features/maps/pick-out";
 import { SubmitTurnModal } from "@/features/maps/SubmitTurnModal";
+import type { TerrainIndex } from "@/features/maps/terrain";
 import type { PlacedUnit } from "@/features/maps/stacks";
 import { reviewOf, type OpenArmyTurn, type useOrders } from "@/features/maps/use-orders";
 import { useOnline } from "@/lib/use-online";
@@ -30,11 +33,14 @@ interface TurnPanelProps {
   /** The formation picked out on the map, if one is (step 64). */
   pickedOut: PickedOut | null;
   onPickOut: (formation: PickedOut | null) => void;
+  /** The commander's hexes over a concentration limit, by the orders as given (step 46). */
+  warnings: readonly HexWarning[];
+  terrain: TerrainIndex;
 }
 
 /**
- * A commander's turn (DESIGN.md §3.13): how far the turn has got, and for each army they command
- * its status, the Umpire's notes, each unit's order (with undo) in the army's order of battle, and
+ * A commander's turn (DESIGN.md §3.13): how far the turn has got, their hexes over a
+ * concentration limit, and for each army they command its status, the Umpire's notes, each unit's order (with undo) in the army's order of battle, and
  * Submit.
  */
 export function TurnPanel({
@@ -45,6 +51,8 @@ export function TurnPanel({
   onChoose,
   pickedOut,
   onPickOut,
+  warnings,
+  terrain,
 }: TurnPanelProps) {
   const [submitting, setSubmitting] = useState<OpenArmyTurn | null>(null);
   const [confirming, { open: ask, close }] = useDisclosure(false);
@@ -67,6 +75,12 @@ export function TurnPanel({
             forced march.
           </Alert>
         )}
+        <HexWarningsList
+          warnings={warnings}
+          terrain={terrain}
+          from="orders"
+          title={commanderWarnings}
+        />
         {commanded.map((entry) =>
           entry.turn ? (
             <ArmyTurnOrders

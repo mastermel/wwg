@@ -40,8 +40,12 @@ interface PastTurnPanelProps {
   /** The open turn's number, to go back to. */
   openTurn: number;
   onBack: () => void;
-  /** Contact and concentration, from where the units ended up (step 46); the Umpire's only. */
+  /**
+   * Contact and concentration, from where the units ended up (step 46): the Umpire's, or a
+   * commander's own hexes over a limit; with the heading to give them.
+   */
   warnings: readonly HexWarning[];
+  warningsTitle?: string;
   threats: readonly DepotThreat[];
   terrain: TerrainIndex;
 }
@@ -58,6 +62,7 @@ export function PastTurnPanel({
   openTurn,
   onBack,
   warnings,
+  warningsTitle,
   threats,
   terrain,
 }: PastTurnPanelProps) {
@@ -127,7 +132,13 @@ export function PastTurnPanel({
             </Stack>
           );
         })}
-        <HexWarningsList warnings={warnings} threats={threats} terrain={terrain} from="positions" />
+        <HexWarningsList
+          warnings={warnings}
+          threats={threats}
+          terrain={terrain}
+          from="positions"
+          title={warningsTitle}
+        />
         <Button
           variant="default"
           leftSection={<IconPlayerTrackNext size={16} aria-hidden />}

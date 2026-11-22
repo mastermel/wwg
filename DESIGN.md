@@ -2784,7 +2784,7 @@ build on positions.
       army's, whatever their status), on past turns from where the units ended up. Outlined on the
       map in the fortress red, and listed in words in the turn panel ("Hex (1, 0): Contact:
       Coalition and French Empire."), as warnings. Worked out in the app (`contact.ts`) from what
-      the Umpire's map already loads; commanders aren't shown them.
+      the Umpire's map already loads; commanders see their own hexes over a limit (step 74).
     - **46d. Battle records (later):** the Umpire records a battle: its hex and turn, the units
       involved, and their points afterwards (which the units then have). Concentration within
       three turns of a battle in that hex is then allowed, as the rules say.
@@ -3217,3 +3217,11 @@ build on positions.
     `hex-halves.ts`); a hex with only one or the other keeps them at its centre. Ghosts stack
     where they'd overlap, as units do (`useStacks`), with a dashed count. A courier in a split
     hex sits beside its units, in the west half.
+74. **Concentration for commanders** (decision 0040), in parts:
+    - ✅ **74a. The drawer's totals:** the hex's drawer has a **Concentration** part: each side's
+      counted infantry and cavalry points against its limits there (`hexConcentration` in
+      `contact.ts`, `ConcentrationSummary`), of the units the viewer sees where the shown turn's
+      orders leave them; marked near a limit from four fifths of it (`standing`), and over it.
+    - ✅ **74b. Commanders' warnings:** a commander's turn panel (and a past turn's) lists their
+      hexes over a limit ("Over the concentration limits"), and the map outlines them; their
+      layer switch and legend entry ("Over a concentration limit") come with them.

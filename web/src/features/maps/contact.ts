@@ -177,6 +177,9 @@ export function afterOrders<T extends UnitInHex>(
   });
 }
 
+/** A commander's warnings' heading: their own side's hexes over a limit (they see no one else's). */
+export const commanderWarnings = "Over the concentration limits";
+
 /** How much of its limit a side may fill before it's told it's nearing it. */
 export const nearShare = 0.8;
 

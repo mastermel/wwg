@@ -76,7 +76,13 @@ import { describeSupply } from "@/features/maps/supply";
 import { SupplyWarnings } from "@/features/maps/SupplyWarnings";
 import { depotName, useDepots } from "@/features/maps/use-depots";
 import { CampaignMap } from "@/features/maps/CampaignMap";
-import { afterOrders, depotThreats, hexConcentration, hexWarnings } from "@/features/maps/contact";
+import {
+  afterOrders,
+  commanderWarnings,
+  depotThreats,
+  hexConcentration,
+  hexWarnings,
+} from "@/features/maps/contact";
 import type { Point } from "@/features/maps/geo";
 import { hexGrid, hexKey, hexName, type Hex } from "@/features/maps/hex-grid";
 import { sideBySide } from "@/features/maps/hex-halves";
@@ -560,10 +566,10 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
   const afterTheOrders = useMemo(() => afterOrders(onMap, shownOrders), [onMap, shownOrders]);
   const warnings = useMemo(
     () =>
-      manager && !setup && concentration.data
+      !setup && concentration.data
         ? hexWarnings(afterTheOrders, concentration.data, costs.terrain)
         : [],
-    [manager, setup, concentration.data, afterTheOrders, costs.terrain],
+    [setup, concentration.data, afterTheOrders, costs.terrain],
   );
   // Depots with the other side's units in their hex: the Umpire captures or destroys them.
   const threats = useMemo(
@@ -1191,7 +1197,7 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
             campaign={settings.layers}
             layers={layers}
             zoomedIn={zoomedIn}
-            warnings={manager}
+            warnings={manager || myArmies.length > 0}
             pieces
           />
           {desktop &&
@@ -1358,6 +1364,7 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
         units={units.data ?? []}
         openTurn={turns.data.openTurn}
         warnings={warnings}
+        warningsTitle={manager ? undefined : commanderWarnings}
         threats={threats}
         terrain={costs.terrain}
         onBack={() => {
@@ -1411,6 +1418,8 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
         onChoose={chooseUnit}
         pickedOut={pickedOut}
         onPickOut={pickOut}
+        warnings={warnings}
+        terrain={costs.terrain}
       />
     ) : (
       <Section title={setup ? "Setting up" : `Turn ${String(turns.data.openTurn)}`}>
@@ -1500,7 +1509,7 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
   );
   const legend = (
     <Section title="Legend">
-      <MapLegend umpire={manager} collapsible={desktop} />
+      <MapLegend umpire={manager} warnings={manager || myArmies.length > 0} collapsible={desktop} />
     </Section>
   );
   const overlays = (

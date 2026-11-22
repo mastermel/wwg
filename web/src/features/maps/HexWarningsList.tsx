@@ -16,27 +16,31 @@ interface HexWarningsListProps {
   terrain: TerrainIndex;
   /** Whose positions they're from: the orders as given, or where the units ended up. */
   from: "orders" | "positions";
+  /** Its heading and the list's name: a commander's warnings are their own side's concentration. */
+  title?: string;
 }
 
 /**
- * Contact and concentration, for the Umpire (step 46, decision 0017): each hex to warn of, in
- * words. Warnings only: nothing is refused, and battles are fought at the table. The map outlines
+ * Contact and concentration (step 46, decision 0017): each hex to warn of, in words. The Umpire
+ * sees every side's; a commander, their own units' hexes over a limit. Warnings only: nothing is refused, and battles are fought at the table. The map outlines
  * the same hexes, for sight.
  */
-export function HexWarningsList({ warnings, threats = [], terrain, from }: HexWarningsListProps) {
+export function HexWarningsList({
+  warnings,
+  threats = [],
+  terrain,
+  from,
+  title = "Contact and concentration",
+}: HexWarningsListProps) {
   if (warnings.length === 0 && threats.length === 0) return null;
   return (
-    <Alert
-      color="orange"
-      icon={<IconAlertTriangle aria-hidden />}
-      title="Contact and concentration"
-    >
+    <Alert color="orange" icon={<IconAlertTriangle aria-hidden />} title={title}>
       <Text size="xs" mb="xs">
         {from === "orders"
           ? "Where the units will be, by the orders as given."
           : "Where the units ended up."}
       </Text>
-      <List size="sm" spacing={6} aria-label="Contact and concentration">
+      <List size="sm" spacing={6} aria-label={title}>
         {warnings.map((warning) => (
           <List.Item key={`${String(warning.hex.q)},${String(warning.hex.r)}`}>
             <Text size="sm" fw={600} span>
