@@ -202,6 +202,35 @@ describe("the hex drawer", () => {
     expect(await screen.findByRole("region", { name: "2 units" })).toBeInTheDocument();
   });
 
+  it("names each unit of a stack by what it shows: its rank, and its hex if not this one", async () => {
+    const napoleon = unit("n", "Napoleon", "Commander");
+    napoleon.unit.isCommanderInChief = true;
+    const away = { ...unit("h", "Hussars", "LightCavalry"), hex: { q: 1, r: 0 } };
+    renderDrawer([stack[0], napoleon, away]);
+    const units = within(await screen.findByRole("region", { name: "3 units" }));
+
+    expect(units.getAllByRole("button").map((b) => b.getAttribute("aria-label"))).toEqual([
+      "Imperial Guard, Line Infantry, Armée du Nord",
+      "Napoleon, Commander in Chief, Armée du Nord",
+      "Hussars, Light Cavalry, Armée du Nord, Hex (1, 0)",
+    ]);
+    // What each shows is in its name, as axe checks it (WCAG 2.5.3; jsdom can't lay it out, so
+    // axe leaves it undecided): its text run together, without what's hidden from listeners.
+    const words = (text: string | null) =>
+      (text ?? "")
+        .replace(/[^\p{L}\p{N}\s]/gu, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+        .toLowerCase();
+    for (const button of units.getAllByRole("button")) {
+      const shown = [...button.querySelectorAll("*")]
+        .filter((el) => el.children.length === 0 && !el.closest("[aria-hidden]"))
+        .map((el) => el.textContent)
+        .join("");
+      expect(words(button.getAttribute("aria-label"))).toContain(words(shown));
+    }
+  });
+
   it("shows a single unit straight away", async () => {
     renderDrawer(stack.slice(0, 1));
 

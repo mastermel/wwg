@@ -6,7 +6,7 @@ import { ArmyBadge } from "@/features/armies/identity/ArmyBadge";
 import { armyColorVar } from "@/features/armies/identity/army-colors";
 import { hexKey, hexName, type Hex } from "@/features/maps/hex-grid";
 import type { HexInfo } from "@/features/maps/hex-info";
-import { describeUnit, type PlacedUnit } from "@/features/maps/stacks";
+import type { PlacedUnit } from "@/features/maps/stacks";
 import { CommanderInChiefBadge } from "@/features/units/CommanderInChiefBadge";
 import { UnitSymbol } from "@/features/units/UnitSymbol";
 import { UnitStat } from "@/features/units/UnitStat";
@@ -150,41 +150,46 @@ export function HexDrawer({
             units.length > 0 && (
               <Part title={`${String(units.length)} units`}>
                 <Stack component="ul" gap={0} p={0} m={0}>
-                  {units.map((placed) => (
-                    <li key={placed.unit.id} style={{ listStyle: "none" }}>
-                      <NavLink
-                        component="button"
-                        label={
-                          placed.unit.isCommanderInChief ? (
-                            <Group gap={6} wrap="nowrap">
-                              {placed.unit.name}
-                              <CommanderInChiefBadge />
-                            </Group>
-                          ) : (
-                            placed.unit.name
-                          )
-                        }
-                        description={[
-                          unitTypeLabels[placed.unit.type],
-                          placed.army.name,
-                          // A marker's stack, zoomed out, can take in the hexes around.
-                          ...(hexKey(placed.hex) === hexKey(hex.hex) ? [] : [hexName(placed.hex)]),
-                        ].join(" · ")}
-                        aria-label={describeUnit(placed)}
-                        leftSection={
-                          <UnitSymbol
-                            type={placed.unit.type}
-                            commanderInChief={placed.unit.isCommanderInChief}
-                            color={armyColorVar(placed.army.color)}
-                            width={30}
-                          />
-                        }
-                        onClick={() => {
-                          onSelect(placed);
-                        }}
-                      />
-                    </li>
-                  ))}
+                  {units.map((placed) => {
+                    // Its name says what it shows (WCAG 2.5.3): the badge is spelt out after it.
+                    const about = [
+                      placed.unit.isCommanderInChief
+                        ? "Commander in Chief"
+                        : unitTypeLabels[placed.unit.type],
+                      placed.army.name,
+                      // A marker's stack, zoomed out, can take in the hexes around.
+                      ...(hexKey(placed.hex) === hexKey(hex.hex) ? [] : [hexName(placed.hex)]),
+                    ];
+                    return (
+                      <li key={placed.unit.id} style={{ listStyle: "none" }}>
+                        <NavLink
+                          component="button"
+                          label={
+                            placed.unit.isCommanderInChief ? (
+                              <Group gap={6} wrap="nowrap">
+                                {placed.unit.name} <CommanderInChiefBadge hidden />
+                              </Group>
+                            ) : (
+                              <>{placed.unit.name} </>
+                            )
+                          }
+                          description={about.join(" · ")}
+                          aria-label={[placed.unit.name, ...about].join(", ")}
+                          leftSection={
+                            <UnitSymbol
+                              type={placed.unit.type}
+                              commanderInChief={placed.unit.isCommanderInChief}
+                              color={armyColorVar(placed.army.color)}
+                              width={30}
+                            />
+                          }
+                          onClick={() => {
+                            onSelect(placed);
+                          }}
+                        />
+                      </li>
+                    );
+                  })}
                 </Stack>
                 {listActions}
               </Part>

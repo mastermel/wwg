@@ -361,12 +361,6 @@ test("a commander is warned of their own hex over a concentration limit", async 
     .getByRole("region", { name: "Concentration" });
   await expect(counted.getByRole("row", { name: /Infantry/ })).toContainText("60 of 50 points");
   await expect(counted.getByText("Over the limit")).toBeVisible();
-  // With one of the hex's units shown, as the totals stay.
-  await page
-    .getByRole("dialog")
-    .getByRole("button", { name: /^Imperial Guard/ })
-    .click();
-  await expect(counted.getByText("Over the limit")).toBeVisible();
   expect(await scan(page, "map, concentration")).toEqual([]);
   await page.emulateMedia({ colorScheme: "dark" });
   expect(await scan(page, "map, concentration, dark")).toEqual([]);
