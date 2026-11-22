@@ -16,6 +16,7 @@ import {
   IconLogout,
   IconMasksTheater,
   IconMap,
+  IconRefresh,
   IconSwords,
   IconUser,
   IconUsers,
@@ -31,6 +32,7 @@ import { ThemeMenuItems } from "@/components/ThemeMenuItems";
 import { useMasqueradeSession } from "@/features/admin/use-masquerade-session";
 import { ConfirmEmailReminder } from "@/features/auth/ConfirmEmailReminder";
 import { useSession, useSessionStore } from "@/features/auth/session-context";
+import { updateAndReload } from "@/lib/app-update";
 import { formatDateTime } from "@/lib/format";
 
 interface NavItem {
@@ -126,6 +128,12 @@ export function AppLayout() {
                 <Menu.Divider />
                 <ThemeMenuItems />
                 <Menu.Divider />
+                <Menu.Item
+                  leftSection={<IconRefresh size={16} aria-hidden />}
+                  onClick={() => void updateAndReload()}
+                >
+                  Update and reload
+                </Menu.Item>
                 <Menu.Item
                   leftSection={<IconLogout size={16} aria-hidden />}
                   onClick={() => void session.signOut()}

@@ -1139,6 +1139,10 @@ web/
 - New deploys: the service worker shows an **"Update available, reload"**
   prompt. This is how the app detects a new deploy (§3.7). On a first visit
   no worker controls the page yet, so Reload simply reloads.
+- The account menu's **Update and reload** does the same on demand, for when
+  the prompt was dismissed or missed: it checks for a newer version, activates
+  it if one is waiting, and reloads (just reloads when there's none, or
+  offline).
 - The manifest icons, maskable icon, Apple touch icon and favicon are
   generated from `web/public/app-icon.svg` at build time; no PNGs are
   committed. The precache globs don't include `*.webmanifest`: the plugin

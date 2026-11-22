@@ -1,6 +1,6 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { server, serveHealth } from "@/test/server";
 import { renderApp } from "@/test/render";
 import { testUser } from "@/test/session";
@@ -69,5 +69,24 @@ describe("app layout and routing", () => {
       within(await open()).getByRole("menuitem", { name: "Match the system", hidden: true }),
     );
     expect(localStorage.getItem("mantine-color-scheme-value")).toBe("auto");
+  });
+
+  it("updates and reloads the app from the account menu", async () => {
+    const user = userEvent.setup();
+    await renderApp("/campaigns");
+    await screen.findByRole("heading", { level: 1, name: "Campaigns" });
+    const reload = vi.fn();
+    vi.stubGlobal("location", { reload });
+
+    await user.click(screen.getByRole("button", { name: new RegExp(testUser.firstName) }));
+    const menu = await screen.findByRole("menu", { hidden: true });
+    await user.click(
+      within(menu).getByRole("menuitem", { name: "Update and reload", hidden: true }),
+    );
+
+    await waitFor(() => {
+      expect(reload).toHaveBeenCalled();
+    });
+    vi.unstubAllGlobals();
   });
 });
