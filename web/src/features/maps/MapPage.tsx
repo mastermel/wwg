@@ -85,6 +85,7 @@ import {
 } from "@/features/maps/contact";
 import type { Point } from "@/features/maps/geo";
 import { hexGrid, hexKey, hexName, type Hex } from "@/features/maps/hex-grid";
+import { destinations, focusedMoves } from "@/features/maps/move-focus";
 import { sideBySide } from "@/features/maps/hex-halves";
 import {
   budgetFor,
@@ -716,6 +717,12 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
   const moves = standingOut ? allMoves.filter((m) => standingOut(m.placed)) : allMoves;
   // Where they're drawn: side by side in a hex with both units and ghosts (decision 0039).
   const drawn = sideBySide(pieces ? shownOnMap : [], pieces ? moves : [], grid);
+  // The chosen hex's moves stand out, and where they go is outlined (decision 0041); not while
+  // placing or moving, which draw their own.
+  const focused = focusedMoves(
+    drawn.moves,
+    idle && chosen ? new Set(chosenUnits.map((p) => p.unit.id)) : null,
+  );
 
   const movingName = together ? `all ${String(together.length)} units` : moving?.unit.name;
   const stopMoving = () => {
@@ -1273,6 +1280,8 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
           />
           <OrderOverlay
             moves={drawn.moves}
+            focus={new Set(focused.map((m) => m.placed.unit.id))}
+            grid={grid}
             reachable={
               landingAt
                 ? landingAt.map((hex) => grid.corners(hex))
@@ -1283,7 +1292,11 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
                   : undefined
             }
           />
-          <SelectedHexLayer grid={grid} hex={idle ? (chosen?.hex ?? null) : null} />
+          <SelectedHexLayer
+            grid={grid}
+            hex={idle ? (chosen?.hex ?? null) : null}
+            destinations={destinations(focused, chosen?.hex ?? null)}
+          />
           {pieces && <DepotMarkers depots={depots.data ?? []} armies={armies.data ?? []} />}
           {pieces && showGame("towns") && (
             <HoldingFlags

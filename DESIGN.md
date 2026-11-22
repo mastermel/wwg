@@ -1374,6 +1374,11 @@ visibility); the data is in §5.1. Built in Phase 8 (§7).
   their destinations, without ghosts). Ghosts going to one place stack with a count, as units
   do; a hex with both units and ghosts coming in draws its units in its west half and the
   ghosts in its east half (decision 0039).
+- **A hex's moves stand out** (decision 0041): while a hex's drawer is open, every move of its
+  units is drawn solid in its army's colour, with a halo and an arrowhead where it enters its
+  destination, and the hexes they're going to are outlined, dashed; every other move, line and
+  ghost, fades back. A hex whose units aren't moving changes nothing. The Umpire's map does the
+  same.
 - **Turn panel:** the turn number and its status; each unit Moved, Held or
   without an order, with an **undo** button for those with one, in the army's order of battle
   (step 62: corps, divisions and brigades, each heading counting the units with orders, and
@@ -3230,3 +3235,18 @@ build on positions.
       (`HexLink`) that opens its drawer, with focus in it, and centres the map on it, as choosing
       a unit does; the Map page gives it `showHex` through `ShowHexContext`. Elsewhere (the
       campaign page's scoreboard) it's only the name.
+75. **A hex's moves stand out** (decision 0041), in parts:
+    - **75a. Focus:** while a hex's drawer is open (not while placing or moving), its units'
+      moves (`focusedMoves`, `move-focus.ts`) are drawn in `OrderOverlay`'s top layers, solid in
+      each army's colour with a halo, one line per path and army (`focusedLines`); the other
+      lines fade to 30% and their ghosts to 25%. Their destinations are outlined, dashed, by
+      `SelectedHexLayer` (`destinations`), and each line has an arrowhead straddling the edge
+      into its destination (`arrowhead`, sized by the hex). Commanders and the Umpire alike.
+    - **75b. A ghost chooses its unit:** tapping a ghost opens the drawer of the hex its units
+      left, so their moves stand out. Not started.
+    - **75c. Hover:** with a mouse, hovering over a unit's marker or a ghost makes its hex's moves
+      stand out until the pointer leaves, as choosing it would. Not started.
+    - **75d. Only the chosen moves:** a switch in the map's layers (`map-layers.ts`) hides every
+      move but the chosen hex's. Not started.
+    - Spreading overlapping paths apart (transit-map style) was considered and is held back:
+      see decision 0041.

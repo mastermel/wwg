@@ -81,3 +81,4 @@ A reversal gets a new entry.
 | [0038](0038-the-hex-drawer-leaves-the-map-in-use.md) | The hex drawer leaves the map in use, and a unit chosen from a list is centred | 2026-11-21 |
 | [0039](0039-units-and-ghosts-side-by-side.md) | Units and the ghosts of units moving in share a hex side by side | 2026-11-21 |
 | [0040](0040-commanders-see-their-concentration.md) | Commanders see their own concentration, and the hexes named in warnings are links | 2026-11-22 |
+| [0041](0041-a-hexs-moves-stand-out.md) | A chosen hex's moves stand out, and the rest fade | 2026-11-22 |

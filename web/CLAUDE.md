@@ -92,6 +92,8 @@ The pre-commit hook runs `eslint --fix` and Prettier on staged files.
   line (`ghost-lines.ts`) and stack as units do (`useStacks`, which both markers use). A hex
   with both units and ghosts coming in draws them side by side (decision 0039): `sideBySide`
   (`hex-halves.ts`, by `HexGrid.half`) moves where they're drawn, never their hex.
+  The chosen hex's moves stand out (decision 0041): `move-focus.ts` (which moves, their
+  destinations, their lines and arrowheads), drawn by `OrderOverlay` and `SelectedHexLayer`.
   The hex grid (decision 0014) is `hex-grid.ts`: its arithmetic matches the API's `HexGrid.cs`,
   and both are tested against `testdata/hex-grid.json` (from an independent Python reference;
   the Dockerfile copies it into the web build). `HexGridLayer` draws it, and nothing past

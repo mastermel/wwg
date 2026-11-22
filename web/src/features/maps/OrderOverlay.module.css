@@ -41,3 +41,18 @@
   background: #111111;
   border: 2px dashed #ffffff;
 }
+
+/* While the chosen hex's moves stand out (decision 0041): theirs nearly solid, the others faded
+   further back, their counts too. */
+.ghost[data-focus="in"] .top {
+  opacity: 0.9;
+}
+
+.ghost[data-focus="out"] .top,
+.ghost[data-focus="out"] .under {
+  opacity: 0.25;
+}
+
+.ghost[data-focus="out"] .count {
+  opacity: 0.5;
+}
