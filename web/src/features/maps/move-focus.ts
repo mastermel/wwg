@@ -2,6 +2,7 @@ import type { ArmyColor } from "@/api/generated/model";
 import type { Feature, FeatureCollection, LineString, Polygon } from "geojson";
 import { hexKey, type Hex, type HexGrid } from "@/features/maps/hex-grid";
 import type { PendingMove } from "@/features/maps/OrderOverlay";
+import type { PlacedUnit } from "@/features/maps/stacks";
 
 /**
  * The moves of the chosen hex's units (decision 0041), which stand out on the map while the rest
@@ -119,4 +120,20 @@ export function arrowheads(
 export function hexSize(centre: [number, number], corner: [number, number]): number {
   const k = Math.cos((centre[1] * Math.PI) / 180);
   return Math.hypot((corner[0] - centre[0]) * k, corner[1] - centre[1]);
+}
+
+/**
+ * What tapping a ghost chooses (step 75b): the hex its units left, so its moves stand out; or,
+ * where a ghost's stack gathers units from several hexes, those units, at the first one's hex.
+ * Null for a ghost of no moves.
+ */
+export function ghostChoice(
+  moves: readonly PendingMove[],
+): { hex: Hex; stack?: PlacedUnit[] } | null {
+  const first = moves.at(0);
+  if (!first) return null;
+  const from = new Set(moves.map((move) => hexKey(move.placed.hex)));
+  return from.size === 1
+    ? { hex: first.placed.hex }
+    : { hex: first.placed.hex, stack: moves.map((move) => move.placed) };
 }

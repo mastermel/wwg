@@ -80,7 +80,8 @@ The pre-commit hook runs `eslint --fix` and Prettier on staged files.
   `geo.ts` holds `Point` and the haversine distance (`distanceMetres`, which measures the view
   for the game map's zoom rule); orders in words from `orders.ts`. Ghost moves and the reach
   (the hexes the unit can reach, shaded as hex polygons) are `OrderOverlay`, inside the map:
-  sight only, as the turn panel lists the same orders. Every turn, past or open, is shown as it
+  sight only, as the turn panel lists the same orders, but for a ghost's button, which chooses
+  the hex its units left (step 75b, `ghostChoice`). Every turn, past or open, is shown as it
   was played (step 59, decision 0029): the units from the positions after the turn before
   (`shownTurn - 1`), and the turn's orders (`shownOrders`, from `useOpenTurns`' turns) as ghosts.
   A commander's turn changes go through `useOrders` (`use-orders.ts`), which also refetches the

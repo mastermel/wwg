@@ -9,7 +9,7 @@ import { sharedLines } from "@/features/maps/ghost-lines";
 import type { Hex, HexGrid } from "@/features/maps/hex-grid";
 import { arrowheads, focusedLines } from "@/features/maps/move-focus";
 import classes from "@/features/maps/OrderOverlay.module.css";
-import type { PlacedUnit } from "@/features/maps/stacks";
+import { nameWithRank, type PlacedUnit } from "@/features/maps/stacks";
 import { useStacks } from "@/features/maps/use-stacks";
 import { UnitSymbol } from "@/features/units/UnitSymbol";
 
@@ -34,16 +34,22 @@ interface OrderOverlayProps {
   grid: Pick<HexGrid, "centre" | "corners">;
   /** The hexes the unit being moved can reach, each a ring of corners as [longitude, latitude]. */
   reachable?: readonly [number, number][][];
+  /**
+   * Tapping a ghost (step 75b), with the moves it shows: given, ghosts are buttons; missing (while
+   * placing or moving), they let clicks through to the map.
+   */
+  onSelect?: (moves: PendingMove[]) => void;
 }
 
 /**
  * Moves not yet approved (DESIGN.md §3.13): a ghost of each unit where it's going, stacked with
  * a count where they'd overlap as units are (step 73), with a dashed line along its path (one for
  * units going together, the wider the more of them); and while
- * moving, the hexes within reach, shaded. The chosen hex's moves stand out (decision 0041). Inside a CampaignMap. Drawn for sight only: the turn
- * panel lists the same orders for screen readers and keyboards.
+ * moving, the hexes within reach, shaded. The chosen hex's moves stand out (decision 0041), and a
+ * ghost is a button choosing them (step 75b). Inside a CampaignMap. Otherwise drawn for sight
+ * only: the turn panel lists the same orders for screen readers and keyboards.
  */
-export function OrderOverlay({ moves, focus, grid, reachable = [] }: OrderOverlayProps) {
+export function OrderOverlay({ moves, focus, grid, reachable = [], onSelect }: OrderOverlayProps) {
   const scheme = useComputedColorScheme("light");
   const { label: ink, halo } = mapPalettes[scheme];
   const focusing = focus !== undefined && focus.size > 0;
@@ -128,39 +134,68 @@ export function OrderOverlay({ moves, focus, grid, reachable = [] }: OrderOverla
         const [top, ...under] = stack.units as [PlacedUnit, ...PlacedUnit[]];
         const next = under.at(0);
         const inFocus = focusing && stack.units.some((placed) => focus.has(placed.unit.id));
+        const symbols = (
+          <>
+            {next && (
+              <span className={classes.under} aria-hidden>
+                <UnitSymbol
+                  type={next.unit.type}
+                  commanderInChief={next.unit.isCommanderInChief}
+                  color={armyColorVar(next.army.color)}
+                  width={30}
+                />
+              </span>
+            )}
+            <span className={classes.top} aria-hidden>
+              <UnitSymbol
+                type={top.unit.type}
+                commanderInChief={top.unit.isCommanderInChief}
+                color={armyColorVar(top.army.color)}
+                width={30}
+              />
+            </span>
+            {under.length > 0 && (
+              <span className={classes.count} aria-hidden>
+                {stack.units.length}
+              </span>
+            )}
+          </>
+        );
+        const focusState = focusing ? (inFocus ? "in" : "out") : undefined;
         return (
           <Marker
             key={stack.key}
             longitude={stack.longitude}
             latitude={stack.latitude}
             anchor="center"
-            style={{ pointerEvents: "none" }}
+            style={onSelect ? undefined : { pointerEvents: "none" }}
+            onClick={(event) => {
+              // Not the map's click too, which would open the hex it's in.
+              event.originalEvent.stopPropagation();
+            }}
           >
-            <span
-              className={classes.ghost}
-              data-focus={focusing ? (inFocus ? "in" : "out") : undefined}
-              aria-hidden
-            >
-              {next && (
-                <span className={classes.under}>
-                  <UnitSymbol
-                    type={next.unit.type}
-                    commanderInChief={next.unit.isCommanderInChief}
-                    color={armyColorVar(next.army.color)}
-                    width={30}
-                  />
-                </span>
-              )}
-              <span className={classes.top}>
-                <UnitSymbol
-                  type={top.unit.type}
-                  commanderInChief={top.unit.isCommanderInChief}
-                  color={armyColorVar(top.army.color)}
-                  width={30}
-                />
+            {onSelect ? (
+              <button
+                type="button"
+                className={`${classes.ghost} ${classes.button}`}
+                data-focus={focusState}
+                aria-label={
+                  under.length === 0
+                    ? `Where ${nameWithRank(top)} is going`
+                    : `Where ${String(stack.units.length)} units are going: ${stack.units.map(nameWithRank).join(", ")}`
+                }
+                onClick={() => {
+                  const ids = new Set(stack.units.map((placed) => placed.unit.id));
+                  onSelect(moves.filter((move) => ids.has(move.placed.unit.id)));
+                }}
+              >
+                {symbols}
+              </button>
+            ) : (
+              <span className={classes.ghost} data-focus={focusState} aria-hidden>
+                {symbols}
               </span>
-              {under.length > 0 && <span className={classes.count}>{stack.units.length}</span>}
-            </span>
+            )}
           </Marker>
         );
       })}

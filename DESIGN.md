@@ -1378,7 +1378,8 @@ visibility); the data is in §5.1. Built in Phase 8 (§7).
   units is drawn solid in its army's colour, with a halo and an arrowhead where it enters its
   destination, and the hexes they're going to are outlined, dashed; every other move, line and
   ghost, fades back. A hex whose units aren't moving changes nothing. The Umpire's map does the
-  same.
+  same. Tapping a ghost opens the drawer of the hex its units left, so their moves stand out
+  (step 75b); a ghost gathering units from several hexes (zoomed out) opens those units.
 - **Turn panel:** the turn number and its status; each unit Moved, Held or
   without an order, with an **undo** button for those with one, in the army's order of battle
   (step 62: corps, divisions and brigades, each heading counting the units with orders, and
@@ -3242,8 +3243,11 @@ build on positions.
       lines fade to 30% and their ghosts to 25%. Their destinations are outlined, dashed, by
       `SelectedHexLayer` (`destinations`), and each line has an arrowhead straddling the edge
       into its destination (`arrowhead`, sized by the hex). Commanders and the Umpire alike.
-    - **75b. A ghost chooses its unit:** tapping a ghost opens the drawer of the hex its units
-      left, so their moves stand out. Not started.
+    - ✅ **75b. A ghost chooses its unit:** a ghost is a button ("Where Imperial Guard is going";
+      a stack's, "Where 2 units are going: …") while nothing's being placed or moved; tapping it
+      opens the drawer of the hex its units left, so their moves stand out, or, where its stack
+      gathers units from several hexes, those units at the first one's hex (`ghostChoice`).
+      `turns.spec.ts` taps one.
     - **75c. Hover:** with a mouse, hovering over a unit's marker or a ghost makes its hex's moves
       stand out until the pointer leaves, as choosing it would. Not started.
     - **75d. Only the chosen moves:** a switch in the map's layers (`map-layers.ts`) hides every

@@ -85,7 +85,7 @@ import {
 } from "@/features/maps/contact";
 import type { Point } from "@/features/maps/geo";
 import { hexGrid, hexKey, hexName, type Hex } from "@/features/maps/hex-grid";
-import { destinations, focusedMoves } from "@/features/maps/move-focus";
+import { destinations, focusedMoves, ghostChoice } from "@/features/maps/move-focus";
 import { sideBySide } from "@/features/maps/hex-halves";
 import {
   budgetFor,
@@ -1282,6 +1282,14 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
             moves={drawn.moves}
             focus={new Set(focused.map((m) => m.placed.unit.id))}
             grid={grid}
+            onSelect={
+              idle
+                ? (ghostMoves) => {
+                    const choice = ghostChoice(ghostMoves);
+                    if (choice) openHex(choice.hex, choice.stack);
+                  }
+                : undefined
+            }
             reachable={
               landingAt
                 ? landingAt.map((hex) => grid.corners(hex))

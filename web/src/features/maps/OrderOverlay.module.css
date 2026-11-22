@@ -6,6 +6,20 @@
   padding: 2px;
 }
 
+/* A ghost to tap (step 75b): a button the size of its symbols, with a focus ring, as units'
+   markers are. */
+.button {
+  border-radius: 4px;
+  cursor: pointer;
+  background: none;
+  border: 0;
+}
+
+.button:focus-visible {
+  outline: 3px solid var(--mantine-primary-color-filled);
+  outline-offset: 2px;
+}
+
 .top,
 .under {
   display: block;

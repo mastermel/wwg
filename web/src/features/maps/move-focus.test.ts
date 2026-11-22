@@ -6,6 +6,7 @@ import {
   destinations,
   focusedLines,
   focusedMoves,
+  ghostChoice,
   hexSize,
 } from "@/features/maps/move-focus";
 import type { Hex } from "@/features/maps/hex-grid";
@@ -141,5 +142,26 @@ describe("arrowheads", () => {
 describe("hexSize", () => {
   it("is the distance to a corner, longitude scaled by the latitude", () => {
     expect(hexSize([0, 60], [1, 60])).toBeCloseTo(0.5);
+  });
+});
+
+describe("ghostChoice", () => {
+  const from = (unitId: string, hex: Hex) =>
+    ({ placed: { unit: { id: unitId }, hex }, toHex: { q: 5, r: 5 } }) as unknown as PendingMove;
+
+  it("chooses the hex its units left", () => {
+    expect(ghostChoice([from("a", { q: 0, r: 0 }), from("b", { q: 0, r: 0 })])).toEqual({
+      hex: { q: 0, r: 0 },
+    });
+  });
+
+  it("chooses the units themselves when they left different hexes", () => {
+    const a = from("a", { q: 0, r: 0 });
+    const b = from("b", { q: 1, r: 0 });
+    expect(ghostChoice([a, b])).toEqual({ hex: { q: 0, r: 0 }, stack: [a.placed, b.placed] });
+  });
+
+  it("chooses nothing for no moves", () => {
+    expect(ghostChoice([])).toBeNull();
   });
 });

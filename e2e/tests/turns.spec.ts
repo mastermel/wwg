@@ -127,6 +127,26 @@ test("a commander moves both units in a hex together", async ({ signUp }) => {
   await expect(panel.getByRole("button", { name: "Submit turn 1" })).toBeEnabled();
 });
 
+test("a commander taps a ghost to choose the hex its unit is leaving", async ({ signUp }) => {
+  test.slow();
+  const umpire = await signUp("Ada");
+  const commander = await signUp("Bob");
+  const { campaignUrl, campaignId, armyId } = await startedCampaign(
+    umpire,
+    commander,
+    "Wavre 1815",
+  );
+  await giveOrders(commander, campaignId, armyId, { "Imperial Guard": [{ q: 0, r: -1 }] });
+
+  const page = commander.page;
+  await page.goto(`${campaignUrl}/map`);
+  // The ghost, a hex north, opens the drawer of the hex the Guard left (step 75b).
+  await page.getByRole("button", { name: "Where Imperial Guard is going" }).click();
+  const drawer = page.getByRole("dialog", { name: "Hex (0, 0)" });
+  await expect(drawer.getByRole("region", { name: "Imperial Guard" })).toBeVisible();
+  await expect(drawer.getByText("Turn 1: Moves 1 hex")).toBeVisible();
+});
+
 test("the Umpire sends a turn back, approves it resubmitted, and starts the next", async ({
   signUp,
 }) => {
