@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 import type { ArmySummary } from "@/api/generated/model";
 import { AppProviders } from "@/app/AppProviders";
 import { createQueryClient } from "@/app/query-client";
+import type { HexConcentration } from "@/features/maps/contact";
 import type { PlacedUnit } from "@/features/maps/stacks";
 import { HexDrawer } from "@/features/maps/HexDrawer";
 import { server } from "@/test/server";
@@ -61,15 +62,23 @@ interface HarnessProps {
   sightings?: string[];
   marches?: boolean;
   screening?: { canChange: boolean };
+  concentration?: HexConcentration;
 }
 
-function Harness({ units, sightings = [], marches = false, screening }: HarnessProps) {
+function Harness({
+  units,
+  sightings = [],
+  marches = false,
+  screening,
+  concentration,
+}: HarnessProps) {
   const [selected, setSelected] = useState<PlacedUnit | null>(null);
   return (
     <HexDrawer
       hex={{ hex: { q: 0, r: 0 }, info }}
       units={units}
       sightings={sightings}
+      concentration={concentration && { counted: concentration, note: "By the orders as given." }}
       selected={selected}
       onSelect={setSelected}
       onClose={() => undefined}
@@ -85,10 +94,17 @@ const renderDrawer = (
   marches = false,
   screening?: { canChange: boolean },
   sightings?: string[],
+  concentration?: HexConcentration,
 ) =>
   render(
     <AppProviders queryClient={createQueryClient()}>
-      <Harness units={units} sightings={sightings} marches={marches} screening={screening} />
+      <Harness
+        units={units}
+        sightings={sightings}
+        marches={marches}
+        screening={screening}
+        concentration={concentration}
+      />
     </AppProviders>,
   );
 
@@ -112,6 +128,52 @@ describe("the hex drawer", () => {
     expect(
       within(dialog.getByRole("region", { name: "Terrain" })).getByText("Wavre: Walled town."),
     ).toBeInTheDocument();
+  });
+
+  it("totals each side's points against the concentration limits, marking those near or over", async () => {
+    const side = { infantryLimit: 100, cavalryLimit: 80, overCavalry: false };
+    renderDrawer(stack, false, undefined, undefined, {
+      hex: { q: 0, r: 0 },
+      contact: true,
+      doubled: false,
+      infantryLimit: 200,
+      cavalryLimit: 160,
+      sides: [
+        {
+          ...side,
+          side: army.side,
+          infantry: 90,
+          cavalry: 0,
+          offTheLand: true,
+          overInfantry: false,
+        },
+        {
+          ...side,
+          infantryLimit: 200,
+          cavalryLimit: 160,
+          side: { id: "s2", name: "French Empire" },
+          infantry: 210,
+          cavalry: 20,
+          offTheLand: false,
+          overInfantry: true,
+        },
+      ],
+    });
+    const part = within(
+      within(await screen.findByRole("dialog")).getByRole("region", { name: "Concentration" }),
+    );
+
+    const coalition = within(part.getByRole("table", { name: "Coalition's concentration" }));
+    expect(coalition.getByRole("row", { name: /Infantry/ })).toHaveTextContent(
+      "90 of 100 pointsNear the limit",
+    );
+    expect(coalition.getByRole("row", { name: /Cavalry/ })).toHaveTextContent("0 of 80 points");
+    expect(part.getByText("Halved: living off the land.")).toBeInTheDocument();
+    const french = within(part.getByRole("table", { name: "French Empire's concentration" }));
+    expect(french.getByRole("row", { name: /Infantry/ })).toHaveTextContent(
+      "210 of 200 pointsOver the limit",
+    );
+    expect(part.getByText("By the orders as given.")).toBeInTheDocument();
   });
 
   it("shows only the terrain of an empty hex", async () => {

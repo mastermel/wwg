@@ -40,8 +40,8 @@ export interface SideInHex {
   overCavalry: boolean;
 }
 
-/** A hex to warn of: contact, a side over a limit, or both. */
-export interface HexWarning {
+/** What's counted in a hex: each side's points against its limits, and whether they're in contact. */
+export interface HexConcentration {
   hex: Hex;
   /** Units of both sides are in it. */
   contact: boolean;
@@ -53,12 +53,47 @@ export interface HexWarning {
   doubled: boolean;
 }
 
+/** A hex to warn of: contact, a side over a limit, or both. */
+export type HexWarning = HexConcentration;
+
+/** Whether a hex is to be warned of: contact, or a side over a limit. */
+const warns = (hex: HexConcentration) =>
+  hex.contact || hex.sides.some((side) => side.overInfantry || side.overCavalry);
+
 /** The hexes to warn of, north to south and west to east. */
 export function hexWarnings(
   units: readonly UnitInHex[],
   settings: CampaignConcentrationResponse,
   terrain: TerrainIndex,
 ): HexWarning[] {
+  return hexConcentrations(units, settings, terrain)
+    .filter(warns)
+    .sort((a, b) => a.hex.r - b.hex.r || a.hex.q - b.hex.q);
+}
+
+/** What's counted in one hex, or null when no unit that fights is in it. */
+export function hexConcentration(
+  hex: Hex,
+  units: readonly UnitInHex[],
+  settings: CampaignConcentrationResponse,
+  terrain: TerrainIndex,
+): HexConcentration | null {
+  const key = hexKey(hex);
+  return (
+    hexConcentrations(
+      units.filter((u) => hexKey(u.hex) === key),
+      settings,
+      terrain,
+    )[0] ?? null
+  );
+}
+
+/** Every hex holding units that fight, with what's counted in it. */
+function hexConcentrations(
+  units: readonly UnitInHex[],
+  settings: CampaignConcentrationResponse,
+  terrain: TerrainIndex,
+): HexConcentration[] {
   const byHex = new Map<string, { hex: Hex; sides: Map<string, SideInHex> }>();
   for (const { unit, army, hex, livesOffTheLand } of units) {
     // Scouts only watch: no contact, and nothing to count (decision 0028).
@@ -82,7 +117,7 @@ export function hexWarnings(
     if (settings.cavalryTypes.includes(unit.type)) side.cavalry += unit.points;
   }
 
-  const warnings: HexWarning[] = [];
+  const counted: HexConcentration[] = [];
   for (const { hex, sides } of byHex.values()) {
     const settlement = terrain.cell(hex)?.settlement;
     // A large city or a fortress holds twice as many; a walled town doesn't (decision 0017).
@@ -104,12 +139,16 @@ export function hexWarnings(
           overCavalry: side.cavalry > sideCavalry,
         };
       });
-    const contact = inHex.length > 1;
-    if (contact || inHex.some((side) => side.overInfantry || side.overCavalry)) {
-      warnings.push({ hex, contact, sides: inHex, infantryLimit, cavalryLimit, doubled });
-    }
+    counted.push({
+      hex,
+      contact: inHex.length > 1,
+      sides: inHex,
+      infantryLimit,
+      cavalryLimit,
+      doubled,
+    });
   }
-  return warnings.sort((a, b) => a.hex.r - b.hex.r || a.hex.q - b.hex.q);
+  return counted;
 }
 
 /** Where the units will be once the orders as given are carried out: each one's order, or still. */
@@ -136,6 +175,15 @@ export function afterOrders<T extends UnitInHex>(
         }
       : placed;
   });
+}
+
+/** How much of its limit a side may fill before it's told it's nearing it. */
+export const nearShare = 0.8;
+
+/** Points against a limit: over it, near it (`nearShare` or more of it), or well within it. */
+export function standing(points: number, limit: number): "over" | "near" | "within" {
+  if (points > limit) return "over";
+  return points >= limit * nearShare ? "near" : "within";
 }
 
 const points = (n: number) => `${String(n)} ${n === 1 ? "point" : "points"}`;

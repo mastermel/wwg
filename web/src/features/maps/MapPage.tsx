@@ -76,7 +76,7 @@ import { describeSupply } from "@/features/maps/supply";
 import { SupplyWarnings } from "@/features/maps/SupplyWarnings";
 import { depotName, useDepots } from "@/features/maps/use-depots";
 import { CampaignMap } from "@/features/maps/CampaignMap";
-import { afterOrders, depotThreats, hexWarnings } from "@/features/maps/contact";
+import { afterOrders, depotThreats, hexConcentration, hexWarnings } from "@/features/maps/contact";
 import type { Point } from "@/features/maps/geo";
 import { hexGrid, hexKey, hexName, type Hex } from "@/features/maps/hex-grid";
 import { sideBySide } from "@/features/maps/hex-halves";
@@ -487,7 +487,7 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
   const movementTable = useGetMovementTable(campaignId, live);
   const calendar = useGetCampaignCalendar(campaignId, live);
   const concentration = useGetCampaignConcentration(campaignId, {
-    query: { meta: { persist: false }, enabled: manager },
+    query: { meta: { persist: false } },
   });
   const costs = useMemo(
     () => ({ rates: ratesOf(movementTable.data), terrain: indexTerrain(terrain.data) }),
@@ -611,6 +611,24 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
     [hoveredHex, describeAt],
   );
   const chosenCard = useMemo(() => (chosen ? describeAt(chosen.hex) : null), [chosen, describeAt]);
+  // The chosen hex's points against the concentration limits, of the units the viewer sees, where
+  // the shown turn's orders leave them (as the warnings count them).
+  const chosenConcentration = useMemo(() => {
+    const counted =
+      chosen && concentration.data
+        ? hexConcentration(chosen.hex, afterTheOrders, concentration.data, costs.terrain)
+        : null;
+    return (
+      counted && {
+        counted,
+        note: setup
+          ? "Where the units are placed."
+          : past !== null
+            ? "Where the units ended up this turn."
+            : "Where the units will be, by the orders as given.",
+      }
+    );
+  }, [chosen, concentration.data, afterTheOrders, costs.terrain, setup, past]);
   const chosenUnits = useMemo(
     () =>
       !chosen
@@ -1570,6 +1588,7 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
         hex={chosen && chosenCard ? { hex: chosen.hex, info: chosenCard.info } : null}
         units={chosenUnits}
         sightings={chosenCard?.sightings ?? []}
+        concentration={chosenConcentration}
         selected={chosenUnits.find((p) => p.unit.id === selected) ?? null}
         onSelect={(unit) => {
           setSelected(unit?.unit.id ?? null);

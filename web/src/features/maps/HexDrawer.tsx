@@ -16,6 +16,8 @@ import { useListMarches } from "@/api/generated/endpoints/turns/turns";
 import { describeMarch } from "@/features/maps/marches";
 import { UnitPointsHistory } from "@/features/maps/UnitPointsHistory";
 import { UnitScreening } from "@/features/maps/UnitScreening";
+import type { HexConcentration } from "@/features/maps/contact";
+import { ConcentrationSummary } from "@/features/maps/ConcentrationSummary";
 import classes from "@/features/maps/HexDrawer.module.css";
 
 interface HexDrawerProps {
@@ -25,6 +27,11 @@ interface HexDrawerProps {
   units: readonly PlacedUnit[];
   /** What was sighted there, in words (`sightingsIn`). */
   sightings: readonly string[];
+  /**
+   * Each side's counted points there against its limits, of the units the viewer sees, and whose
+   * positions they're from in words; nothing when no unit that fights is there.
+   */
+  concentration?: { counted: HexConcentration; note: string } | null;
   /** The unit being shown, of several. */
   selected: PlacedUnit | null;
   /** Shows one of the units, or (null) the list of them again. */
@@ -52,8 +59,8 @@ interface HexDrawerProps {
 
 /**
  * Everything the viewer knows of a hex, opened by choosing it or a unit in it on the map (step
- * 57): its units (one shown in full, several listed to choose from), what was sighted there, and
- * its terrain. From the left on wide screens (the turn panel is on the right), from the bottom on
+ * 57): its units (one shown in full, several listed to choose from), their points against the
+ * concentration limits, what was sighted there, and its terrain. From the left on wide screens (the turn panel is on the right), from the bottom on
  * phones (DESIGN.md §3.13). It doesn't hold the page: the map and the panels stay in use, and
  * choosing another hex changes what it shows.
  */
@@ -61,6 +68,7 @@ export function HexDrawer({
   hex,
   units,
   sightings,
+  concentration,
   selected,
   onSelect,
   onClose,
@@ -181,6 +189,11 @@ export function HexDrawer({
                 {listActions}
               </Part>
             )
+          )}
+          {concentration && (
+            <Part title="Concentration">
+              <ConcentrationSummary {...concentration} />
+            </Part>
           )}
           {sightings.length > 0 && (
             <Part title="Sightings">

@@ -12,7 +12,9 @@ import {
   depotThreats,
   describeThreat,
   describeWarning,
+  hexConcentration,
   hexWarnings,
+  standing,
   warningPlace,
   type UnitInHex,
 } from "@/features/maps/contact";
@@ -246,5 +248,39 @@ describe("depotThreats", () => {
       "Charleroi (Armée du Nord's main depot): 20 points of the other side are in its hex.",
     ]);
     expect(depotThreats([unit(napoleon, 50)], [depot], [napoleon])).toEqual([]);
+  });
+});
+
+describe("hexConcentration", () => {
+  it("counts each side in one hex against its limits, within them or not", () => {
+    const counted = hexConcentration(
+      { q: 0, r: 0 },
+      [
+        unit(wellington, 100),
+        unit(blucher, 70, "HeavyCavalry"),
+        unit(wellington, 500, "LineInfantry", { q: 1, r: 0 }),
+      ],
+      usual,
+      open,
+    );
+
+    expect(counted).toMatchObject({ contact: false, infantryLimit: 200, cavalryLimit: 160 });
+    expect(counted?.sides).toEqual([
+      expect.objectContaining({ infantry: 100, cavalry: 70, overInfantry: false }),
+    ]);
+  });
+
+  it("has nothing to count where no unit that fights is", () => {
+    expect(hexConcentration({ q: 0, r: 0 }, [unit(napoleon, 0, "Scouts")], usual, open)).toBe(null);
+    expect(hexConcentration({ q: 5, r: 5 }, [unit(napoleon, 100)], usual, open)).toBe(null);
+  });
+});
+
+describe("standing", () => {
+  it("is near a limit from four fifths of it, and over it past it", () => {
+    expect(standing(159, 200)).toBe("within");
+    expect(standing(160, 200)).toBe("near");
+    expect(standing(200, 200)).toBe("near");
+    expect(standing(201, 200)).toBe("over");
   });
 });
