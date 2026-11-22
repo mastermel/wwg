@@ -21,6 +21,8 @@ interface UnitMarkersProps {
   highlight?: ((placed: PlacedUnit) => boolean) | null;
   /** Units out of supply (step 48d), marked as such, for those who see their supply. */
   outOfSupply?: ReadonlySet<string>;
+  /** A mouse pointer coming onto a stack's marker, or leaving it (null; step 75c). */
+  onHover?: (stack: UnitStack | null) => void;
 }
 
 /**
@@ -28,7 +30,13 @@ interface UnitMarkersProps {
  * shows how many and opens the list to choose from (DESIGN.md §3.13). Restacked as the zoom
  * changes (`useStacks`). Inside a CampaignMap.
  */
-export function UnitMarkers({ units, onSelect, highlight, outOfSupply }: UnitMarkersProps) {
+export function UnitMarkers({
+  units,
+  onSelect,
+  highlight,
+  outOfSupply,
+  onHover,
+}: UnitMarkersProps) {
   const stacks = useStacks(units);
 
   return stacks.map((stack) => {
@@ -68,6 +76,13 @@ export function UnitMarkers({ units, onSelect, highlight, outOfSupply }: UnitMar
           aria-label={label}
           onClick={() => {
             onSelect(stack);
+          }}
+          // A mouse's only: a tap would leave it behind, with nothing to take it away.
+          onPointerEnter={(event) => {
+            if (event.pointerType === "mouse") onHover?.(stack);
+          }}
+          onPointerLeave={(event) => {
+            if (event.pointerType === "mouse") onHover?.(null);
           }}
         >
           {next && (

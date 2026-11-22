@@ -84,7 +84,7 @@ import {
   hexWarnings,
 } from "@/features/maps/contact";
 import type { Point } from "@/features/maps/geo";
-import { hexGrid, hexKey, hexName, type Hex } from "@/features/maps/hex-grid";
+import { hexDistance, hexGrid, hexKey, hexName, type Hex } from "@/features/maps/hex-grid";
 import { destinations, focusedMoves, ghostChoice } from "@/features/maps/move-focus";
 import { sideBySide } from "@/features/maps/hex-halves";
 import {
@@ -157,7 +157,7 @@ import { MapLayersControl } from "@/features/maps/MapLayersControl";
 import { TerrainLayer } from "@/features/maps/TerrainLayer";
 import { TurnPanel } from "@/features/maps/TurnPanel";
 import { standsOut, type PickedOut } from "@/features/maps/pick-out";
-import { unitsIn, type PlacedUnit } from "@/features/maps/stacks";
+import { unitsIn, type PlacedUnit, type UnitStack } from "@/features/maps/stacks";
 import { HexDrawer } from "@/features/maps/HexDrawer";
 import { ShowHexContext } from "@/features/maps/show-hex";
 import { UnitMarkers } from "@/features/maps/UnitMarkers";
@@ -589,6 +589,14 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
   const [chosen, setChosen] = useState<{ hex: Hex; stack?: readonly string[] } | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [hovered, setHovered] = useState<Hex | null>(null);
+  // What a mouse over a unit's marker or a ghost previews (step 75c), as choosing it would: the
+  // hex, and the stack where it takes in others; `over`, the hex the marker's in, which the
+  // pointer must stay near (a marker restacked from under it never says the pointer left).
+  const [previewed, setPreviewed] = useState<{
+    hex: Hex;
+    stack?: readonly string[];
+    over: Hex;
+  } | null>(null);
   const idle = !placingUnit && !placingDepot && !moving;
   const describeAt = useMemo(() => {
     const known = armies.data ?? [];
@@ -646,6 +654,16 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
           : unitsIn(chosen.hex, shownOnMap),
     [chosen, shownOnMap],
   );
+  // Only while nothing's chosen: a chosen hex keeps its moves standing out wherever the mouse is.
+  const previewing =
+    idle && !chosen && previewed && hovered && hexDistance(hovered, previewed.over) <= 1
+      ? previewed
+      : null;
+  const previewUnits = !previewing
+    ? []
+    : previewing.stack
+      ? shownOnMap.filter((p) => previewing.stack?.includes(p.unit.id))
+      : unitsIn(previewing.hex, shownOnMap);
   const hoverAt = (point: Point | null) => {
     const hex = point && idle ? grid.hexAt(point) : null;
     const inside = hex && grid.contains(hex) ? hex : null;
@@ -715,14 +733,13 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
 
   // A picked-out army's or formation's moves only; the rest would clutter it.
   const moves = standingOut ? allMoves.filter((m) => standingOut(m.placed)) : allMoves;
+  // The chosen hex's moves stand out, or those a mouse previews, and where they go is outlined
+  // (decision 0041); not while placing or moving, which draw their own.
+  const focusUnits = idle ? (chosen ? chosenUnits : previewUnits) : [];
+  const focusIds = focusUnits.length > 0 ? new Set(focusUnits.map((p) => p.unit.id)) : null;
   // Where they're drawn: side by side in a hex with both units and ghosts (decision 0039).
   const drawn = sideBySide(pieces ? shownOnMap : [], pieces ? moves : [], grid);
-  // The chosen hex's moves stand out, and where they go is outlined (decision 0041); not while
-  // placing or moving, which draw their own.
-  const focused = focusedMoves(
-    drawn.moves,
-    idle && chosen ? new Set(chosenUnits.map((p) => p.unit.id)) : null,
-  );
+  const focused = focusedMoves(drawn.moves, focusIds);
 
   const movingName = together ? `all ${String(together.length)} units` : moving?.unit.name;
   const stopMoving = () => {
@@ -844,6 +861,24 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
     if (saved) setPlacingDepot(null);
   };
 
+  // What choosing a unit's marker opens: the hex of the stack's first unit, where the marker is;
+  // the stack itself only when it takes in the hexes around.
+  const stackChoice = (stack: UnitStack) => {
+    const hex = stack.units[0]?.hex ?? grid.hexAt(stack);
+    return {
+      hex,
+      stack: stack.units.some((p) => hexKey(p.hex) !== hexKey(hex)) ? stack.units : undefined,
+    };
+  };
+  // A mouse previews what choosing a marker would (step 75c), while it's over it (`over`).
+  const preview = (
+    choice: { hex: Hex; stack?: readonly PlacedUnit[] } | null | undefined,
+    over: Hex | undefined,
+  ) => {
+    setPreviewed(
+      choice && over ? { hex: choice.hex, stack: choice.stack?.map((p) => p.unit.id), over } : null,
+    );
+  };
   const openHex = (hex: Hex, stack?: readonly PlacedUnit[], unit?: PlacedUnit) => {
     setChosen({ hex, stack: stack?.map((p) => p.unit.id) });
     setSelected(unit?.unit.id ?? null);
@@ -1290,6 +1325,10 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
                   }
                 : undefined
             }
+            onHover={(ghostMoves) => {
+              const choice = ghostMoves && ghostChoice(ghostMoves);
+              preview(choice, ghostMoves?.at(0)?.toHex);
+            }}
             reachable={
               landingAt
                 ? landingAt.map((hex) => grid.corners(hex))
@@ -1302,8 +1341,8 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
           />
           <SelectedHexLayer
             grid={grid}
-            hex={idle ? (chosen?.hex ?? null) : null}
-            destinations={destinations(focused, chosen?.hex ?? null)}
+            hex={idle ? (chosen?.hex ?? previewing?.hex ?? null) : null}
+            destinations={destinations(focused, chosen?.hex ?? previewing?.hex ?? null)}
           />
           {pieces && <DepotMarkers depots={depots.data ?? []} armies={armies.data ?? []} />}
           {pieces && showGame("towns") && (
@@ -1355,13 +1394,12 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
                 chooseTarget({ longitude: stack.longitude, latitude: stack.latitude });
                 return;
               }
-              // The hex of the stack's first unit, where the marker is; the stack itself only when
-              // it takes in the hexes around.
-              const hex = stack.units[0]?.hex ?? grid.hexAt(stack);
-              openHex(
-                hex,
-                stack.units.some((p) => hexKey(p.hex) !== hexKey(hex)) ? stack.units : undefined,
-              );
+              const choice = stackChoice(stack);
+              openHex(choice.hex, choice.stack);
+            }}
+            onHover={(stack) => {
+              const choice = stack && stackChoice(stack);
+              preview(choice, choice?.hex);
             }}
           />
           {/* Over the units: a stack's count would cover it. */}

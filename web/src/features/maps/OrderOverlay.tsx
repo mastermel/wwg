@@ -39,6 +39,8 @@ interface OrderOverlayProps {
    * placing or moving), they let clicks through to the map.
    */
   onSelect?: (moves: PendingMove[]) => void;
+  /** A mouse pointer coming onto a ghost, with the moves it shows, or leaving it (step 75c). */
+  onHover?: (moves: PendingMove[] | null) => void;
 }
 
 /**
@@ -49,7 +51,14 @@ interface OrderOverlayProps {
  * ghost is a button choosing them (step 75b). Inside a CampaignMap. Otherwise drawn for sight
  * only: the turn panel lists the same orders for screen readers and keyboards.
  */
-export function OrderOverlay({ moves, focus, grid, reachable = [], onSelect }: OrderOverlayProps) {
+export function OrderOverlay({
+  moves,
+  focus,
+  grid,
+  reachable = [],
+  onSelect,
+  onHover,
+}: OrderOverlayProps) {
   const scheme = useComputedColorScheme("light");
   const { label: ink, halo } = mapPalettes[scheme];
   const focusing = focus !== undefined && focus.size > 0;
@@ -63,6 +72,11 @@ export function OrderOverlay({ moves, focus, grid, reachable = [], onSelect }: O
     [moves],
   );
   const stacks = useStacks(ghosts);
+  // The moves a ghost's stack shows, by its units.
+  const movesOf = (units: readonly PlacedUnit[]) => {
+    const ids = new Set(units.map((placed) => placed.unit.id));
+    return moves.filter((move) => ids.has(move.placed.unit.id));
+  };
   const area: FeatureCollection<Polygon> = {
     type: "FeatureCollection",
     features: reachable.map((corners) => ({
@@ -185,8 +199,13 @@ export function OrderOverlay({ moves, focus, grid, reachable = [], onSelect }: O
                     : `Where ${String(stack.units.length)} units are going: ${stack.units.map(nameWithRank).join(", ")}`
                 }
                 onClick={() => {
-                  const ids = new Set(stack.units.map((placed) => placed.unit.id));
-                  onSelect(moves.filter((move) => ids.has(move.placed.unit.id)));
+                  onSelect(movesOf(stack.units));
+                }}
+                onPointerEnter={(event) => {
+                  if (event.pointerType === "mouse") onHover?.(movesOf(stack.units));
+                }}
+                onPointerLeave={(event) => {
+                  if (event.pointerType === "mouse") onHover?.(null);
                 }}
               >
                 {symbols}

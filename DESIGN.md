@@ -1379,7 +1379,9 @@ visibility); the data is in §5.1. Built in Phase 8 (§7).
   destination, and the hexes they're going to are outlined, dashed; every other move, line and
   ghost, fades back. A hex whose units aren't moving changes nothing. The Umpire's map does the
   same. Tapping a ghost opens the drawer of the hex its units left, so their moves stand out
-  (step 75b); a ghost gathering units from several hexes (zoomed out) opens those units.
+  (step 75b); a ghost gathering units from several hexes (zoomed out) opens those units. With a
+  mouse, while no hex is chosen, hovering over a unit's marker or a ghost shows the same until
+  the pointer leaves (step 75c).
 - **Turn panel:** the turn number and its status; each unit Moved, Held or
   without an order, with an **undo** button for those with one, in the army's order of battle
   (step 62: corps, divisions and brigades, each heading counting the units with orders, and
@@ -3248,8 +3250,12 @@ build on positions.
       opens the drawer of the hex its units left, so their moves stand out, or, where its stack
       gathers units from several hexes, those units at the first one's hex (`ghostChoice`).
       `turns.spec.ts` taps one.
-    - **75c. Hover:** with a mouse, hovering over a unit's marker or a ghost makes its hex's moves
-      stand out until the pointer leaves, as choosing it would. Not started.
+    - ✅ **75c. Hover:** with a mouse (a pointer event's `pointerType`; a tap would leave it
+      behind), hovering over a unit's marker or a ghost makes the moves stand out that choosing
+      it would (`stackChoice`, `ghostChoice`), its starting hex outlined, until the pointer
+      leaves, or strays more than a hex from the marker (a marker restacked from under the
+      pointer never says it left). Only while no hex is chosen: a chosen hex keeps its moves
+      standing out wherever the mouse goes.
     - **75d. Only the chosen moves:** a switch in the map's layers (`map-layers.ts`) hides every
       move but the chosen hex's. Not started.
     - Spreading overlapping paths apart (transit-map style) was considered and is held back:
