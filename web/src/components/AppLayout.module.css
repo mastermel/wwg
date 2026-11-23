@@ -48,6 +48,19 @@
   box-shadow: 2px 0 8px rgb(0 0 0 / 6%);
 }
 
+/* The rail (collapsed): each link is just its icon, centred. */
+.navbar[data-collapsed] .navLink {
+  justify-content: center;
+
+  & :global(.mantine-NavLink-section) {
+    margin-inline-end: 0;
+  }
+
+  & :global(.mantine-NavLink-body) {
+    display: none;
+  }
+}
+
 .navLabel {
   font-size: var(--mantine-font-size-xs);
   font-weight: 700;

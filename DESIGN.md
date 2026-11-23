@@ -969,7 +969,9 @@ people see; the project keeps `wwg-campaigner` wherever they don't (decision
   (neutrals), as custom Mantine palettes.
 - Light and dark mode **follow the OS** (`defaultColorScheme="auto"`).
 - **Desktop-first**, responsive down to phones: Mantine `AppShell` with a
-  sidebar on desktop and a bottom tab bar on mobile.
+  sidebar on desktop and a bottom tab bar on mobile. The sidebar starts as a
+  rail of icons (labels in tooltips); a button at its foot widens it to show
+  the labels, remembered per device (`localStorage`).
 - The mark: a **silhouette of an officer in the uniform of the late 18th
   century** (`web/public/logo.svg`, from a purchased vector image). It's a
   mask, drawn in the text colour (`BrandMark`), its details cut through to

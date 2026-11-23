@@ -45,6 +45,28 @@ describe("app layout and routing", () => {
     );
   });
 
+  it("starts the sidebar as a rail of icons, and widens it to show their labels", async () => {
+    const user = userEvent.setup();
+    await renderApp("/campaigns");
+    await screen.findByRole("heading", { level: 1, name: "Campaigns" });
+    const sidebar = screen.getByRole("navigation", { name: "Main" });
+
+    // Collapsed, each link is named by its label though only its icon shows.
+    expect(within(sidebar).getByRole("link", { name: "Library" })).not.toHaveTextContent("Library");
+    const expand = within(sidebar).getByRole("button", { name: "Expand menu" });
+    expect(expand).toHaveAttribute("aria-expanded", "false");
+
+    await user.click(expand);
+
+    expect(within(sidebar).getByRole("link", { name: "Library" })).toHaveTextContent("Library");
+    const collapse = within(sidebar).getByRole("button", { name: "Collapse menu" });
+    expect(collapse).toHaveAttribute("aria-expanded", "true");
+    expect(localStorage.getItem("wwg-nav-expanded")).toBe("true");
+
+    await user.click(collapse);
+    expect(within(sidebar).getByRole("button", { name: "Expand menu" })).toBeInTheDocument();
+  });
+
   it("lets the user choose light or dark, remembered, or go back to the system's", async () => {
     localStorage.clear();
     const user = userEvent.setup();

@@ -7,12 +7,16 @@ import {
   Menu,
   NavLink,
   Text,
+  Tooltip,
   UnstyledButton,
 } from "@mantine/core";
+import { useLocalStorage } from "@mantine/hooks";
 import {
   IconBooks,
   IconChevronDown,
   IconInfoCircle,
+  IconLayoutSidebarLeftCollapse,
+  IconLayoutSidebarLeftExpand,
   IconLogout,
   IconMasksTheater,
   IconMap,
@@ -55,7 +59,9 @@ const adminOnly = new Set<NavItem>([allCampaigns, users]);
 /**
  * The app frame: a header, a sidebar on desktop, and a bottom tab bar on phones (below Mantine's
  * `sm` breakpoint). Both navigations use the same items; CSS shows one or the other, and they
- * have distinct labels so they're never two identical landmarks.
+ * have distinct labels so they're never two identical landmarks. The sidebar starts as a rail of
+ * icons (each named, with its label in a tooltip); its button widens it to show the labels, and
+ * the choice is remembered on this device.
  */
 export function AppLayout() {
   const matchRoute = useMatchRoute();
@@ -64,11 +70,16 @@ export function AppLayout() {
   const masquerade = useMasqueradeSession();
   const navItems = user?.isAdmin ? adminNavItems : memberNavItems;
   const isActive = (to: NavItem["to"]) => Boolean(matchRoute({ to, fuzzy: true }));
+  const [navExpanded, setNavExpanded] = useLocalStorage({
+    key: "wwg-nav-expanded",
+    defaultValue: false,
+    getInitialValueInEffect: false,
+  });
 
   return (
     <AppShell
       header={{ height: 60 }}
-      navbar={{ width: 240, breakpoint: "sm", collapsed: { mobile: true } }}
+      navbar={{ width: navExpanded ? 240 : 68, breakpoint: "sm", collapsed: { mobile: true } }}
       footer={{ height: { base: 64, sm: 0 } }}
       padding="lg"
     >
@@ -148,29 +159,75 @@ export function AppLayout() {
 
       {/* Hidden below sm, not just slid away: otherwise its links stay in the tab order and the
           accessibility tree on phones, off-screen, next to the tab bar's. */}
-      <AppShell.Navbar p="sm" aria-label="Main" visibleFrom="sm" className={classes.navbar}>
-        {navItems.map((item, index) => (
-          <Fragment key={item.to}>
-            {/* Admin screens under their own label (a visual grouping, not a heading). */}
-            {adminOnly.has(item) && !adminOnly.has(navItems[index - 1] ?? item) && (
-              <Text className={classes.navLabel} aria-hidden>
-                Admin
-              </Text>
-            )}
-            {!adminOnly.has(item) && adminOnly.has(navItems[index - 1] ?? item) && (
-              <Divider my="sm" />
-            )}
+      <AppShell.Navbar
+        p="sm"
+        aria-label="Main"
+        visibleFrom="sm"
+        className={classes.navbar}
+        data-collapsed={navExpanded ? undefined : true}
+      >
+        <AppShell.Section grow>
+          {navItems.map((item, index) => {
+            const startsAdmin = adminOnly.has(item) && !adminOnly.has(navItems[index - 1] ?? item);
+            const endsAdmin = !adminOnly.has(item) && adminOnly.has(navItems[index - 1] ?? item);
+            const link = (
+              <NavLink
+                component={Link}
+                to={item.to}
+                label={navExpanded ? item.label : undefined}
+                aria-label={navExpanded ? undefined : item.label}
+                leftSection={<item.icon size={20} aria-hidden />}
+                active={isActive(item.to)}
+                aria-current={isActive(item.to) ? "page" : undefined}
+                className={classes.navLink}
+              />
+            );
+            return (
+              <Fragment key={item.to}>
+                {/* Admin screens under their own label (a visual grouping, not a heading); the
+                    rail has no room for it, so a divider sets them apart there. */}
+                {startsAdmin &&
+                  (navExpanded ? (
+                    <Text className={classes.navLabel} aria-hidden>
+                      Admin
+                    </Text>
+                  ) : (
+                    <Divider my="sm" />
+                  ))}
+                {endsAdmin && <Divider my="sm" />}
+                {navExpanded ? (
+                  link
+                ) : (
+                  <Tooltip label={item.label} position="right" withArrow>
+                    {link}
+                  </Tooltip>
+                )}
+              </Fragment>
+            );
+          })}
+        </AppShell.Section>
+        <AppShell.Section>
+          <Tooltip label="Expand menu" position="right" withArrow disabled={navExpanded}>
             <NavLink
-              component={Link}
-              to={item.to}
-              label={item.label}
-              leftSection={<item.icon size={20} aria-hidden />}
-              active={isActive(item.to)}
-              aria-current={isActive(item.to) ? "page" : undefined}
+              component="button"
+              type="button"
+              label={navExpanded ? "Collapse menu" : undefined}
+              aria-label={navExpanded ? undefined : "Expand menu"}
+              aria-expanded={navExpanded}
+              leftSection={
+                navExpanded ? (
+                  <IconLayoutSidebarLeftCollapse size={20} aria-hidden />
+                ) : (
+                  <IconLayoutSidebarLeftExpand size={20} aria-hidden />
+                )
+              }
+              onClick={() => {
+                setNavExpanded(!navExpanded);
+              }}
               className={classes.navLink}
             />
-          </Fragment>
-        ))}
+          </Tooltip>
+        </AppShell.Section>
       </AppShell.Navbar>
 
       <AppShell.Main className={classes.main}>
