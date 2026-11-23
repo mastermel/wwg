@@ -1,6 +1,7 @@
 import { notifications } from "@mantine/notifications";
-import { QueryCache, QueryClient } from "@tanstack/react-query";
+import { focusManager, QueryCache, QueryClient } from "@tanstack/react-query";
 import { ApiError } from "@/lib/api-fetch";
+import { onResume } from "@/lib/app-resume";
 import { errorMessage, isServerTrouble } from "@/lib/errors";
 
 /** How long cached API data is kept (and persisted for offline use): the session's length. */
@@ -48,4 +49,17 @@ export function createQueryClient() {
       },
     },
   });
+}
+
+/**
+ * Refetches stale data whenever the app comes back to the screen (`onResume`), not only on
+ * `visibilitychange` (TanStack Query's default), which an installed iOS app hasn't always had.
+ * Those responses also carry the API's build, so a new deploy is noticed on return.
+ */
+export function refetchOnResume() {
+  focusManager.setEventListener((handleFocus) =>
+    onResume(() => {
+      handleFocus();
+    }),
+  );
 }

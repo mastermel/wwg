@@ -15,8 +15,11 @@ API returns that kept its shape left the saved data in place.
 ## Decision
 
 - No prompt. When a new front-end has downloaded, the app activates it and reloads.
-- A running app asks for a new service worker every 5 minutes, and when it comes back into view
-  or back online.
+- A running app asks for a new service worker every 5 minutes, and when it comes back to the
+  screen or back online. Coming back is `visibilitychange`, `pageshow` or window `focus`, counted
+  once within 5 seconds, because an installed iOS app hasn't always had `visibilitychange` when
+  brought back from the background. Stale queries refetch on the same events, so the API build
+  is checked on return too.
 - Every API response carries `X-Api-Build`: the API assembly's module version ID. .NET builds are
   deterministic, so it changes when the API's code or references change, and not for a deploy
   that only changes the front-end. (The image tag would change on every deploy.) The front-end
@@ -32,7 +35,10 @@ API returns that kept its shape left the saved data in place.
 
 ## Consequences
 
-- Open apps reach a new deploy within minutes, or on their next API call for an API change.
+- Open apps reach a new deploy within minutes, or on their next API call for an API change. iOS
+  suspends an installed app in the background, so it updates when opened, never while closed.
+- Stale data now also refetches when a window regains focus without having been hidden (two
+  windows side by side), not only when it comes back into view.
 - Something half-typed in a field that has lost focus, outside a modal, can still be lost on a
   reload.
 - A dependency update that keeps its assembly version (most patch releases) doesn't change the

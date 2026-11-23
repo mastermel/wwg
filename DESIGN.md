@@ -1162,9 +1162,16 @@ web/
 - New deploys **reload the app by themselves**, with no prompt (decision
   0044; `AppUpdater`, `lib/app-update.ts`, `lib/api-build.ts`):
   - **A new front-end:** the app asks for a new service worker every 5
-    minutes, and whenever it comes back into view or back online (browsers
+    minutes, and whenever it comes back to the screen or back online (browsers
     only look on a page load, which an open app may not have for days). Once
     one has downloaded, the app activates it and reloads.
+  - "Back to the screen" (`lib/app-resume.ts`) is `visibilitychange`,
+    `pageshow` or window `focus`, counted once within 5 seconds: an installed
+    iOS app hasn't always had `visibilitychange` when brought back from the
+    background. TanStack Query's refetch on focus uses the same events
+    (`refetchOnResume`), so the API's build is checked on return too. iOS
+    suspends an installed app in the background, so it updates only when
+    opened, never while closed.
   - **A new API:** every API response carries `X-Api-Build`, the API
     assembly's module version ID (deterministic builds: it changes only when
     the API's code or references do). When it differs from the build the page

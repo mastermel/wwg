@@ -1,3 +1,5 @@
+import { onResume } from "@/lib/app-resume";
+
 /** How long to wait for a newly found version to download before reloading anyway. */
 const installTimeoutMs = 15_000;
 
@@ -102,8 +104,8 @@ export function updateAndReload({ whenIdle = false }: { whenIdle?: boolean } = {
 
 /**
  * Asks the server for a new service worker (a new front-end) now and then: on an interval, and
- * whenever the app comes back into view or back online. Browsers only look by themselves on a
- * page load, which an open app or installed PWA may not have for days.
+ * whenever the app comes back to the screen (`onResume`) or back online. Browsers only look by
+ * themselves on a page load, which an open app or installed PWA may not have for days.
  */
 export function watchForUpdates(registration: ServiceWorkerRegistration): void {
   const check = () => {
@@ -112,6 +114,6 @@ export function watchForUpdates(registration: ServiceWorkerRegistration): void {
     }
   };
   window.setInterval(check, updateCheckIntervalMs);
-  document.addEventListener("visibilitychange", check);
+  onResume(check);
   window.addEventListener("online", check);
 }

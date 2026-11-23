@@ -3,7 +3,7 @@ import { RouterProvider } from "@tanstack/react-router";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { AppProviders } from "@/app/AppProviders";
-import { createQueryClient } from "@/app/query-client";
+import { createQueryClient, refetchOnResume } from "@/app/query-client";
 import { persistOptions } from "@/app/query-persistence";
 import { createAppRouter } from "@/app/router";
 import { SessionProvider } from "@/features/auth/SessionProvider";
@@ -17,6 +17,7 @@ if (!root) {
 // TanStack Query assumes it starts online and only listens for changes, so an installed app
 // opened offline would try (and fail) to fetch instead of pausing and showing saved data.
 onlineManager.setOnline(navigator.onLine);
+refetchOnResume();
 
 const queryClient = createQueryClient();
 const session = createSessionStore({
