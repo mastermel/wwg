@@ -85,7 +85,13 @@ import {
 } from "@/features/maps/contact";
 import type { Point } from "@/features/maps/geo";
 import { hexDistance, hexGrid, hexKey, hexName, type Hex } from "@/features/maps/hex-grid";
-import { destinations, focusedMoves, ghostChoice } from "@/features/maps/move-focus";
+import {
+  arrivalChoice,
+  atDestinations,
+  destinations,
+  focusedMoves,
+  ghostChoice,
+} from "@/features/maps/move-focus";
 import { sideBySide } from "@/features/maps/hex-halves";
 import {
   budgetFor,
@@ -150,6 +156,7 @@ import {
   shownRealLayers,
   showsGameLayer,
   showsOtherMoves,
+  showsTrails,
   showsPieces,
   useHiddenLayers,
   type GameLayer,
@@ -738,12 +745,23 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
   // (decision 0041); not while placing or moving, which draw their own.
   const focusUnits = idle ? (chosen ? chosenUnits : previewUnits) : [];
   const focusIds = focusUnits.length > 0 ? new Set(focusUnits.map((p) => p.unit.id)) : null;
+  // Without trails (step 75e), units on their way are drawn where they're going, as units, but
+  // those whose moves stand out and those being moved.
+  const arrivals = showsTrails(layers.hidden)
+    ? []
+    : pickedMoves.filter(
+        (m) => !movingIds.has(m.placed.unit.id) && !focusIds?.has(m.placed.unit.id),
+      );
+  const arriving = new Set(arrivals.map((m) => m.placed.unit.id));
   // The rest fade, or, for a viewer who'd rather (step 75d), go while a hex is chosen with moves.
   const chosenMoves =
     idle && chosen && !showsOtherMoves(layers.hidden) ? focusedMoves(pickedMoves, focusIds) : [];
-  const moves = chosenMoves.length > 0 ? chosenMoves : pickedMoves;
+  const moves = (chosenMoves.length > 0 ? chosenMoves : pickedMoves).filter(
+    (m) => !arriving.has(m.placed.unit.id),
+  );
+  const markedUnits = arrivals.length > 0 ? atDestinations(shownOnMap, arrivals) : shownOnMap;
   // Where they're drawn: side by side in a hex with both units and ghosts (decision 0039).
-  const drawn = sideBySide(pieces ? shownOnMap : [], pieces ? moves : [], grid);
+  const drawn = sideBySide(pieces ? markedUnits : [], pieces ? moves : [], grid);
   const focused = focusedMoves(drawn.moves, focusIds);
 
   const movingName = together ? `all ${String(together.length)} units` : moving?.unit.name;
@@ -869,6 +887,9 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
   // What choosing a unit's marker opens: the hex of the stack's first unit, where the marker is;
   // the stack itself only when it takes in the hexes around.
   const stackChoice = (stack: UnitStack) => {
+    // Units drawn where they're going (step 75e) choose as their ghosts would.
+    const arrival = arrivalChoice(stack.units, arrivals);
+    if (arrival) return arrival;
     const hex = stack.units[0]?.hex ?? grid.hexAt(stack);
     return {
       hex,
@@ -1383,6 +1404,7 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
             units={drawn.units}
             outOfSupply={past === null ? outOfSupply : undefined}
             highlight={standingOut}
+            arriving={arriving}
             onSelect={(stack) => {
               // While placing, choosing a unit (or stack) puts the new one there too.
               if (placingUnit) {
@@ -1404,7 +1426,8 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
             }}
             onHover={(stack) => {
               const choice = stack && stackChoice(stack);
-              preview(choice, choice?.hex);
+              // Over the marker's hex: where its units are drawn, not always the hex chosen.
+              preview(choice, stack ? (stack.units[0]?.hex ?? grid.hexAt(stack)) : undefined);
             }}
           />
           {/* Over the units: a stack's count would cover it. */}

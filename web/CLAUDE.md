@@ -96,7 +96,9 @@ The pre-commit hook runs `eslint --fix` and Prettier on staged files.
   The chosen hex's moves stand out (decision 0041): `move-focus.ts` (which moves, their
   destinations, their lines and arrowheads), drawn by `OrderOverlay` and `SelectedHexLayer`;
   a mouse over a marker or ghost previews them (`previewed` in `MapPage`, step 75c), and the
-  layers' `otherMoves` group hides the rest instead of fading them (step 75d).
+  layers' `otherMoves` group hides the rest instead of fading them (step 75d); their `trails`
+  group off draws each moving unit where it's going instead (step 75e: `atDestinations`,
+  `arrivalChoice`), but for those whose moves stand out.
   The hex grid (decision 0014) is `hex-grid.ts`: its arithmetic matches the API's `HexGrid.cs`,
   and both are tested against `testdata/hex-grid.json` (from an independent Python reference;
   the Dockerfile copies it into the web build). `HexGridLayer` draws it, and nothing past

@@ -1382,7 +1382,9 @@ visibility); the data is in §5.1. Built in Phase 8 (§7).
   (step 75b); a ghost gathering units from several hexes (zoomed out) opens those units. With a
   mouse, while no hex is chosen, hovering over a unit's marker or a ghost shows the same until
   the pointer leaves (step 75c). A viewer can hide the other moves while a hex is chosen,
-  instead of fading them (the layers' **Other moves while a hex is chosen**, step 75d).
+  instead of fading them (the layers' **Other moves while a hex is chosen**, step 75d), or
+  turn the trails off (**Move trails**, step 75e): each unit then shows only where it's going,
+  or where it is if it isn't moving, until its hex is chosen, which draws its move as usual.
 - **Turn panel:** the turn number and its status; each unit Moved, Held or
   without an order, with an **undo** button for those with one, in the army's order of battle
   (step 62: corps, divisions and brigades, each heading counting the units with orders, and
@@ -3261,5 +3263,12 @@ build on positions.
       layers, under Units & markers (the `otherMoves` group, `showsOtherMoves`): off, choosing a
       hex with moves hides every other move, line and ghost, instead of fading it. Nothing
       chosen, or a hex without moves, shows them all as before; a hover only fades them.
+    - ✅ **75e. No trails:** **Move trails** in the map's layers, under Units & markers (the
+      `trails` group, `showsTrails`): off, a unit with a move this turn is drawn as a unit where
+      it's going (`atDestinations` in `move-focus.ts`; its marker's label adds "on its way
+      here"), with no ghost or line, and a unit without one where it is. Its moves are drawn as
+      usual while they stand out (a chosen or hovered hex's) or while it's being moved. Choosing
+      its marker chooses what its ghost would (`arrivalChoice`); a marker with units staying
+      there too chooses its units, at its hex.
     - Spreading overlapping paths apart (transit-map style) was considered and is held back:
       see decision 0041.

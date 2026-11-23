@@ -3,6 +3,8 @@ import type { ArmyColor } from "@/api/generated/model";
 import {
   arrowhead,
   arrowheads,
+  arrivalChoice,
+  atDestinations,
   destinations,
   focusedLines,
   focusedMoves,
@@ -11,6 +13,7 @@ import {
 } from "@/features/maps/move-focus";
 import type { Hex } from "@/features/maps/hex-grid";
 import type { PendingMove } from "@/features/maps/OrderOverlay";
+import type { PlacedUnit } from "@/features/maps/stacks";
 
 const move = (unitId: string, color: ArmyColor, toHex: Hex, line: [number, number][]) =>
   ({
@@ -163,5 +166,39 @@ describe("ghostChoice", () => {
 
   it("chooses nothing for no moves", () => {
     expect(ghostChoice([])).toBeNull();
+  });
+});
+
+describe("without trails", () => {
+  const unit = (id: string, hex: Hex) =>
+    ({ unit: { id }, hex, longitude: 0, latitude: 0 }) as unknown as PlacedUnit;
+  const going = (placed: PlacedUnit, toHex: Hex) =>
+    ({ placed, toHex, to: { longitude: 4.5, latitude: 50.8, extra: 1 } }) as unknown as PendingMove;
+  const staying = unit("a", { q: 0, r: 0 });
+  const leaving = unit("b", { q: 1, r: 0 });
+  const away = going(leaving, { q: 0, r: 0 });
+
+  it("draws the units on their way where they're going, the rest where they are", () => {
+    expect(atDestinations([staying, leaving], [away])).toEqual([
+      staying,
+      { ...leaving, hex: { q: 0, r: 0 }, longitude: 4.5, latitude: 50.8 },
+    ]);
+  });
+
+  it("chooses where a marker's units left, when all of them are on their way", () => {
+    const [drawn] = atDestinations([leaving], [away]) as [PlacedUnit];
+    expect(arrivalChoice([drawn], [away])).toEqual({ hex: { q: 1, r: 0 } });
+  });
+
+  it("chooses a marker's units at its hex, when some of them stay", () => {
+    const [, drawn] = atDestinations([staying, leaving], [away]) as [PlacedUnit, PlacedUnit];
+    expect(arrivalChoice([staying, drawn], [away])).toEqual({
+      hex: { q: 0, r: 0 },
+      stack: [staying, drawn],
+    });
+  });
+
+  it("chooses nothing apart for a marker without units on their way", () => {
+    expect(arrivalChoice([staying], [away])).toBeNull();
   });
 });

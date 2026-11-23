@@ -23,6 +23,8 @@ interface UnitMarkersProps {
   outOfSupply?: ReadonlySet<string>;
   /** A mouse pointer coming onto a stack's marker, or leaving it (null; step 75c). */
   onHover?: (stack: UnitStack | null) => void;
+  /** Units drawn where they're going, not where they are (no trails, step 75e). */
+  arriving?: ReadonlySet<string>;
 }
 
 /**
@@ -36,6 +38,7 @@ export function UnitMarkers({
   highlight,
   outOfSupply,
   onHover,
+  arriving,
 }: UnitMarkersProps) {
   const stacks = useStacks(units);
 
@@ -45,6 +48,7 @@ export function UnitMarkers({
     const cutOff = stack.units.filter((u) => outOfSupply?.has(u.unit.id));
     // On boats (step 51): its boats aren't drawn, but go with it.
     const afloat = stack.units.filter((u) => (u.boats?.length ?? 0) > 0);
+    const onTheirWay = stack.units.filter((u) => arriving?.has(u.unit.id));
     const label =
       (under.length === 0
         ? describeUnit(top)
@@ -58,7 +62,12 @@ export function UnitMarkers({
         ? ""
         : under.length === 0
           ? ", on boats"
-          : `; on boats: ${afloat.map((u) => u.unit.name).join(", ")}`);
+          : `; on boats: ${afloat.map((u) => u.unit.name).join(", ")}`) +
+      (onTheirWay.length === 0
+        ? ""
+        : under.length === 0
+          ? ", on its way here"
+          : `; on their way here: ${onTheirWay.map((u) => u.unit.name).join(", ")}`);
     return (
       <Marker
         key={stack.key}

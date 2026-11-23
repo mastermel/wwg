@@ -442,6 +442,7 @@ describe("the map's layers", () => {
       expect(
         screen.getByRole("switch", { name: "Other moves while a hex is chosen", hidden: true }),
       ).toBeDisabled();
+      expect(screen.getByRole("switch", { name: "Move trails", hidden: true })).toBeDisabled();
       // The maps are drawn as they were.
       expect(screen.getByText(/^Drawn:/)).toHaveTextContent(
         "Drawn: roads, places, water, forests, hills; grid on",
@@ -474,6 +475,26 @@ describe("the map's layers", () => {
       real: [],
       game: ["rivers"],
       groups: ["otherMoves"],
+      version: 2,
+    });
+  });
+
+  it("lets a viewer show units only where they're going, without their trails", async () => {
+    localStorage.clear();
+    serveCampaign("Player", settings(waterloo));
+    const user = userEvent.setup();
+    await renderApp(`/campaigns/${campaignId}/map`);
+
+    await user.click(await screen.findByRole("button", { name: "Map layers" }));
+    const trails = await screen.findByRole("switch", { name: "Move trails", hidden: true });
+    expect(trails).toBeChecked();
+    await user.click(trails);
+
+    expect(trails).not.toBeChecked();
+    expect(JSON.parse(localStorage.getItem(`wwg:map-layers:${campaignId}`) ?? "{}")).toEqual({
+      real: [],
+      game: ["rivers"],
+      groups: ["trails"],
       version: 2,
     });
   });

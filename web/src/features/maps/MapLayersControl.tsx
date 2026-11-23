@@ -96,6 +96,22 @@ export function MapLayersControl({
               Off, choosing a hex hides every other move, instead of fading it.
             </Text>
           </Stack>
+          <Stack gap={4}>
+            <Switch
+              size="sm"
+              ml="md"
+              label="Move trails"
+              disabled={hidden.groups.includes("pieces")}
+              checked={!hidden.groups.includes("trails")}
+              onChange={() => {
+                toggleGroup("trails");
+              }}
+            />
+            <Text size="xs" c="dimmed" ml="md">
+              Off, each unit shows only where it&apos;s going this turn; choose it to see where it
+              was and its way there.
+            </Text>
+          </Stack>
           <Divider />
         </>
       )}

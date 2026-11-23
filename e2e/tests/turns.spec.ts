@@ -127,7 +127,9 @@ test("a commander moves both units in a hex together", async ({ signUp }) => {
   await expect(panel.getByRole("button", { name: "Submit turn 1" })).toBeEnabled();
 });
 
-test("a commander taps a ghost to choose the hex its unit is leaving", async ({ signUp }) => {
+test("a commander taps a ghost, or without trails the unit, to choose the hex it is leaving", async ({
+  signUp,
+}) => {
   test.slow();
   const umpire = await signUp("Ada");
   const commander = await signUp("Bob");
@@ -145,6 +147,18 @@ test("a commander taps a ghost to choose the hex its unit is leaving", async ({ 
   const drawer = page.getByRole("dialog", { name: "Hex (0, 0)" });
   await expect(drawer.getByRole("region", { name: "Imperial Guard" })).toBeVisible();
   await expect(drawer.getByText("Turn 1: Moves 1 hex")).toBeVisible();
+
+  // Without trails (step 75e), the Guard shows where it's going, and choosing it draws its move.
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await page.getByRole("button", { name: "Map layers" }).click();
+  await page.getByRole("switch", { name: "Move trails" }).click();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  const ghost = page.getByRole("button", { name: "Where Imperial Guard is going" });
+  await expect(ghost).toHaveCount(0);
+  await page.getByRole("button", { name: /on (its|their) way here/ }).click();
+  await expect(ghost).toBeVisible();
 });
 
 test("the Umpire sends a turn back, approves it resubmitted, and starts the next", async ({

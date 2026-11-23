@@ -137,3 +137,39 @@ export function ghostChoice(
     ? { hex: first.placed.hex }
     : { hex: first.placed.hex, stack: moves.map((move) => move.placed) };
 }
+
+/**
+ * Without the moves' trails (step 75e): the units, those making `arrivals` drawn where they're
+ * going (the hex, and where in it the ghost would be) instead of where they are.
+ */
+export function atDestinations(
+  units: readonly PlacedUnit[],
+  arrivals: readonly PendingMove[],
+): PlacedUnit[] {
+  const going = new Map(arrivals.map((move) => [move.placed.unit.id, move]));
+  return units.map((placed) => {
+    const move = going.get(placed.unit.id);
+    return move
+      ? { ...placed, hex: move.toHex, longitude: move.to.longitude, latitude: move.to.latitude }
+      : placed;
+  });
+}
+
+/**
+ * What choosing a marker chooses without trails (step 75e), when units in it are drawn where
+ * they're going: all of them on their way, what their ghost would (`ghostChoice`), so their moves
+ * stand out from where they left; some staying, the marker's units, at its hex. Null when none
+ * of its units are on their way.
+ */
+export function arrivalChoice(
+  units: readonly PlacedUnit[],
+  arrivals: readonly PendingMove[],
+): { hex: Hex; stack?: PlacedUnit[] } | null {
+  const ids = new Set(units.map((placed) => placed.unit.id));
+  const theirs = arrivals.filter((move) => ids.has(move.placed.unit.id));
+  const first = units.at(0);
+  if (theirs.length === 0 || !first) return null;
+  return theirs.length === units.length
+    ? ghostChoice(theirs)
+    : { hex: first.hex, stack: [...units] };
+}

@@ -6,6 +6,7 @@ import {
   loadHidden,
   shownRealLayers,
   showsOtherMoves,
+  showsTrails,
 } from "@/features/maps/map-layers";
 
 const campaign: MapLayers = {
@@ -73,7 +74,7 @@ describe("loadHidden", () => {
       JSON.stringify({
         real: ["roads", "railways"],
         game: ["bridges", "units"],
-        groups: ["game", "pieces", "otherMoves", "both"],
+        groups: ["game", "pieces", "otherMoves", "trails", "both"],
         version: 2,
       }),
     );
@@ -81,7 +82,7 @@ describe("loadHidden", () => {
     expect(loadHidden("c")).toEqual({
       real: ["roads"],
       game: ["bridges"],
-      groups: ["game", "pieces", "otherMoves"],
+      groups: ["game", "pieces", "otherMoves", "trails"],
     });
   });
 
@@ -102,6 +103,13 @@ describe("showsOtherMoves", () => {
   it("keeps other hexes' moves, faded, unless the viewer hid them", () => {
     expect(showsOtherMoves({ real: [], game: [], groups: [] })).toBe(true);
     expect(showsOtherMoves({ real: [], game: [], groups: ["otherMoves"] })).toBe(false);
+  });
+});
+
+describe("showsTrails", () => {
+  it("draws moves along their trails unless the viewer hid them", () => {
+    expect(showsTrails({ real: [], game: [], groups: [] })).toBe(true);
+    expect(showsTrails({ real: [], game: [], groups: ["trails"] })).toBe(false);
   });
 });
 
