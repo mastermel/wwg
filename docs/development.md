@@ -127,8 +127,8 @@ Auto-fix: `dotnet csharpier format .`, and in `web/` `npm run lint:fix` and `npm
 ## End-to-end tests
 
 `e2e/` drives the production image in real browsers with Playwright: desktop Chromium and
-Safari's engine (WebKit) on an iPhone profile. CI runs it on every PR; run it yourself after
-changing a user-facing flow. From `e2e/`, once: `npm ci`.
+Safari's engine (WebKit) on an iPhone profile. CI runs it only on `main`, not on PRs,
+so run it yourself before merging a change to a user-facing flow. From `e2e/`, once: `npm ci`.
 
 ```sh
 ./stack.sh up           # build the image, start it behind a TLS proxy with Mailpit (fresh data)
