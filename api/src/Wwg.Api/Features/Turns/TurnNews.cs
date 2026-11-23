@@ -13,20 +13,23 @@ internal sealed record ReportNews(string From, string? Message, int Sightings, b
 
 /// <summary>
 /// What's new for an army as a turn opens (step 52c, decision 0023), in sentences: its sightings,
-/// its supply, its attrition, its boats built and its allies' reports.
+/// its supply, its attrition, its boats built, its allies' reports and the Umpire's note on
+/// approving its last turn (decision 0047).
 /// </summary>
 internal sealed record TurnNews(
     IReadOnlyList<string> Sightings,
     IReadOnlyList<string> Supply,
     IReadOnlyList<string> Attrition,
     IReadOnlyList<string> Boats,
-    IReadOnlyList<ReportNews> Reports
+    IReadOnlyList<ReportNews> Reports,
+    string? UmpireNote = null
 )
 {
     public static readonly TurnNews None = new([], [], [], [], []);
 
     public bool IsEmpty =>
-        Sightings.Count + Supply.Count + Attrition.Count + Boats.Count + Reports.Count == 0;
+        UmpireNote is null
+        && Sightings.Count + Supply.Count + Attrition.Count + Boats.Count + Reports.Count == 0;
 }
 
 internal static partial class TurnNewsBuilder
@@ -67,6 +70,7 @@ internal static partial class TurnNewsBuilder
             r => r.ArmyId,
             r => r.Report
         );
+        var approved = await ApprovalNotesAsync(db, campaignId, closing, cancellationToken);
         return armies.Keys.ToDictionary(
             id => id,
             id => new TurnNews(
@@ -74,9 +78,40 @@ internal static partial class TurnNewsBuilder
                 [.. supply[id]],
                 [.. attrition[id]],
                 [.. boats[id]],
-                [.. reports[id]]
+                [.. reports[id]],
+                approved.GetValueOrDefault(id)
             )
         );
+    }
+
+    /// <summary>
+    /// The Umpire's note on approving each army's closing turn: the latest approval's, so a turn
+    /// reopened and approved again without one has none.
+    /// </summary>
+    private static async Task<Dictionary<Guid, string>> ApprovalNotesAsync(
+        WwgDbContext db,
+        Guid campaignId,
+        int closing,
+        CancellationToken cancellationToken
+    )
+    {
+        var approvals = await db
+            .ArmyTurnEvents.AsNoTracking()
+            .Where(e =>
+                e.ArmyTurn.CampaignTurn.CampaignId == campaignId
+                && e.ArmyTurn.CampaignTurn.Number == closing
+                && e.Kind == ArmyTurnEventKind.Approved
+            )
+            // The history's order, so the last of each army's is its latest.
+            .OrderBy(e => e.At)
+            .ThenBy(e => e.Id)
+            .Select(e => new { e.ArmyTurn.ArmyId, e.Note })
+            .ToListAsync(cancellationToken);
+        return approvals
+            .GroupBy(e => e.ArmyId)
+            .Select(g => g.Last())
+            .Where(e => e.Note is { Length: > 0 })
+            .ToDictionary(e => e.ArmyId, e => e.Note!);
     }
 
     /// <summary>The army's own sightings for the turn, worded as the map's Sightings panel does.</summary>

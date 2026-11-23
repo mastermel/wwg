@@ -5349,7 +5349,7 @@
         "tags": [
           "Turns"
         ],
-        "summary": "Approves a Submitted turn in the open turn (Umpire or Admin), once every unit on the map\nhas an order: it's Completed.",
+        "summary": "Approves a Submitted turn in the open turn (Umpire or Admin), once every unit on the map\nhas an order: it's Completed. The Umpire may add a note for the commander, kept on the\nApproved event in the turn's history (decision 0047).",
         "operationId": "ApproveTurn",
         "parameters": [
           {
@@ -5362,9 +5362,35 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ApproveTurnRequest"
+                  }
+                ]
+              }
+            }
+          }
+        },
         "responses": {
           "204": {
             "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
           },
           "409": {
             "description": "Conflict",
@@ -6066,6 +6092,24 @@
           }
         },
         "description": "A campaign in the admin list of every campaign."
+      },
+      "ApproveTurnRequest": {
+        "required": [
+          "note"
+        ],
+        "type": "object",
+        "properties": {
+          "note": {
+            "maxLength": 2000,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "An optional note to the commander, kept in the turn's history."
+          }
+        },
+        "description": "What the Umpire says when approving a turn (decision 0047)."
       },
       "ArmyColor": {
         "enum": [

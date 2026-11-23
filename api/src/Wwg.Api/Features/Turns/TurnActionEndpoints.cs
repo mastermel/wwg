@@ -34,6 +34,7 @@ internal static class TurnActionEndpoints
         turn.MapPost("/approve", ApproveTurnAsync)
             .WithName("ApproveTurn")
             .RequireCampaignAccess(CampaignAccess.Umpire, CampaignRouteId.ArmyTurn)
+            .ProducesValidationProblem()
             .ProducesProblem(StatusCodes.Status409Conflict);
         turn.MapPost("/send-back", SendBackTurnAsync)
             .WithName("SendBackTurn")
@@ -127,10 +128,12 @@ internal static class TurnActionEndpoints
 
     /// <summary>
     /// Approves a Submitted turn in the open turn (Umpire or Admin), once every unit on the map
-    /// has an order: it's Completed.
+    /// has an order: it's Completed. The Umpire may add a note for the commander, kept on the
+    /// Approved event in the turn's history (decision 0047).
     /// </summary>
     internal static async Task<Results<NoContent, ProblemHttpResult>> ApproveTurnAsync(
         Guid id,
+        ApproveTurnRequest? request,
         WwgDbContext db,
         TimeProvider time,
         IEmailQueue emails,
@@ -149,7 +152,8 @@ internal static class TurnActionEndpoints
             return missing;
         }
 
-        var action = new TurnAction(ArmyTurnEventKind.Approved, ArmyTurnStatus.Submitted);
+        var note = string.IsNullOrEmpty(request?.Note) ? null : request.Note;
+        var action = new TurnAction(ArmyTurnEventKind.Approved, ArmyTurnStatus.Submitted, note);
         if (!await ActAsync(db, time, httpContext, turn, action, cancellationToken))
         {
             return NotNow(turn, "approved", "Submitted");
@@ -164,7 +168,7 @@ internal static class TurnActionEndpoints
             $"{by} approved {turn.Army}'s orders for turn {turn.Number} of {turn.Campaign}.",
             "See the map",
             MapLink(appOptions, turn.CampaignId),
-            null,
+            note is null ? null : (note, []),
             cancellationToken
         );
         return TypedResults.NoContent();

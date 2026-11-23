@@ -551,13 +551,14 @@ Identity has two layers:
     **confirm link** to a changed address (§3.4);
   - from Phase 8, the **turn emails**, each to the other side of the action:
     an army's turn submitted → the Umpire (submitted by the Umpire, from
-    Phase 9 → the army's commander); approved, sent back or reopened
-    (reverted; with the Umpire's notes) → the army's commander, listing the
+    Phase 9 → the army's commander); approved (with the Umpire's note, if any; decision
+    0047), sent back or reopened (reverted; with the Umpire's notes) → the army's commander, listing the
     orders the Umpire set (Phase 9);
   - a **new turn started** (the campaign's first too) → each commander, one for
     all their armies (step 71b): the turn's number, date and time of day, and what's
     new for each army as the last turn closed (sightings, units out of supply and depots
-    cut off, attrition, boats built, allies' reports with their notes), or
+    cut off, attrition, boats built, allies' reports with their notes, the Umpire's note
+    on approving the army's last turn (decision 0047)), or
     "Nothing new since the last turn", under the army's name when they command several
     (`TurnNewsBuilder`, `TurnStartedEmails`);
   - a player **given an army** (at its making, or made its commander) → that
@@ -1442,7 +1443,8 @@ visibility); the data is in §5.1. Built in Phase 8 (§7).
   (step 62: corps, divisions and brigades, each heading counting the units with orders, and
   folding its group away; step 63: one with every unit ordered starts folded; step 64: each
   heading's menu picks the formation out on the map, or holds the units in it without orders); the Umpire's
-  notes, if the turn was sent back or reverted; how far the turn has got
+  notes, if the turn was sent back or reverted; the Umpire's note on approving it, while it's
+  approved, and on approving the last turn, through the next (decision 0047); how far the turn has got
   ("4 of 6 armies submitted", no names); and **Submit** once every unit has an
   order. While Submitted, nothing can be changed.
 - **Unit drawer** (tap a unit, or its hex: the hex's drawer, decision 0027): name, type, FF,
@@ -1469,7 +1471,8 @@ visibility); the data is in §5.1. Built in Phase 8 (§7).
 - **Turn list**, from 0 to the open turn, each with its progress ("Turn 4 – 5
   of 6"). Choosing a turn shows it as it was played (where everyone started it, and
   its moves as ghosts; decision 0029), and each army's turn
-  under it: status, submitted and completed times, and **Approve**, **Send
+  under it: status, submitted and completed times, and **Approve** (with **Approve with
+  note…** beside it, a note for the turn only: decision 0047), **Send
   back** or **Revert** (the last two with a note for the turn and for units),
   for the open turn only; its units, folded away, with their orders and each formation's
   menu (step 64d). A Submitted turn shows the commander's note to the Umpire (the latest
@@ -2215,7 +2218,7 @@ each step)
 | POST | `/api/army-turns/{id}/undo` | Step 66f: take back several units' orders `{ unitIds }` (1–500), a hex's stack say, as `UndoOrder` would each (their boats' orders follow); those without one are skipped. All or nothing: a unit not in the army (404), or a boat tied to a unit (409, naming it), changes nothing; the Umpire's are one Edited event. 204 |
 | POST | `/api/army-turns/{id}/move` | Step 66: move a hex's units together `{ unitIds, path, forceMarch }` (1–500; a path of 1–50 steps): each without an order this turn moves along the path, as a Move from the drawer would (living off the land if it did last turn); those with one keep it. They must start in one hex, all on boats or all ashore, and each get the whole way (none part of the way into the last hex). All or nothing, the problem naming the unit; the Umpire's moves are one Edited event. Returns the new orders |
 | POST | `/api/army-turns/{id}/submit` | Submit (every unit on the map has an order; emails the Umpire). Optional body `{ note? }` (≤2000), a note to the Umpire kept on the Submitted event |
-| POST | `/api/army-turns/{id}/approve` | Approve: Completed (this and the next two email the commander) |
+| POST | `/api/army-turns/{id}/approve` | Approve: Completed (this and the next two email the commander). Optional body `{ note? }` (≤2000), a note to the commander kept on the Approved event (decision 0047) |
 | POST | `/api/army-turns/{id}/send-back` | Back to Draft `{ note?, unitNotes? }` |
 | POST | `/api/army-turns/{id}/revert` | Completed back to Draft, open turn only `{ note?, unitNotes? }` |
 | GET | `/api/campaigns/{id}/units` | Every unit in the campaign (every member), for the map |
@@ -3326,3 +3329,20 @@ build on positions.
       there too chooses its units, at its hex.
     - Spreading overlapping paths apart (transit-map style) was considered and is held back:
       see decision 0041.
+76. **The Umpire's note on approving a turn** (decision 0047), in parts:
+    - ✅ **76a. The API:** `POST /api/army-turns/{id}/approve` takes an optional `{ note? }`
+      (`ApproveTurnRequest`, ≤2000, blank is none), kept on the Approved event as Submit keeps
+      the commander's; no migration (`ArmyTurnEvent.Note` is there). The approval email carries
+      it as send-back's does. `TurnNews` gains the note on the latest Approved event of the
+      army's closing turn (the latest, in the history's order), so the turn-started email shows
+      it under the army ("The Umpire on your last orders"); an army with only that is not
+      "Nothing new".
+    - **76b. Approving with a note (UI):** **Approve** stays one click; **Approve with note…**
+      beside it opens `ApproveModal` (a note field, as the submit modal's), for any army's
+      Submitted turn, commanderless too (the note is then the Umpire's own record).
+    - **76c. The commander reads it (UI):** the turn panel shows the note (an Alert, "Approved"
+      with who and the note) while the turn is Completed, and on the next turn, through its
+      whole time open, "The Umpire on turn N: …" from the last turn's latest Approved event
+      (from the army's turns already loaded; no new endpoint). The history lists it already.
+    - **76d. End to end:** the turn spec approves one army's turn with a note, and its
+      commander reads it on the panel and, after the next turn starts, on the new one.

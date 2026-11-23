@@ -269,6 +269,66 @@ public sealed class TurnActionTests : ApiTest
     }
 
     [Fact]
+    public async Task ApproveTurn_WithANote_KeepsItOnTheApprovedEventAndEmailsIt()
+    {
+        using var scenario = await StartedAsync();
+        var turn = await TurnSteps.SubmittedAsync(scenario);
+
+        using var response = await TurnSteps.ActAsync(
+            scenario,
+            turn.Id,
+            "approve",
+            Role.Umpire,
+            new ApproveTurnRequest("  The ford will be contested.  ")
+        );
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        var approved = (await TurnSteps.OpenArmyTurnAsync(scenario)).History[^1];
+        Assert.Equal(
+            (ArmyTurnEventKind.Approved, "The ford will be contested."),
+            (approved.Kind, approved.Note)
+        );
+        var email = await Emails.WaitForEmailToAsync("commander@example.com", "approved for");
+        Assert.Contains(
+            "Their note: The ford will be contested.",
+            email.TextBody,
+            StringComparison.Ordinal
+        );
+    }
+
+    [Fact]
+    public async Task ApproveTurn_WithoutANote_RecordsNone()
+    {
+        using var scenario = await StartedAsync();
+
+        await TurnSteps.CompletedAsync(scenario);
+
+        var approved = (await TurnSteps.OpenArmyTurnAsync(scenario)).History[^1];
+        Assert.Null(approved.Note);
+    }
+
+    [Fact]
+    public async Task ApproveTurn_ANoteOver2000Characters_IsAValidationError()
+    {
+        using var scenario = await StartedAsync();
+        var turn = await TurnSteps.SubmittedAsync(scenario);
+
+        using var response = await TurnSteps.ActAsync(
+            scenario,
+            turn.Id,
+            "approve",
+            Role.Umpire,
+            new ApproveTurnRequest(new string('x', 2001))
+        );
+
+        await response.AssertValidationProblemAsync("note");
+        Assert.Equal(
+            ArmyTurnStatus.Submitted,
+            (await TurnSteps.OpenArmyTurnAsync(scenario)).Status
+        );
+    }
+
+    [Fact]
     public async Task ApproveTurn_ADraft_Returns409()
     {
         using var scenario = await StartedAsync();

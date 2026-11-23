@@ -152,13 +152,13 @@ internal static class TurnSteps
         Guid armyTurnId,
         string action,
         Role role,
-        ReviewTurnRequest? review = null
+        object? body = null
     ) =>
         scenario
             .As(role)
             .PostAsJsonAsync(
                 new Uri($"/api/army-turns/{armyTurnId}/{action}", UriKind.Relative),
-                review,
+                body,
                 CancellationToken
             );
 

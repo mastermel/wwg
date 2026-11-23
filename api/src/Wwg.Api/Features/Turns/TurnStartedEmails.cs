@@ -170,6 +170,18 @@ internal static class TurnStartedEmails
             return;
         }
 
+        if (news.UmpireNote is { } note)
+        {
+            html.Append(
+                CultureInfo.InvariantCulture,
+                $"<h4>The Umpire on your last orders</h4>\n<blockquote>{Encode(note).Replace("\n", "<br>\n", StringComparison.Ordinal)}</blockquote>\n"
+            );
+            text.Append(
+                CultureInfo.InvariantCulture,
+                $"The Umpire on your last orders\n> {note.Replace("\n", "\n> ", StringComparison.Ordinal)}\n\n"
+            );
+        }
+
         AppendList(html, text, "Enemy sightings", news.Sightings);
         AppendList(html, text, "Supply", news.Supply);
         AppendList(html, text, "Attrition", news.Attrition);

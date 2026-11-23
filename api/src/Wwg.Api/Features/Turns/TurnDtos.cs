@@ -200,6 +200,10 @@ public sealed record ArmyTurnDetails(
 /// <param name="Note">An optional note to the Umpire, kept in the turn's history.</param>
 public sealed record SubmitTurnRequest([property: Trimmed, StringLength(2000)] string? Note);
 
+/// <summary>What the Umpire says when approving a turn (decision 0047).</summary>
+/// <param name="Note">An optional note to the commander, kept in the turn's history.</param>
+public sealed record ApproveTurnRequest([property: Trimmed, StringLength(2000)] string? Note);
+
 /// <summary>Why the Umpire sends a turn back or reverts it: a note, and notes on units.</summary>
 /// <param name="Note">A note on the turn as a whole.</param>
 /// <param name="UnitNotes">Notes on units in the army, at most one each.</param>

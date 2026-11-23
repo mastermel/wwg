@@ -52,6 +52,67 @@ public sealed class TurnStartedEmailTests : ApiTest
     }
 
     [Fact]
+    public async Task StartNextTurn_AfterAnApprovalWithANote_HasTheUmpiresNote()
+    {
+        using var scenario = await CreateCampaignScenarioAsync();
+        await TurnSteps.StartedAsync(scenario);
+        var turn = await TurnSteps.SubmittedAsync(scenario);
+        using var approved = await TurnSteps.ActAsync(
+            scenario,
+            turn.Id,
+            "approve",
+            Role.Umpire,
+            new ApproveTurnRequest("Well marched.")
+        );
+        approved.EnsureSuccessStatusCode();
+
+        using var next = await TurnSteps.StartNextTurnAsync(scenario);
+        next.EnsureSuccessStatusCode();
+
+        var email = await Emails.WaitForEmailToAsync("commander@example.com", "turn 2 has started");
+        Assert.Contains(
+            "The Umpire on your last orders\n> Well marched.",
+            email.TextBody,
+            StringComparison.Ordinal
+        );
+        Assert.DoesNotContain("Nothing new", email.TextBody, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task StartNextTurn_ReapprovedWithoutANote_HasNoUmpiresNote()
+    {
+        using var scenario = await CreateCampaignScenarioAsync();
+        await TurnSteps.StartedAsync(scenario);
+        var turn = await TurnSteps.SubmittedAsync(scenario);
+        using var approved = await TurnSteps.ActAsync(
+            scenario,
+            turn.Id,
+            "approve",
+            Role.Umpire,
+            new ApproveTurnRequest("Well marched.")
+        );
+        approved.EnsureSuccessStatusCode();
+        using var reverted = await TurnSteps.ActAsync(
+            scenario,
+            turn.Id,
+            "revert",
+            Role.Umpire,
+            new ReviewTurnRequest(null, null)
+        );
+        reverted.EnsureSuccessStatusCode();
+        using var submitted = await TurnSteps.ActAsync(scenario, turn.Id, "submit", Role.Commander);
+        submitted.EnsureSuccessStatusCode();
+        using var again = await TurnSteps.ActAsync(scenario, turn.Id, "approve", Role.Umpire);
+        again.EnsureSuccessStatusCode();
+
+        using var next = await TurnSteps.StartNextTurnAsync(scenario);
+        next.EnsureSuccessStatusCode();
+
+        var email = await Emails.WaitForEmailToAsync("commander@example.com", "turn 2 has started");
+        Assert.DoesNotContain("Well marched.", email.TextBody, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task StartNextTurn_TurnedOff_EmailsTheCommanderNothing()
     {
         using var scenario = await CreateCampaignScenarioAsync();
