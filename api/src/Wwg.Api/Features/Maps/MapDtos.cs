@@ -95,3 +95,19 @@ public sealed record PlaceResult(
     double Latitude,
     MapBounds? Bounds
 );
+
+/// <summary>A town or village on the campaign's map, found by a search, and the hex it's in.</summary>
+/// <param name="Name">Its name.</param>
+/// <param name="Description">Its name with where it is ("Markkleeberg, Saxony, Germany").</param>
+/// <param name="Q">Its hex's column.</param>
+/// <param name="R">Its hex's row.</param>
+/// <param name="Longitude">Its centre's longitude.</param>
+/// <param name="Latitude">Its centre's latitude.</param>
+public sealed record TownResult(
+    string Name,
+    string Description,
+    int Q,
+    int R,
+    double Longitude,
+    double Latitude
+);

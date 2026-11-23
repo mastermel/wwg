@@ -32,6 +32,14 @@ internal static partial class MapEndpoints
             .ProducesProblem(StatusCodes.Status429TooManyRequests)
             .ProducesProblem(StatusCodes.Status503ServiceUnavailable);
 
+        map.MapGet("/towns", SearchTownsAsync)
+            .WithName("SearchTowns")
+            .RequireCampaignAccess(CampaignAccess.Member)
+            .RequireRateLimiting(RateLimiting.PlacesPolicy)
+            .ProducesProblem(StatusCodes.Status409Conflict)
+            .ProducesProblem(StatusCodes.Status429TooManyRequests)
+            .ProducesProblem(StatusCodes.Status503ServiceUnavailable);
+
         return app;
     }
 
@@ -57,23 +65,15 @@ internal static partial class MapEndpoints
         CancellationToken cancellationToken
     )
     {
-        IReadOnlyList<Place> places;
-        try
-        {
-            places = await geocoder.SearchAsync(search.Trim(), cancellationToken);
-        }
-        catch (Exception exception)
-            when (exception is HttpRequestException or TaskCanceledException or JsonException
-                && !cancellationToken.IsCancellationRequested
-            )
-        {
-            LogSearchFailed(logger, exception);
-            return TypedResults.Problem(
-                statusCode: StatusCodes.Status503ServiceUnavailable,
-                title: "Place search unavailable",
-                detail: "Place search isn't working right now. Try again later, or pan and zoom to the area."
-            );
-        }
+        var (places, problem) = await GeocodeAsync(
+            geocoder,
+            search,
+            null,
+            logger,
+            cancellationToken
+        );
+        if (problem is not null)
+            return problem;
 
         return TypedResults.Ok(
             places
@@ -88,6 +88,90 @@ internal static partial class MapEndpoints
                 ))
                 .ToList()
         );
+    }
+
+    /// <summary>
+    /// Towns and villages on the campaign's map matching <paramref name="search"/>, each with the
+    /// hex it's in, to find on the map (every member). Only those in the grid's hexes. 409 while the
+    /// map has no area; 503 if the geocoding service fails.
+    /// </summary>
+    internal static async Task<Results<Ok<List<TownResult>>, ProblemHttpResult>> SearchTownsAsync(
+        Guid id,
+        [Required, StringLength(200, MinimumLength = 2)] string search,
+        WwgDbContext db,
+        IGeocoder geocoder,
+        ILogger<CampaignMap> logger,
+        CancellationToken cancellationToken
+    )
+    {
+        var grid = await CampaignMaps.GridAsync(db, id, cancellationToken);
+        if (grid is null)
+        {
+            return TypedResults.Problem(
+                statusCode: StatusCodes.Status409Conflict,
+                title: "No map yet",
+                detail: "The Umpire hasn't set the campaign's area yet."
+            );
+        }
+
+        var bounds = grid.Bounds;
+        var (places, problem) = await GeocodeAsync(
+            geocoder,
+            search,
+            new SearchArea(bounds.West, bounds.South, bounds.East, bounds.North),
+            logger,
+            cancellationToken
+        );
+        if (problem is not null)
+            return problem;
+
+        // The services only prefer the area, so places outside the grid are dropped here.
+        return TypedResults.Ok(
+            places
+                .Select(p => (Place: p, Hex: grid.HexAt(p.Latitude, p.Longitude)))
+                .Where(found => grid.Contains(found.Hex))
+                .Select(found => new TownResult(
+                    found.Place.Name,
+                    found.Place.Description,
+                    found.Hex.Q,
+                    found.Hex.R,
+                    found.Place.Longitude,
+                    found.Place.Latitude
+                ))
+                .ToList()
+        );
+    }
+
+    private static async Task<(
+        IReadOnlyList<Place> Places,
+        ProblemHttpResult? Problem
+    )> GeocodeAsync(
+        IGeocoder geocoder,
+        string search,
+        SearchArea? area,
+        ILogger logger,
+        CancellationToken cancellationToken
+    )
+    {
+        try
+        {
+            return (await geocoder.SearchAsync(search.Trim(), area, cancellationToken), null);
+        }
+        catch (Exception exception)
+            when (exception is HttpRequestException or TaskCanceledException or JsonException
+                && !cancellationToken.IsCancellationRequested
+            )
+        {
+            LogSearchFailed(logger, exception);
+            return (
+                [],
+                TypedResults.Problem(
+                    statusCode: StatusCodes.Status503ServiceUnavailable,
+                    title: "Place search unavailable",
+                    detail: "Place search isn't working right now. Try again later, or pan and zoom to the area."
+                )
+            );
+        }
     }
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Place search failed")]

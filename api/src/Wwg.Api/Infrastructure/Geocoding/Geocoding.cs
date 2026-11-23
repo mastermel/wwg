@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Options;
 
@@ -27,10 +28,30 @@ internal sealed record Place(
     (double West, double South, double East, double North)? Bounds
 );
 
+/// <summary>An area to search inside, in degrees.</summary>
+internal sealed record SearchArea(double West, double South, double East, double North)
+{
+    /// <summary>The service's <c>bbox</c> parameter: west, south, east, north.</summary>
+    public string BoundingBox =>
+        string.Join(
+            ',',
+            new[] { West, South, East, North }.Select(d => d.ToString(CultureInfo.InvariantCulture))
+        );
+}
+
 /// <summary>Searches for places by name. Throws <see cref="HttpRequestException"/> when the service fails.</summary>
 internal interface IGeocoder
 {
-    Task<IReadOnlyList<Place>> SearchAsync(string query, CancellationToken cancellationToken);
+    /// <summary>
+    /// Areas and settlements matching <paramref name="query"/>, anywhere; or, given an
+    /// <paramref name="area"/>, only towns and villages, looked for there first (the services may
+    /// still return some outside it).
+    /// </summary>
+    Task<IReadOnlyList<Place>> SearchAsync(
+        string query,
+        SearchArea? area,
+        CancellationToken cancellationToken
+    );
 }
 
 /// <summary>MapTiler's forward geocoding: areas and settlements, not addresses or roads.</summary>
@@ -41,15 +62,24 @@ internal sealed class MapTilerGeocoder(HttpClient http, IOptions<GeocodingOption
     private const string Types =
         "country,region,subregion,county,joint_municipality,municipality,municipal_district,locality,place";
 
+    // Towns and villages, to find on the map.
+    private const string SettlementTypes = "municipality,municipal_district,locality,place";
+
     public async Task<IReadOnlyList<Place>> SearchAsync(
         string query,
+        SearchArea? area,
         CancellationToken cancellationToken
     )
     {
         var url =
             $"https://api.maptiler.com/geocoding/{Uri.EscapeDataString(query)}.json"
             + $"?key={Uri.EscapeDataString(options.Value.MapTilerApiKey ?? "")}"
-            + $"&limit=8&language=en&types={Types}";
+            + "&limit=8&language=en"
+            + (
+                area is { } within
+                    ? $"&types={SettlementTypes}&bbox={within.BoundingBox}"
+                    : $"&types={Types}"
+            );
         var result = await http.GetFromJsonAsync<Collection>(url, cancellationToken);
         return
         [
@@ -82,12 +112,18 @@ internal sealed class PhotonGeocoder(HttpClient http) : IGeocoder
 {
     public async Task<IReadOnlyList<Place>> SearchAsync(
         string query,
+        SearchArea? area,
         CancellationToken cancellationToken
     )
     {
         var url =
             $"https://photon.komoot.io/api/?q={Uri.EscapeDataString(query)}&limit=8&lang=en"
-            + "&layer=city&layer=county&layer=state&layer=country&layer=district&layer=locality";
+            + (
+                area is { } within
+                    // Photon's city layer holds towns and villages too.
+                    ? $"&layer=city&layer=district&layer=locality&bbox={within.BoundingBox}"
+                    : "&layer=city&layer=county&layer=state&layer=country&layer=district&layer=locality"
+            );
         var result = await http.GetFromJsonAsync<Collection>(url, cancellationToken);
         return
         [

@@ -3559,6 +3559,86 @@
         ]
       }
     },
+    "/api/campaigns/{id}/map/towns": {
+      "get": {
+        "tags": [
+          "Maps"
+        ],
+        "summary": "Towns and villages on the campaign's map matching search, each with the\nhex it's in, to find on the map (every member). Only those in the grid's hexes. 409 while the\nmap has no area; 503 if the geocoding service fails.",
+        "operationId": "SearchTowns",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 2,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TownResult"
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      }
+    },
     "/api/campaigns/{id}/grid": {
       "get": {
         "tags": [
@@ -10320,6 +10400,48 @@
           }
         },
         "description": "A signed-in session. The access token goes in `Authorization: Bearer …`; the refresh\ntoken is never in a body: it's set as an HttpOnly cookie that only /api/auth receives."
+      },
+      "TownResult": {
+        "required": [
+          "name",
+          "description",
+          "q",
+          "r",
+          "longitude",
+          "latitude"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Its name."
+          },
+          "description": {
+            "type": "string",
+            "description": "Its name with where it is (\"Markkleeberg, Saxony, Germany\")."
+          },
+          "q": {
+            "type": "integer",
+            "description": "Its hex's column.",
+            "format": "int32"
+          },
+          "r": {
+            "type": "integer",
+            "description": "Its hex's row.",
+            "format": "int32"
+          },
+          "longitude": {
+            "type": "number",
+            "description": "Its centre's longitude.",
+            "format": "double"
+          },
+          "latitude": {
+            "type": "number",
+            "description": "Its centre's latitude.",
+            "format": "double"
+          }
+        },
+        "description": "A town or village on the campaign's map, found by a search, and the hex it's in."
       },
       "TurnPart": {
         "enum": [

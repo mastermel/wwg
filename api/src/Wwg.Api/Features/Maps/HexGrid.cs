@@ -57,6 +57,9 @@ internal sealed class HexGrid
         _side = size / Math.Sqrt(3);
     }
 
+    /// <summary>The campaign's area the grid covers.</summary>
+    public MapBounds Bounds => _bounds;
+
     /// <summary>The hex a point falls in (whether or not it's in the grid).</summary>
     public Hex HexAt(double latitude, double longitude)
     {

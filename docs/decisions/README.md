@@ -86,3 +86,4 @@ A reversal gets a new entry.
 | [0043](0043-the-api-reports-the-version.md) | The API reports the version, and the offline cache is busted by the API contract | 2026-11-23 |
 | [0044](0044-the-app-updates-itself.md) | The app reloads itself into a new deploy, and a new API build drops the saved data | 2026-11-23 |
 | [0045](0045-e2e-docker-and-deploy-on-main-only.md) | The e2e, docker and deploy jobs run on `main` only, never on PRs | 2026-11-23 |
+| [0046](0046-find-a-town-on-the-map.md) | Everyone can find a town on the map | 2026-11-23 |

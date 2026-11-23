@@ -2060,6 +2060,7 @@ Admins (403 for others). Admins
 make users Managers (`PUT /api/admin/users/{id}/manager`).
 | View the map settings (bounds, layers, language, hex size) | ✅ | ✅ | ✅ | ✅ | 404 |
 | Edit the map settings; search for places | ✅ | ✅ | 403 | 403 | 404 |
+| Find a town on the map (decision 0046) | ✅ | ✅ | ✅ | ✅ | 404 |
 | View turn progress (numbers, statuses, counts) | ✅ | ✅ | ✅ | ✅ | 404 |
 | View **positions and orders** (the visibility rule) | ✅ all | ✅ all | own army | 403 | 404 |
 | Give orders, undo, submit (the open turn; a Draft, or for the Umpire a Draft or Submitted); from step 64, hold the rest of a formation; from step 66, move a hex's units together, or take back their orders | ✅ | ✅ | own army | 403 | 404 |
@@ -2198,6 +2199,7 @@ each step)
 | PUT | `/api/armies/{id}` | `UpdateArmy` (was `RenameArmy`): name, faction, colour and nation |
 | GET / PUT | `/api/campaigns/{id}/map` | The map settings, with the hex size (the movement limits until Phase 11) |
 | GET | `/api/campaigns/{id}/places?search=` | Place search for the bounds (Umpire; server-side geocoder, rate-limited) |
+| GET | `/api/campaigns/{id}/map/towns?search=` | Towns and villages in the grid's hexes, each with its hex `{ q, r }` (every member; the same geocoder and rate limit; no area yet: 409) (decision 0046) |
 | GET | `/api/campaigns/{id}/turns` | Campaign turns: number, open/closed, each army's status and times, counts; for the Umpire, what stops the start or the next turn |
 | POST | `/api/campaigns/{id}/start` | Start the campaign (close turn 0, open turn 1) |
 | POST | `/api/campaigns/{id}/turns` | Start the next turn (emails every commander); from step 47b `{ attrition: [{ unitId, points }], sightings? }`: the Umpire's confirmed attrition and, from step 49b, the sightings as shaped |
