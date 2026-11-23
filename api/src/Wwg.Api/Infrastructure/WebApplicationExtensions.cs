@@ -9,6 +9,7 @@ internal static class WebApplicationExtensions
     {
         // First, so everything after sees the real client IP and scheme.
         app.UseForwardedHeaders();
+        app.UseApiBuildHeader();
         // Before error handling, so it logs the status the client actually gets.
         app.UseHttpLogging();
         app.UseErrorHandling();

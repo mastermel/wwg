@@ -38,6 +38,18 @@ public sealed class HealthTests : ApiTest
     }
 
     [Fact]
+    public async Task Responses_CarryTheApiBuild()
+    {
+        using var response = await Client.GetAsync(
+            new Uri("/health", UriKind.Relative),
+            CancellationToken
+        );
+
+        var build = Assert.Single(response.Headers.GetValues("X-Api-Build"));
+        Assert.Equal(typeof(Program).Assembly.ManifestModule.ModuleVersionId.ToString("N"), build);
+    }
+
+    [Fact]
     public async Task GetHealth_DatabaseHasNoSchema_ReturnsUnhealthy503()
     {
         // A fresh, empty in-memory database: nothing keeps it alive, so it stays empty.
