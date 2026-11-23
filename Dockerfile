@@ -15,11 +15,7 @@ COPY api/openapi.json /src/api/openapi.json
 # The build typechecks the tests too, and the grid's reads the figures it shares with the API's.
 COPY testdata/ /src/testdata/
 COPY web/ ./
-# The image tag (e.g. v20260927.143005), shown on the About page. "dev" when built by hand.
-# Declared here, not at the top of the stage: an ARG's value is part of the cache key of every RUN
-# after it, and CI passes a new value on every build.
-ARG APP_VERSION=dev
-RUN APP_VERSION=$APP_VERSION npm run build
+RUN npm run build
 
 # 2. API: published for the target architecture
 FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0 AS api
@@ -46,6 +42,11 @@ COPY --from=web /src/web/dist ./wwwroot
 COPY --from=api --chown=1654:1654 /out/data /data
 VOLUME /data
 EXPOSE 8080
+# The image tag (e.g. v20260927.143005), reported by GET /health and shown on the About page; "dev"
+# when built by hand. Set after the build steps, so a new value (every CI build has one)
+# invalidates none of them, and the front-end bundle is the same for every build of the same code.
+ARG APP_VERSION=dev
+ENV App__Version=$APP_VERSION
 # Probed every second while starting (--start-interval), so the container reports healthy as soon
 # as it is (deploys and `compose up --wait` don't wait out a 30s interval); then every 30s.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --start-interval=1s --retries=3 \

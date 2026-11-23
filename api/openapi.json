@@ -11,7 +11,7 @@
         "tags": [
           "Health"
         ],
-        "summary": "Reports whether the API and its dependencies are healthy.",
+        "summary": "Reports whether the API and its dependencies are healthy, and its version.",
         "operationId": "GetHealth",
         "responses": {
           "200": {
@@ -7766,16 +7766,21 @@
       },
       "HealthResponse": {
         "required": [
-          "status"
+          "status",
+          "version"
         ],
         "type": "object",
         "properties": {
           "status": {
             "description": "Healthy or Degraded (200), or Unhealthy (503).",
             "$ref": "#/components/schemas/HealthStatus"
+          },
+          "version": {
+            "type": "string",
+            "description": "The image tag (e.g. `v20260927.143005`), or \"dev\" when not built by\n    the Docker image build."
           }
         },
-        "description": "The API's overall health."
+        "description": "The API's overall health, and the version that's running."
       },
       "HealthStatus": {
         "enum": [

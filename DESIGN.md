@@ -1139,9 +1139,11 @@ web/
     at once.
   - Restored data is refetched (if online) as soon as it's restored, however
     recent, so a reload always shows current data.
-  - The cache's `buster` is the app version, so **a new deploy clears it**:
-    persisted data can never have an older response shape than the code
-    reading it. Offline data comes back on the next online visit.
+  - The cache's `buster` is a hash of `api/openapi.json`, computed at build
+    time, so **a deploy that changes the API contract clears it**: persisted
+    data can never have an older response shape than the code reading it.
+    Offline data comes back on the next online visit. Deploys that leave the
+    contract alone keep it (decision 0043).
   - **Only campaign data is persisted.** Admin queries (e.g. the user list
     with emails) are marked not to persist.
   - On a shared computer the data stays until someone signs out, which
@@ -1176,9 +1178,12 @@ web/
   standalone display.
 - A small, dismissible install hint. iOS has no install prompt, so there it
   explains Share → Add to Home Screen.
-- An **About** page shows the app version (the image tag, passed into the
-  Vite build as a build argument by the CI `docker` job; `dev` locally) and
-  the API's health. It replaces the Phase 1 "health" page.
+- An **About** page shows the app version and the API's health, both from
+  `GET /health`. The version is the image tag, passed into the image as a
+  build argument by the CI `docker` job and set as `App__Version` in its final
+  stage (`dev` locally); it isn't baked into the front-end bundle, so the
+  bundle is the same for every build of the same code (decision 0043). It
+  replaces the Phase 1 "health" page.
 - No push notifications, error reporting or analytics in v1.
 
 **Screens, navigation and errors**
@@ -1464,7 +1469,7 @@ e2e suite (Chromium) drives the real map.
 |---|---|
 | Logging | Built-in `ILogger`. **JSON console logs** in production (`Logging:Console:FormatterName`, UTC timestamps); plain text in development. **One line per API request** (`HttpLogging`: method, path, status, duration; never headers, bodies or query strings); static files and `/health` aren't logged. EF Core's SQL is only logged in development |
 | Configuration | `appsettings.{Environment}.json` + env vars; user-secrets in dev. **Every settings section** (`App`, `Database`, `Smtp`, `Admin`, `Auth`, `Backup`, `Geocoding`, `RateLimits`, `ForwardedHeaders`) is a typed options class with DataAnnotations, `ValidateDataAnnotations()` and `ValidateOnStart()`, so bad config fails at startup with a clear message. Nested objects (each rate limit) need `[ValidateObjectMembers]`, or they aren't checked; lists are checked in `Validate` (`IValidatableObject`), e.g. that every `Admin:Emails` entry is an email. `App:PublicUrl` (the app's public URL, e.g. `https://wwg.example.com`) is required outside development. `Database` holds `MigrateOnStartup` (default on) and the connection string, read from the standard `ConnectionStrings:Default` |
-| Health check | `GET /health` (includes a DB check) for Docker and the proxy |
+| Health check | `GET /health` (includes a DB check) for Docker and the proxy; it also reports the running version (`App:Version`) |
 | Time | `TimeProvider` injected everywhere; faked in tests |
 | Code quality | See §4.1 |
 | Packages | Central package management (`Directory.Packages.props`) |
@@ -2442,7 +2447,7 @@ generated SDK, and the app installs as a PWA and opens offline.
     `api/openapi.json` for Orval.
 20. ✅ **CD:** Docker Hub push step in CI with `latest` + `vYYYYMMdd.HHmmss` tags and
     OCI labels. The version tag is also passed into the image build, for the
-    app's About page.
+    app's About page (since decision 0043, as the API's `App:Version`).
 21. ✅ **First deploy** to the server behind Traefik, with the SMTP values and
     `ForwardedHeaders__KnownNetworks__0` (the shared network's subnet) filled
     in. Register the Admin account and confirm its email, then add it to `Admin:Emails` and

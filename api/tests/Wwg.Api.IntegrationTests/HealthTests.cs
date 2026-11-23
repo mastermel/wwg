@@ -19,6 +19,25 @@ public sealed class HealthTests : ApiTest
     }
 
     [Fact]
+    public async Task GetHealth_ReportsTheConfiguredVersion()
+    {
+        using var client = App.WithWebHostBuilder(builder =>
+                builder.UseSetting("App:Version", "v20260927.143005")
+            )
+            .CreateClient();
+
+        using var response = await client.GetAsync(
+            new Uri("/health", UriKind.Relative),
+            CancellationToken
+        );
+
+        using var body = JsonDocument.Parse(
+            await response.Content.ReadAsStringAsync(CancellationToken)
+        );
+        Assert.Equal("v20260927.143005", body.RootElement.GetProperty("version").GetString());
+    }
+
+    [Fact]
     public async Task GetHealth_DatabaseHasNoSchema_ReturnsUnhealthy503()
     {
         // A fresh, empty in-memory database: nothing keeps it alive, so it stays empty.

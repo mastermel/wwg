@@ -45,6 +45,6 @@ const defaults = [
  */
 export const server = setupServer(...defaults);
 
-/** `GET /health` answering with `status`. */
-export const serveHealth = (status: HealthStatus = "Healthy") =>
-  http.get("*/health", () => HttpResponse.json({ status }));
+/** `GET /health` answering with `status` and `version`. */
+export const serveHealth = (status: HealthStatus = "Healthy", version = "v20260927.143005") =>
+  http.get("*/health", () => HttpResponse.json({ status, version }));

@@ -4,7 +4,6 @@ import type { HealthStatus } from "@/api/generated/model";
 import { Page } from "@/components/Page";
 import { Section } from "@/components/Section";
 import { ApiError } from "@/lib/api-fetch";
-import { appVersion } from "@/lib/app-version";
 
 const statusColors: Record<HealthStatus, string> = {
   Healthy: "green",
@@ -22,7 +21,7 @@ export function AboutPage() {
               <Text size="sm" c="dimmed">
                 Version
               </Text>
-              <Text fw={500}>{appVersion}</Text>
+              <ApiVersion />
             </div>
             <div>
               <Text size="sm" c="dimmed">
@@ -50,9 +49,31 @@ function Status({ label, color }: { label: string; color: string }) {
   );
 }
 
+// Live status: never saved for offline use.
+const useHealth = () => useGetHealth({ query: { meta: { persist: false } } });
+
+/** The health response's body, which an unhealthy API sends with a 503 (arriving as an error). */
+function healthBody(health: ReturnType<typeof useHealth>) {
+  if (health.isSuccess) {
+    return health.data;
+  }
+  return health.error instanceof ApiError ? health.error.body : undefined;
+}
+
+/** The version the API reports: the image tag, which covers the front-end too (one image). */
+function ApiVersion() {
+  const health = useHealth();
+
+  if (health.isPending && health.fetchStatus === "fetching") {
+    return <Loader size="xs" role="status" aria-label="Checking the version" />;
+  }
+
+  const version = healthBody(health)?.version;
+  return version ? <Text fw={500}>{version}</Text> : <Text c="dimmed">Unknown</Text>;
+}
+
 function ApiHealth() {
-  // Live status: never saved for offline use.
-  const health = useGetHealth({ query: { meta: { persist: false } } });
+  const health = useHealth();
 
   if (health.fetchStatus === "paused") {
     return <Status label="Offline" color="gray" />;
@@ -62,12 +83,7 @@ function ApiHealth() {
     return <Loader size="xs" role="status" aria-label="Checking the server" />;
   }
 
-  // An unhealthy API answers 503 with the same body, which arrives as an error.
-  const status: HealthStatus | undefined = health.isSuccess
-    ? health.data.status
-    : health.error instanceof ApiError
-      ? health.error.body?.status
-      : undefined;
+  const status: HealthStatus | undefined = healthBody(health)?.status;
 
   if (!status) {
     return <Status label="Unreachable" color="gray" />;

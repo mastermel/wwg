@@ -14,17 +14,31 @@ describe("About page", () => {
     expect(await screen.findByText("Healthy")).toBeInTheDocument();
   });
 
-  it("shows the app version", async () => {
-    server.use(serveHealth("Healthy"));
+  it("shows the version the API reports", async () => {
+    server.use(serveHealth("Healthy", "v20261123.171118"));
 
     await renderApp("/about");
 
-    expect(await screen.findByText("dev")).toBeInTheDocument();
+    expect(await screen.findByText("v20261123.171118")).toBeInTheDocument();
+  });
+
+  it("shows the version an unhealthy API reports", async () => {
+    server.use(
+      http.get("*/health", () =>
+        HttpResponse.json({ status: "Unhealthy", version: "v20261123.171118" }, { status: 503 }),
+      ),
+    );
+
+    await renderApp("/about");
+
+    expect(await screen.findByText("v20261123.171118")).toBeInTheDocument();
   });
 
   it("shows the server as unhealthy when the API answers 503", async () => {
     server.use(
-      http.get("*/health", () => HttpResponse.json({ status: "Unhealthy" }, { status: 503 })),
+      http.get("*/health", () =>
+        HttpResponse.json({ status: "Unhealthy", version: "dev" }, { status: 503 }),
+      ),
     );
 
     await renderApp("/about");
@@ -46,6 +60,7 @@ describe("About page", () => {
     await renderApp("/about");
 
     expect(await screen.findByText("Offline")).toBeInTheDocument();
+    expect(screen.getByText("Unknown")).toBeInTheDocument();
   });
 
   it("has no detectable accessibility problems", async () => {

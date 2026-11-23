@@ -14,6 +14,12 @@ internal sealed class AppOptions : IValidatableObject
     [Required]
     public Uri? PublicUrl { get; set; }
 
+    /// <summary>
+    /// The deployed version: the image tag (e.g. <c>v20260927.143005</c>), set by the Docker build.
+    /// Reported by <c>GET /health</c> and shown on the About page.
+    /// </summary>
+    public string Version { get; set; } = "dev";
+
     /// <summary>Serve Swagger UI outside development too.</summary>
     public bool EnableSwaggerUi { get; set; }
 

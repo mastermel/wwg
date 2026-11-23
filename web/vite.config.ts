@@ -1,4 +1,6 @@
 /// <reference types="vitest/config" />
+import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import react from "@vitejs/plugin-react";
@@ -16,8 +18,14 @@ const apiProxy: Record<string, ProxyOptions> = Object.fromEntries(
 
 export default defineConfig({
   define: {
-    // The image tag (e.g. v20260927.143005), passed in by the Docker build; "dev" otherwise.
-    __APP_VERSION__: JSON.stringify(process.env.APP_VERSION ?? "dev"),
+    // The offline cache's buster: a hash of the API contract, which decides the shape of every
+    // saved response (src/app/query-persistence.ts).
+    __API_CONTRACT_HASH__: JSON.stringify(
+      createHash("sha256")
+        .update(readFileSync(fileURLToPath(new URL("../api/openapi.json", import.meta.url))))
+        .digest("hex")
+        .slice(0, 16),
+    ),
   },
   plugins: [
     // Generates src/routeTree.gen.ts from src/routes/, and splits each route into its own chunk.

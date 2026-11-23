@@ -33,6 +33,6 @@ test.describe("hosting", () => {
   test("reports itself healthy", async ({ request }) => {
     const response = await request.get("/health");
 
-    expect(await response.json()).toEqual({ status: "Healthy" });
+    expect(await response.json()).toEqual({ status: "Healthy", version: "e2e" });
   });
 });

@@ -3,12 +3,12 @@ import { defaultShouldDehydrateQuery } from "@tanstack/react-query";
 import type { PersistQueryClientProviderProps } from "@tanstack/react-query-persist-client";
 import { del, get, set } from "idb-keyval";
 import { cacheMaxAge } from "@/app/query-client";
-import { appVersion } from "@/lib/app-version";
+import { apiContractHash } from "@/lib/api-contract-hash";
 
 /**
  * Saves the API cache to IndexedDB so the app can show the last-known data offline (read-only).
- * The buster is the app version: a new deploy discards the saved copy, so saved data never has
- * an older shape than the code reading it. It's cleared on sign-out, and when someone other than
+ * The buster is a hash of the API contract: a deploy that changes it discards the saved copy, so
+ * saved data never has an older shape than the code reading it. It's cleared on sign-out, and when someone other than
  * the last user signs in (the session store).
  */
 export const persistOptions: PersistQueryClientProviderProps["persistOptions"] = {
@@ -17,7 +17,7 @@ export const persistOptions: PersistQueryClientProviderProps["persistOptions"] =
     key: "wwg:query-cache",
   }),
   maxAge: cacheMaxAge,
-  buster: appVersion,
+  buster: apiContractHash,
   dehydrateOptions: {
     shouldDehydrateQuery: (query) =>
       defaultShouldDehydrateQuery(query) && query.meta?.persist !== false,

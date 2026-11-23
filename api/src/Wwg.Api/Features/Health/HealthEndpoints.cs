@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Options;
+using Wwg.Api.Infrastructure;
 
 namespace Wwg.Api.Features.Health;
 
@@ -20,13 +22,17 @@ internal static class HealthEndpoints
         return app;
     }
 
-    /// <summary>Reports whether the API and its dependencies are healthy.</summary>
+    /// <summary>Reports whether the API and its dependencies are healthy, and its version.</summary>
     internal static async Task<
         Results<Ok<HealthResponse>, JsonHttpResult<HealthResponse>>
-    > GetHealthAsync(HealthCheckService healthChecks, CancellationToken cancellationToken)
+    > GetHealthAsync(
+        HealthCheckService healthChecks,
+        IOptions<AppOptions> appOptions,
+        CancellationToken cancellationToken
+    )
     {
         var report = await healthChecks.CheckHealthAsync(cancellationToken);
-        var response = new HealthResponse(report.Status);
+        var response = new HealthResponse(report.Status, appOptions.Value.Version);
 
         return report.Status == HealthStatus.Unhealthy
             ? TypedResults.Json(response, statusCode: StatusCodes.Status503ServiceUnavailable)
