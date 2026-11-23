@@ -1,6 +1,6 @@
 import { Outlet, useRouter } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { UpdatePrompt } from "@/components/UpdatePrompt";
+import { AppUpdater } from "@/components/AppUpdater";
 import { useSessionStore } from "@/features/auth/session-context";
 
 /**
@@ -16,7 +16,7 @@ export function RootLayout() {
   return (
     <>
       <Outlet />
-      <UpdatePrompt />
+      <AppUpdater />
     </>
   );
 }

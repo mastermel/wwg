@@ -1,8 +1,10 @@
 import { getAccessToken, refreshAccessToken } from "@/lib/access-token";
+import { noteApiBuild } from "@/lib/api-build";
 
 /**
  * The one fetch function every generated API call goes through (Orval's "mutator"). It adds the
- * access token, and after a 401 refreshes once (shared with any other callers) and retries.
+ * access token, and after a 401 refreshes once (shared with any other callers) and retries. It
+ * also watches the API's build, to reload the app when a new one is deployed (`api-build.ts`).
  */
 
 /** RFC 9457 Problem Details, as every API error returns (validation errors add `errors`). */
@@ -45,6 +47,7 @@ export async function apiFetch<T>(url: string, init: RequestInit): Promise<T> {
     }
   }
 
+  noteApiBuild(response.headers.get("X-Api-Build"));
   const body = await readBody(response);
 
   if (!response.ok) {

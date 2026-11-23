@@ -61,8 +61,10 @@ The service worker (offline shell, update prompt) only runs in a production buil
 npm run build --prefix web && npm run preview --prefix web   # http://localhost:4173
 ```
 
-Building again after changing something in `web/` while the preview is open triggers the update
-prompt. (A rebuild of unchanged code gives the same bundle, so no prompt.) The version on the
+Building again after changing something in `web/` while the preview is open makes the open page
+reload into it within 5 minutes, or as soon as you switch back to its tab. (A rebuild of unchanged
+code gives the same bundle, so nothing happens.) Restarting the API after changing its code does
+the same, on the page's next API call, and drops the saved offline data. The version on the
 About page comes from the API, not the build: set `App__Version` when running it to see another. To start
 clean, remove the service worker and site data in the browser's dev tools (Application tab in
 Chrome).

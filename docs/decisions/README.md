@@ -84,3 +84,4 @@ A reversal gets a new entry.
 | [0041](0041-a-hexs-moves-stand-out.md) | A chosen hex's moves stand out, and the rest fade | 2026-11-22 |
 | [0042](0042-ci-deploys-to-komodo.md) | CI redeploys the production stack through the Komodo API | 2026-11-23 |
 | [0043](0043-the-api-reports-the-version.md) | The API reports the version, and the offline cache is busted by the API contract | 2026-11-23 |
+| [0044](0044-the-app-updates-itself.md) | The app reloads itself into a new deploy, and a new API build drops the saved data | 2026-11-23 |

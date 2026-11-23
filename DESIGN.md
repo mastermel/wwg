@@ -642,8 +642,9 @@ Identity has two layers:
   - On PRs, **`oasdiff breaking`** compares the PR's `openapi.json` with
     `main`'s and posts a **warning** listing any breaking changes. It doesn't
     fail the check, because a coordinated change in the same PR is normal now.
-  - The front-end detects a new deploy through its service worker and
-    prompts the user to reload (§3.12).
+  - An open tab notices a new deploy and reloads itself (§3.12): a new
+    front-end through its service worker, a new API build through the
+    `X-Api-Build` header on every response.
 - .NET 10 emits **OpenAPI 3.1** by default, and Orval handles it (checked in
   step 9.3, §3.12).
 
@@ -1139,11 +1140,12 @@ web/
     at once.
   - Restored data is refetched (if online) as soon as it's restored, however
     recent, so a reload always shows current data.
-  - The cache's `buster` is a hash of `api/openapi.json`, computed at build
-    time, so **a deploy that changes the API contract clears it**: persisted
-    data can never have an older response shape than the code reading it.
-    Offline data comes back on the next online visit. Deploys that leave the
-    contract alone keep it (decision 0043).
+  - The cache's `buster` is the API build the page started with (the last
+    `X-Api-Build` seen, kept in localStorage) plus a hash of `api/openapi.json`
+    computed at build time, so **a deploy that changes the API clears it**:
+    persisted data never comes from an older API than the one running.
+    Offline data comes back on the next online visit. Deploys that only change
+    the front-end keep it (decisions 0043, 0044).
   - **Only campaign data is persisted.** Admin queries (e.g. the user list
     with emails) are marked not to persist.
   - On a shared computer the data stays until someone signs out, which
@@ -1157,13 +1159,24 @@ web/
 - The service worker precaches the **app shell only** (HTML, JS, CSS,
   icons). It never caches API responses. Its navigation fallback excludes
   `/api`, `/openapi`, `/swagger` and `/health`.
-- New deploys: the service worker shows an **"Update available, reload"**
-  prompt. This is how the app detects a new deploy (§3.7). On a first visit
-  no worker controls the page yet, so Reload simply reloads.
-- The account menu's **Update and reload** does the same on demand, for when
-  the prompt was dismissed or missed: it checks for a newer version, activates
-  it if one is waiting, and reloads (just reloads when there's none, or
-  offline).
+- New deploys **reload the app by themselves**, with no prompt (decision
+  0044; `AppUpdater`, `lib/app-update.ts`, `lib/api-build.ts`):
+  - **A new front-end:** the app asks for a new service worker every 5
+    minutes, and whenever it comes back into view or back online (browsers
+    only look on a page load, which an open app may not have for days). Once
+    one has downloaded, the app activates it and reloads.
+  - **A new API:** every API response carries `X-Api-Build`, the API
+    assembly's module version ID (deterministic builds: it changes only when
+    the API's code or references do). When it differs from the build the page
+    started with, the app reloads, picking up a new service worker at the same
+    time; the new build in the buster drops the saved data.
+  - Either way it reloads only **when nobody's typing**: at once, unless a
+    text field has focus or a modal is open, then as soon as neither is true.
+    Drawers don't count (the map's hex drawer stays open while the map is in
+    use; a focused field in it does).
+- The account menu's **Update and reload** does the same on demand, at once:
+  it checks for a newer version, activates it if one is waiting, and reloads
+  (just reloads when there's none, or offline).
 - The manifest icons, maskable icon, Apple touch icon and favicon are
   generated from `web/public/app-icon.svg` at build time; no PNGs are
   committed. The precache globs don't include `*.webmanifest`: the plugin

@@ -1,7 +1,7 @@
 # 0043. The API reports the version, and the offline cache is busted by the API contract
 
 - **Date:** 2026-11-23
-- **Status:** Accepted
+- **Status:** Accepted; the buster and update prompt amended by [0044](0044-the-app-updates-itself.md)
 
 ## Context
 

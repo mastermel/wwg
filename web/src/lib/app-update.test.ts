@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { updateAndReload } from "@/lib/app-update";
+import { isIdle, updateAndReload, updateCheckIntervalMs, watchForUpdates } from "@/lib/app-update";
 
 class FakeWorker extends EventTarget {
   postMessage = vi.fn();
@@ -108,5 +108,83 @@ describe("updateAndReload", () => {
     await updateAndReload();
 
     expect(reload).toHaveBeenCalled();
+  });
+
+  describe("when idle", () => {
+    afterEach(() => {
+      vi.useRealTimers();
+      document.body.replaceChildren();
+    });
+
+    it("reloads at once when nobody's typing", async () => {
+      serviceWorkers(registration(), {});
+
+      await updateAndReload({ whenIdle: true });
+
+      expect(reload).toHaveBeenCalled();
+    });
+
+    it("waits until the text field being typed in loses focus", async () => {
+      vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] });
+      serviceWorkers(registration(), {});
+      const field = document.body.appendChild(document.createElement("textarea"));
+      field.focus();
+
+      const done = updateAndReload({ whenIdle: true });
+      await vi.advanceTimersByTimeAsync(5_000);
+      expect(reload).not.toHaveBeenCalled();
+
+      field.blur();
+      await vi.advanceTimersByTimeAsync(1_000);
+      await done;
+      expect(reload).toHaveBeenCalledTimes(1);
+    });
+
+    it("waits until an open modal closes", async () => {
+      vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] });
+      const waiting = new FakeWorker("installed");
+      serviceWorkers(registration({ waiting }), {});
+      const modal = document.body.appendChild(document.createElement("div"));
+      modal.className = "mantine-Modal-root";
+
+      const done = updateAndReload({ whenIdle: true });
+      await vi.advanceTimersByTimeAsync(5_000);
+      expect(waiting.postMessage).not.toHaveBeenCalled();
+
+      modal.remove();
+      await vi.advanceTimersByTimeAsync(1_000);
+      await done;
+      expect(waiting.postMessage).toHaveBeenCalledWith({ type: "SKIP_WAITING" });
+    });
+
+    it("doesn't count a focused checkbox or button as typing", () => {
+      const checkbox = document.body.appendChild(document.createElement("input"));
+      checkbox.type = "checkbox";
+      checkbox.focus();
+      expect(isIdle()).toBe(true);
+
+      const text = document.body.appendChild(document.createElement("input"));
+      text.focus();
+      expect(isIdle()).toBe(false);
+    });
+  });
+});
+
+describe("watchForUpdates", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("checks now and then, and when the app comes back into view or online", () => {
+    vi.useFakeTimers({ toFake: ["setInterval"] });
+    const update = vi.fn(() => Promise.resolve());
+
+    watchForUpdates({ update } as unknown as ServiceWorkerRegistration);
+    vi.advanceTimersByTime(updateCheckIntervalMs);
+    expect(update).toHaveBeenCalledTimes(1);
+
+    document.dispatchEvent(new Event("visibilitychange"));
+    window.dispatchEvent(new Event("online"));
+    expect(update).toHaveBeenCalledTimes(3);
   });
 });

@@ -1,9 +1,24 @@
 import { http, HttpResponse } from "msw";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { ApiError, apiFetch } from "@/lib/api-fetch";
 import { server } from "@/test/server";
 
+const noteApiBuild = vi.hoisted(() => vi.fn());
+vi.mock("@/lib/api-build", () => ({ noteApiBuild }));
+
 describe("apiFetch", () => {
+  it("passes on the API build of every response, errors too", async () => {
+    server.use(
+      http.get("*/api/thing", () =>
+        HttpResponse.json({}, { status: 404, headers: { "X-Api-Build": "abc123" } }),
+      ),
+    );
+
+    await apiFetch("/api/thing", { method: "GET" }).catch(() => undefined);
+
+    expect(noteApiBuild).toHaveBeenCalledWith("abc123");
+  });
+
   it("returns the parsed JSON body of a successful response", async () => {
     server.use(http.get("*/api/thing", () => HttpResponse.json({ name: "Army" })));
 
