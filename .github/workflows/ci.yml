@@ -246,3 +246,50 @@ jobs:
           build-args: APP_VERSION=${{ steps.version.outputs.tag }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  # Redeploys the production stack (the wwg stack on Komodo, managed in the roach repo) once the new
+  # image is pushed. Komodo pulls :latest before `compose up` (the stack's auto_pull, on by default).
+  # Its API key belongs to a service user with Execute permission on the wwg stack only. The stack
+  # also polls for new images hourly, so a failed run here is caught up later.
+  deploy:
+    name: deploy
+    needs: [docker]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: production
+    env:
+      KOMODO_URL: https://roach.mel-green.com
+      KOMODO_API_KEY: ${{ secrets.KOMODO_API_KEY }}
+      KOMODO_API_SECRET: ${{ secrets.KOMODO_API_SECRET }}
+    steps:
+      # DeployStack returns its Update straight away and runs in the background, so poll that Update
+      # until it completes, then fail the job if the deploy failed.
+      - name: Redeploy the wwg stack
+        shell: bash
+        run: |
+          set -euo pipefail
+          komodo() {
+            curl --fail-with-body --silent --show-error --retry 3 \
+              -H 'Content-Type: application/json' \
+              -H "X-Api-Key: $KOMODO_API_KEY" \
+              -H "X-Api-Secret: $KOMODO_API_SECRET" \
+              -d "$2" "$KOMODO_URL/$1"
+          }
+
+          update_id=$(komodo execute '{"type":"DeployStack","params":{"stack":"wwg"}}' | jq -r '._id["$oid"]')
+          echo "Deploying; Komodo update $update_id"
+
+          while :; do
+            sleep 5
+            update=$(komodo read "{\"type\":\"GetUpdate\",\"params\":{\"id\":\"$update_id\"}}")
+            status=$(jq -r '.status' <<< "$update")
+            echo "Status: $status"
+            [ "$status" = "Complete" ] && break
+          done
+
+          jq -r '.logs[] | "::group::\(.stage) (\(if .success then "ok" else "failed" end))\n\(.command)\n\(.stdout)\n\(.stderr)\n::endgroup::"' <<< "$update"
+
+          if [ "$(jq -r '.success' <<< "$update")" != "true" ]; then
+            echo "::error::Komodo failed to deploy the wwg stack. See the logs above, or update $update_id in Komodo."
+            exit 1
+          fi

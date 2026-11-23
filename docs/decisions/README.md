@@ -82,3 +82,4 @@ A reversal gets a new entry.
 | [0039](0039-units-and-ghosts-side-by-side.md) | Units and the ghosts of units moving in share a hex side by side | 2026-11-21 |
 | [0040](0040-commanders-see-their-concentration.md) | Commanders see their own concentration, and the hexes named in warnings are links | 2026-11-22 |
 | [0041](0041-a-hexs-moves-stand-out.md) | A chosen hex's moves stand out, and the rest fade | 2026-11-22 |
+| [0042](0042-ci-deploys-to-komodo.md) | CI redeploys the production stack through the Komodo API | 2026-11-23 |
