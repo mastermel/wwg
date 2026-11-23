@@ -6,10 +6,13 @@ import type {
   ArmySummary,
   ArmyTurnDetails,
   CampaignMapResponse,
+  CampaignGridResponse,
   CampaignResponse,
   CampaignTurnsResponse,
+  TownResult,
   UnitPosition,
 } from "@/api/generated/model";
+import { noSettlement } from "@/features/maps/terrain";
 import { expectNoAxeViolations, renderApp } from "@/test/render";
 import { server } from "@/test/server";
 import { testUser } from "@/test/session";
@@ -1251,5 +1254,82 @@ describe("a commander's turn", () => {
     await openMap();
 
     expect(await screen.findByText("Holds · set by the Umpire")).toBeInTheDocument();
+  });
+});
+
+describe("finding a town", () => {
+  beforeEach(() => {
+    eased.length = 0;
+  });
+
+  it("lists the game's towns and the area's places, and shows the chosen one's hex", async () => {
+    serveCommander(draft());
+    const searches: string[] = [];
+    server.use(
+      http.get(`*/api/campaigns/${campaignId}/grid`, () =>
+        HttpResponse.json({
+          cells: [
+            {
+              q: 0,
+              r: -1,
+              terrain: "Flat",
+              forest: false,
+              settlement: { ...noSettlement, size: "Town", name: "Plancenoit" },
+              setByUmpire: true,
+            },
+          ],
+          edges: [],
+        } satisfies CampaignGridResponse),
+      ),
+      http.get(`*/api/campaigns/${campaignId}/map/towns`, ({ request }) => {
+        searches.push(new URL(request.url).searchParams.get("search") ?? "");
+        return HttpResponse.json([
+          {
+            name: "Plancenoit",
+            description: "Plancenoit, Walloon Brabant, Belgium",
+            q: 1,
+            r: 0,
+            longitude: 4.5,
+            latitude: 50.68,
+          },
+        ] satisfies TownResult[]);
+      }),
+    );
+    const user = userEvent.setup();
+    await openMap();
+
+    await user.click(await screen.findByRole("button", { name: "Find a town" }));
+    await user.type(await screen.findByRole("combobox", { name: "Find a town" }), "planc");
+
+    // The game's own town first, then the real world's; the API's search waits for the typing.
+    expect(
+      await screen.findByRole("option", {
+        name: "Plancenoit, Walloon Brabant, Belgium",
+        hidden: true,
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getAllByRole("option", { hidden: true }).map((option) => option.textContent),
+    ).toEqual(["Plancenoit, Hex (0, −1)", "Plancenoit, Walloon Brabant, Belgium"]);
+    expect(searches).toEqual(["planc"]);
+    await expectNoAxeViolations(document.body);
+    await user.click(screen.getByRole("option", { name: "Plancenoit, Hex (0, −1)", hidden: true }));
+
+    const dialog = await screen.findByRole("dialog", { name: /^Hex \(0, −1\)/ });
+    expect(dialog).toHaveFocus();
+    expect(eased).toHaveLength(1);
+    expect(screen.queryByRole("combobox", { name: "Find a town" })).not.toBeInTheDocument();
+  });
+
+  it("says when nothing on the map has that name", async () => {
+    serveCommander(draft());
+    server.use(http.get(`*/api/campaigns/${campaignId}/map/towns`, () => HttpResponse.json([])));
+    const user = userEvent.setup();
+    await openMap();
+
+    await user.click(await screen.findByRole("button", { name: "Find a town" }));
+    await user.type(await screen.findByRole("combobox", { name: "Find a town" }), "Atlantis");
+
+    expect(await screen.findByText("No town by that name on the map.")).toBeInTheDocument();
   });
 });

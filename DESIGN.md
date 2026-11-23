@@ -1354,6 +1354,11 @@ visibility); the data is in §5.1. Built in Phase 8 (§7).
   Zooming in is unlimited. Place search (our API, §5.3)
   helps the Umpire find the area; the settings page previews layers and the
   label language as they change.
+- **Find a town** (decision 0046): a search button over the Map page's map, beside **Map
+  layers**. It lists the game's own named towns, cities and fortresses that match (matched in
+  the browser, ignoring case and accents), then the real world's towns and villages in the
+  campaign's area (our API, §5.3). Choosing one shows its hex as a hex named in a panel does: its
+  drawer opens and the map centres on it.
 - **The hex grid** (decision 0014, Phase 11): flat-topped hexes (3 miles
   across by default) over the whole area, drawn as a light line layer that can
   be switched off like the others. Units are in hexes, and a hex's units are one

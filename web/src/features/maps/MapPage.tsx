@@ -168,6 +168,7 @@ import { standsOut, type PickedOut } from "@/features/maps/pick-out";
 import { unitsIn, type PlacedUnit, type UnitStack } from "@/features/maps/stacks";
 import { HexDrawer } from "@/features/maps/HexDrawer";
 import { ShowHexContext } from "@/features/maps/show-hex";
+import { TownSearch } from "@/features/maps/TownSearch";
 import { UnitMarkers } from "@/features/maps/UnitMarkers";
 import { useOpenTurns, useOrders } from "@/features/maps/use-orders";
 import { useReview } from "@/features/maps/use-review";
@@ -1274,6 +1275,11 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
             zoomedIn={zoomedIn}
             warnings={manager || myArmies.length > 0}
             pieces
+          />
+          <TownSearch
+            campaignId={campaignId}
+            cells={terrain.data?.cells ?? []}
+            onChoose={showHex}
           />
           {desktop &&
             (full ? (

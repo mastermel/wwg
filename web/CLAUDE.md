@@ -141,6 +141,8 @@ The pre-commit hook runs `eslint --fix` and Prettier on staged files.
   hexes (decision 0040). A hex's drawer totals its points (`hexConcentration`,
   `ConcentrationSummary`). Name a hex with `hexName` (`hex-grid.ts`); beside the map, with
   `HexLink`, which opens and centres it (the Map page's `ShowHexContext`; decision 0040).
+  `TownSearch` (decision 0046) finds a town the same way: the grid's named settlements, then the
+  API's `SearchTowns`, each leading to its hex.
 - The Map page's layers (`map-layers.ts`, `MapLayersControl`): each viewer hides what the
   campaign's map settings show, layer by layer or a whole map by its own switch (`groups`, which
   leaves its layers' switches as they were; on the Map page, `"pieces"` hides everything drawn
