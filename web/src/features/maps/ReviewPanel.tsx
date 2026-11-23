@@ -322,13 +322,13 @@ function ArmyTurnReview({
           <Button
             size="compact-sm"
             variant="default"
-            aria-label={`Approve ${army.name}'s turn with a note`}
+            aria-label={`Approve with a note: ${army.name}`}
             disabled={!online || review.busy}
             onClick={() => {
               onApproveWithNote(turn);
             }}
           >
-            Approve with note…
+            Approve with a note
           </Button>
           <Button
             size="compact-sm"

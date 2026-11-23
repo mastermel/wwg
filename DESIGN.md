@@ -1472,7 +1472,7 @@ visibility); the data is in §5.1. Built in Phase 8 (§7).
   of 6"). Choosing a turn shows it as it was played (where everyone started it, and
   its moves as ghosts; decision 0029), and each army's turn
   under it: status, submitted and completed times, and **Approve** (with **Approve with
-  note…** beside it, a note for the turn only: decision 0047), **Send
+  a note** beside it, a note for the turn only: decision 0047), **Send
   back** or **Revert** (the last two with a note for the turn and for units),
   for the open turn only; its units, folded away, with their orders and each formation's
   menu (step 64d). A Submitted turn shows the commander's note to the Umpire (the latest
@@ -3337,7 +3337,7 @@ build on positions.
       army's closing turn (the latest, in the history's order), so the turn-started email shows
       it under the army ("The Umpire on your last orders"); an army with only that is not
       "Nothing new".
-    - ✅ **76b. Approving with a note (UI):** **Approve** stays one click; **Approve with note…**
+    - ✅ **76b. Approving with a note (UI):** **Approve** stays one click; **Approve with a note**
       beside it opens `ApproveModal` (a note field, as the submit modal's), for any army's
       Submitted turn, commanderless too (the note is then the Umpire's own record).
     - ✅ **76c. The commander reads it (UI):** the turn panel shows the note (an Alert, "Approved"

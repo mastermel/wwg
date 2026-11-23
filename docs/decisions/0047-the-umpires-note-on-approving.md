@@ -16,7 +16,7 @@ minutes later, and the panel moves on to the new Draft.
 - Approve takes an optional note for the turn (≤2000), kept on the Approved history event, as
   Submit keeps the commander's. No notes on units: send back or reopen is the way to change
   orders, and approving stays light.
-- **Approve** stays a single click; **Approve with note…** beside it opens a dialog. It's offered
+- **Approve** stays a single click; **Approve with a note** beside it opens a dialog. It's offered
   for every army, commanderless ones too, where the note is the Umpire's own record.
 - The commander reads it in four places: the approval email; the turn panel while the turn is
   approved; the next turn's panel, through its whole time open ("The Umpire on turn N: …"); and

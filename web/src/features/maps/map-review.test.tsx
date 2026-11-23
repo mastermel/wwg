@@ -281,7 +281,7 @@ describe("the Umpire's turn", () => {
     await openMap();
 
     await user.click(
-      await screen.findByRole("button", { name: "Approve Armée du Nord's turn with a note" }),
+      await screen.findByRole("button", { name: "Approve with a note: Armée du Nord" }),
     );
     const dialog = await screen.findByRole("dialog", { name: "Approve Armée du Nord's turn 1" });
     await user.type(
@@ -306,7 +306,7 @@ describe("the Umpire's turn", () => {
     await openMap();
 
     await user.click(
-      await screen.findByRole("button", { name: "Approve Armée du Nord's turn with a note" }),
+      await screen.findByRole("button", { name: "Approve with a note: Armée du Nord" }),
     );
     const dialog = await screen.findByRole("dialog", { name: "Approve Armée du Nord's turn 1" });
     await user.click(within(dialog).getByRole("button", { name: "Approve" }));
