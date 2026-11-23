@@ -244,7 +244,12 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           annotations: ${{ steps.meta.outputs.annotations }}
           build-args: APP_VERSION=${{ steps.version.outputs.tag }}
-          cache-from: type=gha
+          # Also reads the e2e job's cache, which this commit's e2e run has just refreshed. The web
+          # stage and the linux/amd64 api stage are the same in both builds; only the arm64 api
+          # stage is this job's own.
+          cache-from: |
+            type=gha
+            type=gha,scope=e2e
           cache-to: type=gha,mode=max
 
   # Redeploys the production stack (the wwg stack on Komodo, managed in the roach repo) once the new

@@ -7,8 +7,6 @@
 
 # 1. Front-end: web/dist
 FROM --platform=$BUILDPLATFORM node:24-slim AS web
-# The image tag (e.g. v20260927.143005), shown on the About page. "dev" when built by hand.
-ARG APP_VERSION=dev
 WORKDIR /src/web
 COPY web/package.json web/package-lock.json ./
 # Scripts are skipped here: `prepare` generates the API client, which needs the sources below.
@@ -17,6 +15,10 @@ COPY api/openapi.json /src/api/openapi.json
 # The build typechecks the tests too, and the grid's reads the figures it shares with the API's.
 COPY testdata/ /src/testdata/
 COPY web/ ./
+# The image tag (e.g. v20260927.143005), shown on the About page. "dev" when built by hand.
+# Declared here, not at the top of the stage: an ARG's value is part of the cache key of every RUN
+# after it, and CI passes a new value on every build.
+ARG APP_VERSION=dev
 RUN APP_VERSION=$APP_VERSION npm run build
 
 # 2. API: published for the target architecture

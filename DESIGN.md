@@ -774,6 +774,12 @@ One workflow, `.github/workflows/ci.yml`, with five jobs:
    - `latest`
    - `vYYYYMMdd.HHmmss`: UTC time, computed once per run, e.g. `v20260927.143005`.
 
+   It reads both its own GitHub Actions cache scope and the `e2e` job's, which
+   holds the web and linux/amd64 api stages that this commit's e2e run has just
+   built; only the arm64 api stage is its own. Build arguments that change on
+   every run (the version) come after the expensive steps in the Dockerfile,
+   so they don't invalidate their cache.
+
    Image name comes from a repo variable (`DOCKERHUB_IMAGE`). Credentials come
    from secrets `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` (a Docker Hub access
    token, not the account password).
