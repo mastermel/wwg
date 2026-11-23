@@ -275,6 +275,46 @@ describe("the Umpire's turn", () => {
     expect(requests).toEqual([{ url: `/api/army-turns/${submitted.id}/approve`, body: null }]);
   });
 
+  it("approves a submitted turn with a note for its commander", async () => {
+    const requests = serveUmpire(submitted, waiting, []);
+    const user = userEvent.setup();
+    await openMap();
+
+    await user.click(
+      await screen.findByRole("button", { name: "Approve Armée du Nord's turn with a note" }),
+    );
+    const dialog = await screen.findByRole("dialog", { name: "Approve Armée du Nord's turn 1" });
+    await user.type(
+      within(dialog).getByRole("textbox", { name: "Note for the commander" }),
+      " The ford will be contested. ",
+    );
+    await user.click(within(dialog).getByRole("button", { name: "Approve" }));
+
+    expect(await screen.findByText("Approved Armée du Nord's turn 1.")).toBeInTheDocument();
+    expect(requests).toEqual([
+      {
+        url: `/api/army-turns/${submitted.id}/approve`,
+        body: { note: "The ford will be contested." },
+      },
+    ]);
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("approves without a note when the note is left blank", async () => {
+    const requests = serveUmpire(submitted, waiting, []);
+    const user = userEvent.setup();
+    await openMap();
+
+    await user.click(
+      await screen.findByRole("button", { name: "Approve Armée du Nord's turn with a note" }),
+    );
+    const dialog = await screen.findByRole("dialog", { name: "Approve Armée du Nord's turn 1" });
+    await user.click(within(dialog).getByRole("button", { name: "Approve" }));
+
+    expect(await screen.findByText("Approved Armée du Nord's turn 1.")).toBeInTheDocument();
+    expect(requests).toEqual([{ url: `/api/army-turns/${submitted.id}/approve`, body: null }]);
+  });
+
   it("sends a turn back with notes on it and on a unit", async () => {
     const requests = serveUmpire(submitted, waiting, []);
     const user = userEvent.setup();

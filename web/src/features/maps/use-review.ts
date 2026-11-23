@@ -85,9 +85,10 @@ export function useReview(campaignId: string) {
         `Submitted ${armyName}'s turn ${String(turn.turn)}.`,
         `${armyName}'s turn couldn't be submitted. Try again.`,
       ),
-    approve: (turn: ArmyTurnDetails, armyName: string) =>
+    // With the Umpire's note for the commander, if any (decision 0047).
+    approve: (turn: ArmyTurnDetails, armyName: string, note: string | null = null) =>
       run(
-        () => approve.mutateAsync({ id: turn.id }),
+        () => approve.mutateAsync({ id: turn.id, data: note === null ? null : { note } }),
         `Approved ${armyName}'s turn ${String(turn.turn)}.`,
         `${armyName}'s turn couldn't be approved. Try again.`,
       ),

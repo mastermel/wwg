@@ -3337,7 +3337,7 @@ build on positions.
       army's closing turn (the latest, in the history's order), so the turn-started email shows
       it under the army ("The Umpire on your last orders"); an army with only that is not
       "Nothing new".
-    - **76b. Approving with a note (UI):** **Approve** stays one click; **Approve with note…**
+    - ✅ **76b. Approving with a note (UI):** **Approve** stays one click; **Approve with note…**
       beside it opens `ApproveModal` (a note field, as the submit modal's), for any army's
       Submitted turn, commanderless too (the note is then the Umpire's own record).
     - **76c. The commander reads it (UI):** the turn panel shows the note (an Alert, "Approved"

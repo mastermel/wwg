@@ -16,6 +16,7 @@ import type { PlacedUnit } from "@/features/maps/stacks";
 import { FormationList } from "@/features/maps/FormationList";
 import { HexWarningsList } from "@/features/maps/HexWarningsList";
 import type { TerrainIndex } from "@/features/maps/terrain";
+import { ApproveModal } from "@/features/maps/ApproveModal";
 import { ReviewModal } from "@/features/maps/ReviewModal";
 import { SendIntelligenceButton } from "@/features/maps/SendIntelligenceButton";
 import { StartTurnModal } from "@/features/maps/StartTurnModal";
@@ -94,6 +95,10 @@ export function ReviewPanel({
     entry: OpenArmyTurn;
     turn: ArmyTurnDetails;
   } | null>(null);
+  const [approving, setApproving] = useState<{
+    entry: OpenArmyTurn;
+    turn: ArmyTurnDetails;
+  } | null>(null);
   const [starting, { open: askToStart, close: closeStart }] = useDisclosure(false);
   const next = open.number + 1;
 
@@ -150,6 +155,9 @@ export function ReviewPanel({
               onReview={(kind, turn) => {
                 setReviewing({ kind, entry, turn });
               }}
+              onApproveWithNote={(turn) => {
+                setApproving({ entry, turn });
+              }}
               units={
                 <ArmyUnitsFold
                   army={entry.army}
@@ -184,6 +192,16 @@ export function ReviewPanel({
           Start turn {next}
         </Button>
       </Stack>
+      {approving && (
+        <ApproveModal
+          army={approving.entry.army}
+          turn={approving.turn.turn}
+          onApprove={(note) => review.approve(approving.turn, approving.entry.army.name, note)}
+          onClose={() => {
+            setApproving(null);
+          }}
+        />
+      )}
       {reviewing && (
         <ReviewModal
           kind={reviewing.kind}
@@ -222,11 +240,20 @@ interface ArmyTurnReviewProps {
   turn: ArmyTurnDetails;
   review: ReturnType<typeof useReview>;
   onReview: (kind: "send-back" | "revert", turn: ArmyTurnDetails) => void;
+  /** Approving with a note for the commander (decision 0047). */
+  onApproveWithNote: (turn: ArmyTurnDetails) => void;
   /** Its units and their orders, folded away. */
   units: ReactNode;
 }
 
-function ArmyTurnReview({ entry: { army }, turn, review, onReview, units }: ArmyTurnReviewProps) {
+function ArmyTurnReview({
+  entry: { army },
+  turn,
+  review,
+  onReview,
+  onApproveWithNote,
+  units,
+}: ArmyTurnReviewProps) {
   const online = useOnline();
   const moves = turn.orders.filter((o) => o.kind === "Move").length;
   const holds = turn.orders.length - moves;
@@ -291,6 +318,17 @@ function ArmyTurnReview({ entry: { army }, turn, review, onReview, units }: Army
             onClick={() => void review.approve(turn, army.name)}
           >
             Approve
+          </Button>
+          <Button
+            size="compact-sm"
+            variant="default"
+            aria-label={`Approve ${army.name}'s turn with a note`}
+            disabled={!online || review.busy}
+            onClick={() => {
+              onApproveWithNote(turn);
+            }}
+          >
+            Approve with note…
           </Button>
           <Button
             size="compact-sm"
