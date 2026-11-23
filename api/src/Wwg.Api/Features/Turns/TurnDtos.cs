@@ -165,7 +165,7 @@ public sealed record UnitNoteDto(
 /// <param name="At">When (UTC).</param>
 /// <param name="ByName">Who, or null if their account is gone.</param>
 /// <param name="Note">
-/// The commander's note to the Umpire, when submitting; the Umpire's, when sending back or reverting.
+/// The commander's note to the Umpire, when submitting; the Umpire's, when approving, sending back or reverting.
 /// </param>
 /// <param name="UnitNotes">Notes on particular units' orders.</param>
 public sealed record ArmyTurnEventDto(

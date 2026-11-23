@@ -3340,7 +3340,7 @@ build on positions.
     - ✅ **76b. Approving with a note (UI):** **Approve** stays one click; **Approve with note…**
       beside it opens `ApproveModal` (a note field, as the submit modal's), for any army's
       Submitted turn, commanderless too (the note is then the Umpire's own record).
-    - **76c. The commander reads it (UI):** the turn panel shows the note (an Alert, "Approved"
+    - ✅ **76c. The commander reads it (UI):** the turn panel shows the note (an Alert, "Approved"
       with who and the note) while the turn is Completed, and on the next turn, through its
       whole time open, "The Umpire on turn N: …" from the last turn's latest Approved event
       (from the army's turns already loaded; no new endpoint). The history lists it already.

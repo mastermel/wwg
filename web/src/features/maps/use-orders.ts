@@ -167,3 +167,17 @@ export function reviewOf(turn: ArmyTurnDetails) {
     ? last
     : undefined;
 }
+
+/**
+ * The Umpire's note on approving an army's turn (decision 0047): this turn's while it's approved,
+ * else the last turn's, through the whole of this one. The latest approval's, as a turn can be
+ * reopened and approved again.
+ */
+export function approvalNoteOf(turn: ArmyTurnDetails, turns: readonly ArmyTurnDetails[]) {
+  const current = turn.status === "Completed";
+  const approved = current ? turn : turns.find((t) => t.turn === turn.turn - 1);
+  const event = approved?.history.findLast((e) => e.kind === "Approved");
+  return approved && event?.note
+    ? { turn: approved.turn, current, byName: event.byName, note: event.note }
+    : undefined;
+}

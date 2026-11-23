@@ -12,7 +12,12 @@ import type { PickedOut } from "@/features/maps/pick-out";
 import { SubmitTurnModal } from "@/features/maps/SubmitTurnModal";
 import type { TerrainIndex } from "@/features/maps/terrain";
 import type { PlacedUnit } from "@/features/maps/stacks";
-import { reviewOf, type OpenArmyTurn, type useOrders } from "@/features/maps/use-orders";
+import {
+  approvalNoteOf,
+  reviewOf,
+  type OpenArmyTurn,
+  type useOrders,
+} from "@/features/maps/use-orders";
 import { useOnline } from "@/lib/use-online";
 import { turnPartHours, turnWhen } from "@/features/campaigns/calendar";
 
@@ -140,7 +145,7 @@ interface ArmyTurnOrdersProps {
 }
 
 function ArmyTurnOrders({
-  entry: { army },
+  entry: { army, turns },
   turn,
   units,
   orders,
@@ -153,6 +158,7 @@ function ArmyTurnOrders({
   const online = useOnline();
   const draft = turn.status === "Draft";
   const review = reviewOf(turn);
+  const approval = approvalNoteOf(turn, turns);
   const missing = units.filter(
     (u) => u.placed && !turn.orders.some((o) => o.unitId === u.unit.id),
   ).length;
@@ -178,6 +184,19 @@ function ArmyTurnOrders({
             {review.byName ?? "The Umpire"}{" "}
             {review.kind === "SentBack" ? "sent this turn back" : "reopened this turn"}
             {review.note ? `: ${review.note}` : "."}
+          </Text>
+        </Alert>
+      )}
+      {approval && (
+        <Alert
+          role="status"
+          color="navy"
+          title={approval.current ? "Approved" : `The Umpire on turn ${String(approval.turn)}`}
+        >
+          <Text size="sm" style={{ whiteSpace: "pre-wrap" }}>
+            {approval.current
+              ? `${approval.byName ?? "The Umpire"} approved this turn: ${approval.note}`
+              : approval.note}
           </Text>
         </Alert>
       )}

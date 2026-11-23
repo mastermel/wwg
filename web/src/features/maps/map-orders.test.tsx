@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type {
   ArmySummary,
   ArmyTurnDetails,
+  ArmyTurnEventDto,
   CampaignMapResponse,
   CampaignGridResponse,
   CampaignResponse,
@@ -101,6 +102,38 @@ const running: CampaignTurnsResponse = {
   ],
 };
 
+// Turn 1 closed, turn 2 open.
+const secondTurn: CampaignTurnsResponse = {
+  ...running,
+  openTurn: 2,
+  turns: [
+    ...running.turns.map((t) => ({ ...t, closedAt: t.closedAt ?? "2026-09-03T12:00:00Z" })),
+    {
+      number: 2,
+      openedAt: "2026-09-03T12:00:00Z",
+      closedAt: null,
+      submitted: 1,
+      armies: 2,
+      armyTurns: [],
+    },
+  ],
+};
+
+const submittedEvent: ArmyTurnEventDto = {
+  kind: "Submitted",
+  at: "2026-09-03T11:00:00Z",
+  byName: "Nico Commander",
+  note: null,
+  unitNotes: [],
+};
+const approvedEvent: ArmyTurnEventDto = {
+  kind: "Approved",
+  at: "2026-09-03T12:00:00Z",
+  byName: "Uma Umpire",
+  note: null,
+  unitNotes: [],
+};
+
 const draft = (changes: Partial<ArmyTurnDetails> = {}): ArmyTurnDetails => ({
   id: turnId,
   turn: 1,
@@ -133,7 +166,11 @@ const hold: UnitPosition = {
 };
 
 /** A running campaign where the signed-in Player commands one army with one unit. */
-function serveCommander(turn: ArmyTurnDetails, turns: CampaignTurnsResponse = running) {
+function serveCommander(
+  turn: ArmyTurnDetails,
+  turns: CampaignTurnsResponse = running,
+  earlier: ArmyTurnDetails[] = [],
+) {
   const requests: { method: string; url: string; body: unknown }[] = [];
   const record = async (request: Request) => {
     const text = await request.text();
@@ -190,7 +227,7 @@ function serveCommander(turn: ArmyTurnDetails, turns: CampaignTurnsResponse = ru
     http.get(`*/api/campaigns/${campaignId}/positions`, () =>
       HttpResponse.json([{ ...hold, turn: 0, status: "Completed", kind: "Move" }]),
     ),
-    http.get(`*/api/armies/${armyId}/turns`, () => HttpResponse.json([turn])),
+    http.get(`*/api/armies/${armyId}/turns`, () => HttpResponse.json([...earlier, turn])),
     http.put(`*/api/army-turns/${turnId}/orders/${unitId}`, async ({ request }) => {
       await record(request);
       return HttpResponse.json(hold);
@@ -1235,6 +1272,62 @@ describe("a commander's turn", () => {
       "Uma Umpire sent this turn back: Too cautious.",
     );
     expect(screen.getByText("Umpire: Advance on the ridge.")).toBeInTheDocument();
+  });
+
+  it("shows the Umpire's note on approving the turn", async () => {
+    serveCommander(
+      draft({
+        status: "Completed",
+        orders: [hold],
+        history: [
+          { ...submittedEvent, note: null },
+          { ...approvedEvent, note: "Well marched." },
+        ],
+      }),
+    );
+
+    await openMap();
+
+    expect(await screen.findByRole("status", { name: "Approved" })).toHaveTextContent(
+      "Uma Umpire approved this turn: Well marched.",
+    );
+  });
+
+  it("shows the Umpire's note on approving the last turn, through the next", async () => {
+    const lastTurn = draft({
+      id: "last-turn",
+      open: false,
+      status: "Completed",
+      orders: [hold],
+      history: [
+        { ...approvedEvent, note: "Well marched." },
+        { ...approvedEvent, kind: "Reverted", note: null },
+        { ...approvedEvent, note: "Hold the bridge at all costs." },
+      ],
+    });
+    serveCommander(
+      draft({ id: "next-turn", turn: 2, status: "Submitted", orders: [{ ...hold, turn: 2 }] }),
+      secondTurn,
+      [lastTurn],
+    );
+
+    await openMap();
+
+    expect(await screen.findByRole("status", { name: "The Umpire on turn 1" })).toHaveTextContent(
+      "Hold the bridge at all costs.",
+    );
+    expect(screen.queryByText(/Well marched/)).not.toBeInTheDocument();
+  });
+
+  it("shows nothing for an approval without a note", async () => {
+    serveCommander(
+      draft({ status: "Completed", orders: [hold], history: [{ ...approvedEvent, note: null }] }),
+    );
+
+    await openMap();
+
+    expect(await screen.findByText(/^Approved: the next turn starts/)).toBeInTheDocument();
+    expect(screen.queryByRole("status", { name: "Approved" })).not.toBeInTheDocument();
   });
 
   it("changes nothing once submitted", async () => {

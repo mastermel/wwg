@@ -6443,7 +6443,7 @@
               "null",
               "string"
             ],
-            "description": "The commander's note to the Umpire, when submitting; the Umpire's, when sending back or reverting."
+            "description": "The commander's note to the Umpire, when submitting; the Umpire's, when approving, sending back or reverting."
           },
           "unitNotes": {
             "type": "array",
