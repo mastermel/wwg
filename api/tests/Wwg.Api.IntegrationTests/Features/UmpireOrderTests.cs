@@ -210,7 +210,7 @@ public sealed class UmpireOrderTests : ApiTest
         await approved.AssertProblemAsync(HttpStatusCode.Conflict);
         var edited = (await TurnSteps.OpenArmyTurnAsync(scenario)).History[^1];
         Assert.Equal(
-            (ArmyTurnEventKind.Edited, "Order taken back."),
+            (ArmyTurnEventKind.Edited, "Order undone."),
             (edited.Kind, Assert.Single(edited.UnitNotes).Text)
         );
     }

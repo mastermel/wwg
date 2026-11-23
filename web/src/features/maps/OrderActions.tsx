@@ -134,7 +134,7 @@ export function OrderActions({
               disabled={!online || busy}
               onClick={onUndo}
             >
-              Take back
+              Undo
             </Button>
           )}
         </Group>

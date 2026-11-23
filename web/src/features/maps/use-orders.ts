@@ -113,16 +113,16 @@ export function useOrders(campaignId: string) {
       run(
         armyId,
         () => undo.mutateAsync({ id: turnId, unitId: unit.id }),
-        `Took back ${unit.name}'s order.`,
-        `${unit.name}'s order couldn't be taken back. Try again.`,
+        `Undid ${unit.name}'s order.`,
+        `${unit.name}'s order couldn't be undone. Try again.`,
       ),
     /** Takes back several units' orders, a hex's stack (step 66g), in one request: all or none. */
     undoAll: (armyId: string, turnId: string, unitIds: string[]) =>
       run(
         armyId,
         () => undoMany.mutateAsync({ id: turnId, data: { unitIds } }),
-        `Took back the ${String(unitIds.length)} units' orders.`,
-        "The units' orders couldn't be taken back. Try again.",
+        `Undid the ${String(unitIds.length)} units' orders.`,
+        "The units' orders couldn't be undone. Try again.",
       ),
     /** Holds a formation's units without orders (step 64), in one request: all or none. */
     holdTheRest: (armyId: string, turnId: string, unitIds: string[], formation: string) =>

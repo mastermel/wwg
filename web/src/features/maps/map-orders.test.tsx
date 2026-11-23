@@ -529,12 +529,12 @@ describe("a commander's turn", () => {
       const drawer = await screen.findByRole("dialog");
       await user.click(within(drawer).getByRole("button", { name: "All 3 units here" }));
       expect(within(drawer).queryByRole("button", { name: /^(Move|Hold) / })).toBeNull();
-      await user.click(within(drawer).getByRole("button", { name: "Take back all 3 orders" }));
-      const confirm = await screen.findByRole("dialog", { name: "Take back 3 orders?" });
+      await user.click(within(drawer).getByRole("button", { name: "Undo all 3 orders" }));
+      const confirm = await screen.findByRole("dialog", { name: "Undo 3 orders?" });
       expect(sent).toEqual([]);
-      await user.click(within(confirm).getByRole("button", { name: "Take back orders" }));
+      await user.click(within(confirm).getByRole("button", { name: "Undo orders" }));
 
-      expect(await screen.findByText("Took back the 3 units' orders.")).toBeInTheDocument();
+      expect(await screen.findByText("Undid the 3 units' orders.")).toBeInTheDocument();
       expect(sent).toEqual([{ unitIds: [unitId, lancersId, hussarsId] }]);
     });
 
@@ -546,15 +546,14 @@ describe("a commander's turn", () => {
       await user.click(await screen.findByRole("button", { name: "Lancers" }));
       const drawer = await screen.findByRole("dialog");
       await user.click(within(drawer).getByRole("button", { name: "All 3 units here" }));
-      await user.click(within(drawer).getByRole("button", { name: "Take back the 2 orders" }));
+      await user.click(within(drawer).getByRole("button", { name: "Undo the 2 orders" }));
       await user.click(
-        within(await screen.findByRole("dialog", { name: "Take back 2 orders?" })).getByRole(
-          "button",
-          { name: "Take back orders" },
-        ),
+        within(await screen.findByRole("dialog", { name: "Undo 2 orders?" })).getByRole("button", {
+          name: "Undo orders",
+        }),
       );
 
-      expect(await screen.findByText("Took back the 2 units' orders.")).toBeInTheDocument();
+      expect(await screen.findByText("Undid the 2 units' orders.")).toBeInTheDocument();
       expect(sent).toEqual([{ unitIds: [unitId, lancersId] }]);
     });
 
@@ -1168,7 +1167,7 @@ describe("a commander's turn", () => {
     expect(await screen.findByText("Holds")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Undo Imperial Guard's order" }));
 
-    expect(await screen.findByText("Took back Imperial Guard's order.")).toBeInTheDocument();
+    expect(await screen.findByText("Undid Imperial Guard's order.")).toBeInTheDocument();
     expect(requests.map((r) => r.method)).toEqual(["DELETE"]);
   });
 

@@ -1086,7 +1086,7 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
                     setTakingBack(ordered);
                   }}
                 >
-                  {`Take back ${ordered.units.length === there ? "all " : "the "}${String(ordered.units.length)} orders${of}`}
+                  {`Undo ${ordered.units.length === there ? "all " : "the "}${String(ordered.units.length)} orders${of}`}
                 </Button>
               )}
             </Group>
@@ -1679,8 +1679,8 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
         onClose={() => {
           setTakingBack(null);
         }}
-        title={`Take back ${String(takingBack?.units.length ?? 0)} orders?`}
-        confirmLabel="Take back orders"
+        title={`Undo ${String(takingBack?.units.length ?? 0)} orders?`}
+        confirmLabel="Undo orders"
         loading={orders.busy}
         onConfirm={() => void takeBack()}
       >

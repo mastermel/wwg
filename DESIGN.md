@@ -1404,7 +1404,7 @@ visibility); the data is in §5.1. Built in Phase 8 (§7).
   so a draft survives closing the tab. **Move all** (step 66, decision 0031), from a hex's
   list of units, does the same for one army's units there without orders, at the slowest one's
   pace, along one path; each unit's order is its own afterwards. **Hold all** beside it holds them
-  (step 66e), and **Take back** their orders together, once confirmed (66g). (Phase 8 measured a straight-line range
+  (step 66e), and **Undo** their orders together, once confirmed (66g). (Phase 8 measured a straight-line range
   instead; decision 0014 replaced it.)
 - **History:** their army's turns, newest first; choosing one shows it as it was
   played, as the open turn is: the units where they started it, and its moves as ghosts
@@ -1425,7 +1425,7 @@ visibility); the data is in §5.1. Built in Phase 8 (§7).
   menu (step 64d). A Submitted turn shows the commander's note to the Umpire (the latest
   submission's); past turns list it in their history, for the Umpire and for the commander's own army.
 - **Start turn N+1**, with confirmation, once every army's turn is Completed.
-- **On a commander's behalf** (decision 0011): Move, Hold and Take back in the drawer for any
+- **On a commander's behalf** (decision 0011): Move, Hold and Undo in the drawer for any
   army's unit while its turn is a Draft or Submitted (a move past the limit warns first), and
   **Submit for it** for a Draft. The commander's panel marks orders the Umpire set, and the
   history lists what the Umpire changed.
@@ -2610,7 +2610,7 @@ Decision [0011](docs/decisions/0011-umpire-edits-orders.md).
     - An edit's note says what the Umpire did ("Set to move.", "Set to hold.", "Order taken
       back."); a run of changes by the same person is one Edited event, one note per unit.
     - The Umpire gets orders in the drawer from the map's markers (there's no unit list in the
-      review panel: the markers are buttons, so keyboards reach them too). Take back is in the
+      review panel: the markers are buttons, so keyboards reach them too). Undo is in the
       drawer, for the commander too.
     - Past the limit, the banner adds "That's past its 5 km limit." and Confirm becomes
       **Move anyway**; the range circle still shows the limit.
@@ -3124,8 +3124,8 @@ build on positions.
       (`UndoOrders`, `Commander` access as `UndoOrder`): each unit's order goes, with its boats'
       (as `UndoOrder`), units without one skipped, in one transaction; a unit not in the army
       (404) or a boat tied to a unit (409, naming it) changes nothing. The Umpire's are one Edited
-      event, a note per unit ("Order taken back.").
-    - ✅ **66g. Taking back a stack's orders (UI):** the hex drawer's unit list offers **Take back
+      event, a note per unit ("Order undone.").
+    - ✅ **66g. Taking back a stack's orders (UI):** the hex drawer's unit list offers **Undo
       all 3 orders** (or **the 2 orders**, "… of Prussians" as Move all) for each army with two or
       more units with orders in that hex, in a turn the viewer can change (`orderedGroups`,
       `stack-moves.ts`; loose boats left out), beside Move all and Hold all for the rest. It asks

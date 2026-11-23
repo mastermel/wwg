@@ -581,7 +581,7 @@ internal static class OrderEndpoints
                 httpContext,
                 id,
                 unitId,
-                "Order taken back.",
+                "Order undone.",
                 cancellationToken
             );
             await db.SaveChangesAsync(cancellationToken);
@@ -675,7 +675,7 @@ internal static class OrderEndpoints
                 httpContext,
                 armyTurnId,
                 unitId,
-                "Order taken back.",
+                "Order undone.",
                 cancellationToken
             );
             await db.SaveChangesAsync(cancellationToken);

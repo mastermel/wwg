@@ -156,8 +156,8 @@ public sealed class UndoOrdersTests : ApiTest
         Assert.Equal(ArmyTurnEventKind.Edited, edited.Kind);
         Assert.Equal(
             [
-                new UnitNoteDto(scenario.UnitId, "Order taken back."),
-                new UnitNoteDto(second, "Order taken back."),
+                new UnitNoteDto(scenario.UnitId, "Order undone."),
+                new UnitNoteDto(second, "Order undone."),
             ],
             edited.UnitNotes.OrderBy(n => n.UnitId == second)
         );
