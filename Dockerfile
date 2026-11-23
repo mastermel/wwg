@@ -18,7 +18,7 @@ COPY web/ ./
 RUN npm run build
 
 # 2. API: published for the target architecture
-FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0 AS api
+FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:11.0 AS api
 ARG TARGETARCH
 WORKDIR /src
 # .editorconfig carries the analyzer rule tuning; without it the build fails on suppressed rules.
