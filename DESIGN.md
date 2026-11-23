@@ -3329,7 +3329,7 @@ build on positions.
       there too chooses its units, at its hex.
     - Spreading overlapping paths apart (transit-map style) was considered and is held back:
       see decision 0041.
-76. **The Umpire's note on approving a turn** (decision 0047), in parts:
+76. ✅ **The Umpire's note on approving a turn** (decision 0047), in parts:
     - ✅ **76a. The API:** `POST /api/army-turns/{id}/approve` takes an optional `{ note? }`
       (`ApproveTurnRequest`, ≤2000, blank is none), kept on the Approved event as Submit keeps
       the commander's; no migration (`ArmyTurnEvent.Note` is there). The approval email carries
@@ -3344,5 +3344,5 @@ build on positions.
       with who and the note) while the turn is Completed, and on the next turn, through its
       whole time open, "The Umpire on turn N: …" from the last turn's latest Approved event
       (from the army's turns already loaded; no new endpoint). The history lists it already.
-    - **76d. End to end:** the turn spec approves one army's turn with a note, and its
+    - ✅ **76d. End to end:** the turn spec approves one army's turn with a note, and its
       commander reads it on the panel and, after the next turn starts, on the new one.

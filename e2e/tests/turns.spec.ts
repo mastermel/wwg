@@ -161,7 +161,7 @@ test("a commander taps a ghost, or without trails the unit, to choose the hex it
   await expect(ghost).toBeVisible();
 });
 
-test("the Umpire sends a turn back, approves it resubmitted, and starts the next", async ({
+test("the Umpire sends a turn back, approves it resubmitted with a note, and starts the next", async ({
   signUp,
 }) => {
   test.slow();
@@ -203,22 +203,39 @@ test("the Umpire sends a turn back, approves it resubmitted, and starts the next
   await bob.getByRole("dialog").getByRole("button", { name: "Submit" }).click();
   await expect(bob.getByText("Submitted Armée du Nord's turn 1.")).toBeVisible();
 
-  // The Umpire approves it, and starts turn 2.
+  // The Umpire approves it with a note, and starts turn 2.
   await page.reload();
-  await panel.getByRole("button", { name: "Approve Armée du Nord's turn" }).click();
+  await panel.getByRole("button", { name: "Approve with a note: Armée du Nord" }).click();
+  const approving = page.getByRole("dialog", { name: "Approve Armée du Nord's turn 1" });
+  await approving.getByRole("textbox", { name: "Note for the commander" }).fill("Well marched.");
+  await approving.getByRole("button", { name: "Approve" }).click();
   await expect(page.getByText("Approved Armée du Nord's turn 1.")).toBeVisible();
+
+  // Bob reads the note while the turn is approved.
+  await expect
+    .poll(() => latestEmailText(commander.email), { timeout: 15_000 })
+    .toContain("Their note: Well marched.");
+  await bob.reload();
+  await expect(bobsPanel.getByRole("status", { name: "Approved" })).toContainText(
+    "approved this turn: Well marched.",
+  );
   await panel.getByRole("button", { name: "Start turn 2" }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Start turn 2" }).click();
   await expect(page.getByText("Turn 2 has started.")).toBeVisible();
   await expect(page.getByRole("region", { name: "Turn 2" })).toBeVisible();
 
-  // Bob is told, and gives orders for turn 2.
+  // Bob is told, with the Umpire's note, and gives orders for turn 2 with it in view.
   await expect
     .poll(() => latestEmailText(commander.email), { timeout: 15_000 })
     .toContain("Turn 2 of Wavre 1815 has started (Afternoon).");
+  expect(await latestEmailText(commander.email)).toMatch(
+    /The Umpire on your last orders\s+> Well marched\./,
+  );
   await bob.reload();
-  await expect(bob.getByRole("region", { name: "Turn 2" }).getByText("No order yet")).toHaveCount(
-    2,
+  const bobsNextPanel = bob.getByRole("region", { name: "Turn 2" });
+  await expect(bobsNextPanel.getByText("No order yet")).toHaveCount(2);
+  await expect(bobsNextPanel.getByRole("status", { name: "The Umpire on turn 1" })).toContainText(
+    "Well marched.",
   );
 });
 
