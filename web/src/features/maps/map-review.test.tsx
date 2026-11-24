@@ -96,6 +96,7 @@ const turns = (startProblems: string[]): CampaignTurnsResponse => ({
       submitted: 2,
       armies: 2,
       armyTurns: [],
+      pending: [],
     },
     {
       number: 1,
@@ -104,6 +105,7 @@ const turns = (startProblems: string[]): CampaignTurnsResponse => ({
       submitted: 1,
       armies: 2,
       armyTurns: [],
+      pending: [],
     },
   ],
 });

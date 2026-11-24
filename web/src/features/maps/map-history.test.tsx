@@ -49,6 +49,7 @@ const summary = (number: number, closedAt: string | null, submitted: number) => 
       completedAt: closedAt,
     },
   ],
+  pending: closedAt ? [] : [nord.id],
 });
 
 const turns: CampaignTurnsResponse = {

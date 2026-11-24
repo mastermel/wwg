@@ -109,6 +109,7 @@ const running: CampaignTurnsResponse = {
       submitted: 0,
       armies: 1,
       armyTurns: [],
+      pending: [],
     },
   ],
 };

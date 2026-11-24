@@ -48,7 +48,7 @@ internal static class TurnEndpoints
     /// <summary>
     /// The campaign's turns and where each stands (every member). The Umpire sees every army's
     /// turn, and what stops the campaign (or, once it's running, the next turn) starting; a
-    /// commander sees their own army's, and everyone the counts.
+    /// commander sees their own army's, and everyone the counts and which armies haven't submitted.
     /// </summary>
     internal static async Task<Ok<CampaignTurnsResponse>> ListTurnsAsync(
         Guid id,
@@ -80,6 +80,13 @@ internal static class TurnEndpoints
                         a.SubmittedAt,
                         a.CompletedAt
                     ))
+                    .ToList(),
+                db.ArmyTurns.Where(a =>
+                        a.CampaignTurnId == t.Id && a.Status == ArmyTurnStatus.Draft
+                    )
+                    .OrderBy(a => a.Army.Name)
+                    .ThenBy(a => a.ArmyId)
+                    .Select(a => a.ArmyId)
                     .ToList()
             ))
             .ToListAsync(cancellationToken);
@@ -100,20 +107,30 @@ internal static class TurnEndpoints
 
         var open = turns.SingleOrDefault(t => t.ClosedAt is null)?.Number ?? 0;
         var stage = open == 0 ? CampaignStage.Setup : CampaignStage.Running;
-        var problems =
-            !access.CanManage ? []
-            : stage == CampaignStage.Setup ? await StartProblemsAsync(db, id, cancellationToken)
+        var problems = access.CanManage
+            ? await ProblemsAsync(db, id, stage, cancellationToken)
+            : [];
+        return TypedResults.Ok(new CampaignTurnsResponse(stage, open, turns, problems));
+    }
+
+    /// <summary>What stops the campaign starting (while setting up) or the next turn.</summary>
+    private static async Task<List<string>> ProblemsAsync(
+        WwgDbContext db,
+        Guid campaignId,
+        CampaignStage stage,
+        CancellationToken cancellationToken
+    ) =>
+        stage == CampaignStage.Setup
+            ? await StartProblemsAsync(db, campaignId, cancellationToken)
             : await TurnActionEndpoints.NextTurnProblemsAsync(
                 db,
-                id,
+                campaignId,
                 await db
-                    .CampaignTurns.Where(t => t.CampaignId == id && t.ClosedAt == null)
+                    .CampaignTurns.Where(t => t.CampaignId == campaignId && t.ClosedAt == null)
                     .Select(t => t.Id)
                     .SingleAsync(cancellationToken),
                 cancellationToken
             );
-        return TypedResults.Ok(new CampaignTurnsResponse(stage, open, turns, problems));
-    }
 
     /// <summary>
     /// Where the campaign's units are, as the caller may see them (the visibility rule): the Umpire

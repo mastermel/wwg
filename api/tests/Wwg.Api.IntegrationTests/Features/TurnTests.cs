@@ -183,6 +183,31 @@ public sealed class TurnTests : ApiTest
     }
 
     [Fact]
+    public async Task ListTurns_ArmyNotSubmitted_TellsAPlayerWithoutItThatItsPending()
+    {
+        using var scenario = await CreateCampaignScenarioAsync();
+        await TurnSteps.StartedAsync(scenario);
+
+        var turns = await TurnsAsync(scenario, Role.Player);
+
+        var open = turns!.Turns.Single(t => t.ClosedAt is null);
+        Assert.Equal([scenario.ArmyId], open.Pending);
+        Assert.Empty(open.ArmyTurns);
+    }
+
+    [Fact]
+    public async Task ListTurns_ArmySubmitted_IsNoLongerPending()
+    {
+        using var scenario = await CreateCampaignScenarioAsync();
+        await TurnSteps.StartedAsync(scenario);
+        await TurnSteps.SubmittedAsync(scenario);
+
+        var turns = await TurnsAsync(scenario, Role.Player);
+
+        Assert.Empty(turns!.Turns.Single(t => t.ClosedAt is null).Pending);
+    }
+
+    [Fact]
     public async Task StartCampaign_Started_PlacementsAreWhereUnitsAreNow()
     {
         using var scenario = await ReadyAsync();

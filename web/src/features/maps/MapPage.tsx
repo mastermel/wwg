@@ -166,6 +166,7 @@ import {
 import { MapLayersControl } from "@/features/maps/MapLayersControl";
 import { TerrainLayer } from "@/features/maps/TerrainLayer";
 import { TurnPanel } from "@/features/maps/TurnPanel";
+import { TurnProgress } from "@/features/maps/TurnProgress";
 import { standsOut, type PickedOut } from "@/features/maps/pick-out";
 import { unitsIn, type PlacedUnit, type UnitStack } from "@/features/maps/stacks";
 import { HexDrawer } from "@/features/maps/HexDrawer";
@@ -1537,6 +1538,7 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
     ) : !setup && commanded.length > 0 && openTurn ? (
       <TurnPanel
         open={openTurn}
+        armies={armies.data ?? []}
         commanded={commanded}
         units={everyUnit
           .filter((u) => myArmies.some((a) => a.id === u.army.id) && !tied.has(u.unit.id))
@@ -1551,9 +1553,11 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
     ) : (
       <Section title={setup ? "Setting up" : `Turn ${String(turns.data.openTurn)}`}>
         <Text size="sm">
-          {setup
-            ? "The Umpire is placing the armies. Your units appear here once the campaign starts."
-            : `${String(turns.data.turns.at(-1)?.submitted ?? 0)} of ${String(turns.data.turns.at(-1)?.armies ?? 0)} armies have submitted this turn.`}
+          {setup || !openTurn ? (
+            "The Umpire is placing the armies. Your units appear here once the campaign starts."
+          ) : (
+            <TurnProgress turn={openTurn} armies={armies.data ?? []} />
+          )}
         </Text>
       </Section>
     ));

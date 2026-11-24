@@ -90,6 +90,7 @@ const running: CampaignTurnsResponse = {
       submitted: 2,
       armies: 2,
       armyTurns: [],
+      pending: [],
     },
     {
       number: 1,
@@ -98,6 +99,7 @@ const running: CampaignTurnsResponse = {
       submitted: 1,
       armies: 2,
       armyTurns: [],
+      pending: [],
     },
   ],
 };
@@ -115,6 +117,7 @@ const secondTurn: CampaignTurnsResponse = {
       submitted: 1,
       armies: 2,
       armyTurns: [],
+      pending: [],
     },
   ],
 };
@@ -459,11 +462,36 @@ describe("a commander's turn", () => {
     await openMap();
 
     const panel = await screen.findByRole("region", { name: "Turn 1" });
-    expect(
-      within(panel).getByText("17 June 1815, Night. 1 of 2 armies have submitted this turn."),
-    ).toBeInTheDocument();
+    expect(within(panel).getByText("17 June 1815, Night.")).toBeInTheDocument();
+    expect(within(panel).getByText("1 of 2 armies have submitted this turn.")).toBeInTheDocument();
     expect(within(panel).getByRole("status")).toHaveTextContent(/It's night/);
     expect(within(panel).getByText("Moves 1 hex, by night")).toBeInTheDocument();
+  });
+
+  it("names the armies still to submit", async () => {
+    const otherId = "0192f5c1-0000-7000-8000-00000000a002";
+    serveCommander(draft(), {
+      ...running,
+      turns: running.turns.map((t) => (t.number === 1 ? { ...t, pending: [otherId] } : t)),
+    });
+    server.use(
+      http.get(`*/api/campaigns/${campaignId}/armies`, () =>
+        HttpResponse.json([
+          army,
+          { ...army, id: otherId, name: "Army of the Lower Rhine", commander: null },
+        ] satisfies ArmySummary[]),
+      ),
+    );
+
+    await openMap();
+
+    const panel = await screen.findByRole("region", { name: "Turn 1" });
+    const pending = within(panel).getByRole("list", { name: "Still to submit" });
+    expect(
+      within(pending)
+        .getAllByRole("listitem")
+        .map((item) => item.textContent),
+    ).toEqual(["Army of the Lower Rhine"]);
   });
 
   it("orders a unit to hold from its drawer", async () => {

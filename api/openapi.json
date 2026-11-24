@@ -1379,7 +1379,7 @@
         "tags": [
           "Turns"
         ],
-        "summary": "The campaign's turns and where each stands (every member). The Umpire sees every army's\nturn, and what stops the campaign (or, once it's running, the next turn) starting; a\ncommander sees their own army's, and everyone the counts.",
+        "summary": "The campaign's turns and where each stands (every member). The Umpire sees every army's\nturn, and what stops the campaign (or, once it's running, the next turn) starting; a\ncommander sees their own army's, and everyone the counts and which armies haven't submitted.",
         "operationId": "ListTurns",
         "parameters": [
           {
@@ -7251,7 +7251,8 @@
           "closedAt",
           "submitted",
           "armies",
-          "armyTurns"
+          "armyTurns",
+          "pending"
         ],
         "type": "object",
         "properties": {
@@ -7289,6 +7290,14 @@
               "$ref": "#/components/schemas/ArmyTurnSummary"
             },
             "description": "Each army's part: all of them for the Umpire, a commander's own for them."
+          },
+          "pending": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "The armies that haven't submitted it yet, by name: every member sees which."
           },
           "part": {
             "oneOf": [

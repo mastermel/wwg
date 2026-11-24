@@ -330,6 +330,7 @@ describe("the map page", () => {
                 submitted: 2,
                 armies: 2,
                 armyTurns: [],
+                pending: [],
               },
               {
                 number: 1,
@@ -338,6 +339,7 @@ describe("the map page", () => {
                 submitted: 1,
                 armies: 2,
                 armyTurns: [],
+                pending: [],
               },
             ],
           }),

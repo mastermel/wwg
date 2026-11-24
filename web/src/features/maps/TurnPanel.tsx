@@ -2,7 +2,12 @@ import { Alert, Badge, Button, Group, Stack, Text } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { IconMoon, IconSend } from "@tabler/icons-react";
 import { useState } from "react";
-import type { ArmyTurnDetails, ArmyTurnStatus, CampaignTurnSummary } from "@/api/generated/model";
+import type {
+  ArmySummary,
+  ArmyTurnDetails,
+  ArmyTurnStatus,
+  CampaignTurnSummary,
+} from "@/api/generated/model";
 import { Section } from "@/components/Section";
 import { ArmyBadge } from "@/features/armies/identity/ArmyBadge";
 import { ArmyOrdersList, type CommandedUnit } from "@/features/maps/ArmyOrdersList";
@@ -11,6 +16,7 @@ import { HexWarningsList } from "@/features/maps/HexWarningsList";
 import type { PickedOut } from "@/features/maps/pick-out";
 import { SubmitTurnModal } from "@/features/maps/SubmitTurnModal";
 import type { TerrainIndex } from "@/features/maps/terrain";
+import { TurnProgress } from "@/features/maps/TurnProgress";
 import type { PlacedUnit } from "@/features/maps/stacks";
 import {
   approvalNoteOf,
@@ -19,7 +25,7 @@ import {
   type useOrders,
 } from "@/features/maps/use-orders";
 import { useOnline } from "@/lib/use-online";
-import { turnPartHours, turnWhen } from "@/features/campaigns/calendar";
+import { turnPartHours } from "@/features/campaigns/calendar";
 
 const statusLabels: Record<ArmyTurnStatus, string> = {
   Draft: "Draft",
@@ -30,6 +36,8 @@ const statusLabels: Record<ArmyTurnStatus, string> = {
 interface TurnPanelProps {
   /** The open campaign turn, for its number and how far it's got. */
   open: CampaignTurnSummary;
+  /** The campaign's armies, to name those still to submit. */
+  armies: readonly ArmySummary[];
   commanded: readonly OpenArmyTurn[];
   units: readonly CommandedUnit[];
   orders: ReturnType<typeof useOrders>;
@@ -44,12 +52,14 @@ interface TurnPanelProps {
 }
 
 /**
- * A commander's turn (DESIGN.md §3.13): how far the turn has got, their hexes over a
+ * A commander's turn (DESIGN.md §3.13): how far the turn has got (and which armies haven't
+ * submitted), their hexes over a
  * concentration limit, and for each army they command its status, the Umpire's notes, each unit's order (with undo) in the army's order of battle, and
  * Submit.
  */
 export function TurnPanel({
   open,
+  armies,
   commanded,
   units,
   orders,
@@ -66,12 +76,7 @@ export function TurnPanel({
   return (
     <Section
       title={`Turn ${String(open.number)}`}
-      description={[
-        turnWhen(open) ? `${turnWhen(open) ?? ""}.` : null,
-        `${String(open.submitted)} of ${String(open.armies)} armies have submitted this turn.`,
-      ]
-        .filter(Boolean)
-        .join(" ")}
+      description={<TurnProgress turn={open} armies={armies} />}
     >
       <Stack gap="lg">
         {open.part === "Night" && (

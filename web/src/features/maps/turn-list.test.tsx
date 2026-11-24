@@ -18,6 +18,7 @@ const turn = (armyTurns: CampaignTurnsResponse["turns"][number]["armyTurns"]) =>
         submitted: 1,
         armies: 3,
         armyTurns,
+        pending: [],
       },
     ],
   }) satisfies CampaignTurnsResponse;

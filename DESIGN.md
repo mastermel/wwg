@@ -1449,7 +1449,8 @@ visibility); the data is in §5.1. Built in Phase 8 (§7).
   heading's menu picks the formation out on the map, or holds the units in it without orders); the Umpire's
   notes, if the turn was sent back or reverted; the Umpire's note on approving it, while it's
   approved, and on approving the last turn, through the next (decision 0047); how far the turn has got
-  ("4 of 6 armies submitted", no names); and **Submit** once every unit has an
+  (the day and time of day, then "4 of 6 armies submitted" on its own line, then the flags of
+  the armies still to submit, decision 0051); and **Submit** once every unit has an
   order. While Submitted, nothing can be changed.
 - **Unit drawer** (tap a unit, or its hex: the hex's drawer, decision 0027): name, type, FF,
   points, the army, this turn's order and any note on it, with **Move** and **Hold**.
@@ -2213,7 +2214,7 @@ each step)
 | GET / PUT | `/api/campaigns/{id}/map` | The map settings, with the hex size (the movement limits until Phase 11) |
 | GET | `/api/campaigns/{id}/places?search=` | Place search for the bounds (Umpire; server-side geocoder, rate-limited) |
 | GET | `/api/campaigns/{id}/map/towns?search=` | Towns and villages in the grid's hexes, each with its hex `{ q, r }` (every member; the same geocoder and rate limit; no area yet: 409) (decision 0046) |
-| GET | `/api/campaigns/{id}/turns` | Campaign turns: number, open/closed, each army's status and times, counts; for the Umpire, what stops the start or the next turn |
+| GET | `/api/campaigns/{id}/turns` | Campaign turns: number, open/closed, each army's status and times (the caller's armies; the Umpire's, every army's), counts, the armies yet to submit (every member); for the Umpire, what stops the start or the next turn |
 | POST | `/api/campaigns/{id}/start` | Start the campaign (close turn 0, open turn 1) |
 | POST | `/api/campaigns/{id}/turns` | Start the next turn (emails every commander); from step 47b `{ attrition: [{ unitId, points }], sightings? }`: the Umpire's confirmed attrition and, from step 49b, the sightings as shaped |
 | GET | `/api/campaigns/{id}/positions?turn=` | Units' positions, as the caller may see them: now (the default), after a closed turn, or ordered in the open one |
