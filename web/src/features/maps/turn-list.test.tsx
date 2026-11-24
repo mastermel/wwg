@@ -31,7 +31,7 @@ const status = (armyId: string, done: boolean) => ({
 
 const show = (turns: CampaignTurnsResponse) =>
   render(
-    <AppProviders queryClient={createQueryClient()}>
+    <AppProviders queryClient={createQueryClient()} env="test">
       <TurnList
         turns={turns}
         viewing={1}

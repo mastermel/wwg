@@ -7,7 +7,7 @@ import { MapLegend } from "@/features/maps/MapLegend";
 
 const renderLegend = (collapsible: boolean) =>
   render(
-    <AppProviders queryClient={createQueryClient()}>
+    <AppProviders queryClient={createQueryClient()} env="test">
       <MapLegend umpire={false} collapsible={collapsible} />
     </AppProviders>,
   );

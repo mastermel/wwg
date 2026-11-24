@@ -69,7 +69,7 @@ const scoreboard: ScoreboardResponse = {
 
 const renderPanel = (data: ScoreboardResponse) =>
   render(
-    <AppProviders queryClient={createQueryClient()}>
+    <AppProviders queryClient={createQueryClient()} env="test">
       <ScoreboardPanel scoreboard={data} armies={[nord, prussians]} />
     </AppProviders>,
   );

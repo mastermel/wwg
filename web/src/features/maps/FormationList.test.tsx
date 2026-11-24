@@ -34,7 +34,7 @@ const row = (
 
 /** The list of `rows`, a group complete once every unit in it is done. */
 const list = (rows: Row[]) => (
-  <AppProviders queryClient={createQueryClient()}>
+  <AppProviders queryClient={createQueryClient()} env="test">
     <FormationList
       items={rows}
       unitOf={(r) => r}

@@ -52,9 +52,13 @@ The pre-commit hook runs `eslint --fix` and Prettier on staged files.
 - A button that goes to another page is a `LinkButton` (`renderLink`), not a `Button` with
   `renderRoot`: disabled, it becomes a real disabled button (a link could still be followed).
 - Every successful change confirms itself with a green notification ("Saved …", "Deleted …").
-- Mantine's `Select` is a `combobox` to Testing Library, and its options need `hidden: true`
-  (the dropdown's transition leaves it `display: none` in jsdom).
-  A `Menu`'s items can too, just after something else re-rendered the page.
+- Tests render Mantine with `env="test"` (`AppProviders`' `env`; `renderApp` passes it, and so
+  must a test rendering `AppProviders` itself): no transitions, and no `hideDetached`, which in
+  jsdom hides popovers, menus and dropdowns at a moment that depends on the machine's speed
+  (passing locally, failing in CI). So a popover's contents need no `hidden: true`, and a popover
+  that a click outside closes is gone at once. Mantine's `Select` is a `combobox` to Testing
+  Library. An `Accordion` panel still animates, and stays `display: none` in jsdom once opened:
+  query inside it with `hidden: true`.
 - Show dates with `formatDate` / `formatDateTime` (`lib/format`): the API sends UTC.
 - Don't set a `gcTime` above 2^31 - 1 ms (about 24.8 days): timers overflow and fire at once,
   dropping the data before it can be saved or restored.

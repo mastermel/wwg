@@ -2,7 +2,7 @@ import "@mantine/core/styles.css";
 import "@mantine/notifications/styles.css";
 import "@/app/app.css";
 
-import { MantineProvider } from "@mantine/core";
+import { MantineProvider, type MantineProviderProps } from "@mantine/core";
 import { Notifications } from "@mantine/notifications";
 import { QueryClientProvider, type QueryClient } from "@tanstack/react-query";
 import {
@@ -16,11 +16,16 @@ interface AppProvidersProps {
   queryClient: QueryClient;
   /** Save the API cache for offline use. The app passes it; tests don't. */
   persistOptions?: PersistQueryClientProviderProps["persistOptions"];
+  /**
+   * Tests pass "test": jsdom has no layout, so Mantine would otherwise hide popovers whose target
+   * looks off screen (hideDetached), at a moment that depends on the machine's speed.
+   */
+  env?: MantineProviderProps["env"];
   children: ReactNode;
 }
 
 /** Everything the app (and component tests) render inside: theme, notifications, API cache. */
-export function AppProviders({ queryClient, persistOptions, children }: AppProvidersProps) {
+export function AppProviders({ queryClient, persistOptions, env, children }: AppProvidersProps) {
   return (
     // Light or dark follows the operating system, unless the user chose one in the account menu
     // (Mantine remembers it in localStorage).
@@ -28,6 +33,7 @@ export function AppProviders({ queryClient, persistOptions, children }: AppProvi
       theme={theme}
       cssVariablesResolver={cssVariablesResolver}
       defaultColorScheme="auto"
+      env={env}
     >
       {/* At the top: at the bottom they'd cover the phone tab bar. */}
       <Notifications position="top-right" limit={3} />

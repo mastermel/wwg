@@ -18,7 +18,11 @@ function OtherThing({ load }: { load: () => Promise<string> }) {
 }
 
 function renderWith(ui: React.ReactNode, queryClient = createQueryClient()) {
-  render(<AppProviders queryClient={queryClient}>{ui}</AppProviders>);
+  render(
+    <AppProviders queryClient={queryClient} env="test">
+      {ui}
+    </AppProviders>,
+  );
   return queryClient;
 }
 

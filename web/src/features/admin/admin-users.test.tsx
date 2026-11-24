@@ -163,8 +163,7 @@ describe("admin users", () => {
     await user.click(screen.getByRole("button", { name: "Mel (masquerade)" }));
     expect(await screen.findByText(/Ada Admin is masquerading as Mel, until/)).toBeInTheDocument();
     await expectNoAxeViolations(document.body);
-    // The dropdown's transition can leave it display: none in jsdom, as with Select.
-    await user.click(await screen.findByRole("menuitem", { name: "End masquerade", hidden: true }));
+    await user.click(screen.getByRole("menuitem", { name: "End masquerade" }));
 
     expect(await screen.findByText("Masquerade ended: you're yourself again.")).toBeInTheDocument();
     expect(await screen.findByRole("heading", { level: 1, name: "Users" })).toBeInTheDocument();

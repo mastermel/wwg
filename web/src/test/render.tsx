@@ -43,7 +43,7 @@ export async function renderApp(
   const router = createAppRouter(store, createMemoryHistory({ initialEntries: [path] }));
 
   const result = render(
-    <AppProviders queryClient={queryClient}>
+    <AppProviders queryClient={queryClient} env="test">
       <SessionProvider store={store}>
         <RouterProvider router={router} />
       </SessionProvider>

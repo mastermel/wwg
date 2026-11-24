@@ -10,7 +10,7 @@ import { expectNoAxeViolations } from "@/test/render";
 
 function renderBadges() {
   return render(
-    <AppProviders queryClient={createQueryClient()}>
+    <AppProviders queryClient={createQueryClient()} env="test">
       <ul>
         {Object.values(Nation).map((nation, i) => (
           <li key={nation}>

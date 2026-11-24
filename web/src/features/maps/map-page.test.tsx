@@ -513,11 +513,14 @@ describe("the map's layers", () => {
     expect(
       within(game).queryByRole("switch", { name: "Contact & concentration", hidden: true }),
     ).not.toBeInTheDocument();
+    // Zooming is a click outside the layers, which closes them.
     await user.click(screen.getByRole("button", { name: "Zoom in" }));
 
     expect(screen.getByText(/^Drawn:/)).toHaveTextContent("grid on");
-    expect(within(game).queryByText(/Zoom in to see it/)).not.toBeInTheDocument();
-    await user.click(within(game).getByRole("switch", { name: "Grid", hidden: true }));
+    await user.click(screen.getByRole("button", { name: "Map layers" }));
+    const zoomed = await screen.findByRole("group", { name: "Game map" });
+    expect(within(zoomed).queryByText(/Zoom in to see it/)).not.toBeInTheDocument();
+    await user.click(within(zoomed).getByRole("switch", { name: "Grid" }));
     expect(screen.getByText(/^Drawn:/)).toHaveTextContent("grid off");
   });
 

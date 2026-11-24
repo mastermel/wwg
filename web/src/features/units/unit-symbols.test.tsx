@@ -9,7 +9,7 @@ import { expectNoAxeViolations } from "@/test/render";
 
 function renderLegend() {
   return render(
-    <AppProviders queryClient={createQueryClient()}>
+    <AppProviders queryClient={createQueryClient()} env="test">
       <UnitLegend />
     </AppProviders>,
   );

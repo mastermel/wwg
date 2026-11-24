@@ -8,7 +8,7 @@ import { InstallHint } from "@/components/InstallHint";
 
 function renderHint() {
   render(
-    <AppProviders queryClient={createQueryClient()}>
+    <AppProviders queryClient={createQueryClient()} env="test">
       <InstallHint />
     </AppProviders>,
   );

@@ -45,7 +45,7 @@ describe("the review dialog", () => {
     const onSubmit = vi.fn(() => Promise.resolve());
     const user = userEvent.setup();
     const { container } = render(
-      <AppProviders queryClient={createQueryClient()}>
+      <AppProviders queryClient={createQueryClient()} env="test">
         <ReviewModal
           kind="send-back"
           army={army}

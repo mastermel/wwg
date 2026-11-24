@@ -97,7 +97,7 @@ const renderDrawer = (
   concentration?: HexConcentration,
 ) =>
   render(
-    <AppProviders queryClient={createQueryClient()}>
+    <AppProviders queryClient={createQueryClient()} env="test">
       <Harness
         units={units}
         sightings={sightings}

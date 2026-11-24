@@ -141,11 +141,7 @@ describe("set Umpire", () => {
     const dialog = await screen.findByRole("dialog");
     await user.type(within(dialog).getByRole("combobox", { name: "New Umpire" }), "Wel");
     await user.click(
-      await within(dialog).findByRole("option", {
-        name: "Arthur Wellesley (arthur@example.com)",
-        // Mantine's dropdown transition leaves it display: none in jsdom.
-        hidden: true,
-      }),
+      await within(dialog).findByRole("option", { name: "Arthur Wellesley (arthur@example.com)" }),
     );
     await user.click(within(dialog).getByRole("button", { name: "Set Umpire" }));
 

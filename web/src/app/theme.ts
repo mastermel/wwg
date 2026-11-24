@@ -76,6 +76,10 @@ export const theme = createTheme({
     Notification: { defaultProps: { closeButtonProps: { "aria-label": "Dismiss" } } },
     // Column headings are styled in app.css: as inline styles here they'd reach footers too.
     Table: { defaultProps: { verticalSpacing: "sm" } },
+    // Mantine's empty focus placeholder isn't allowed inside role="menu" (axe's
+    // aria-required-children); without it, an opened menu focuses its first item, as the
+    // WAI-ARIA menu button pattern has it.
+    Menu: { defaultProps: { withInitialFocusPlaceholder: false } },
   },
 });
 
