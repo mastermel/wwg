@@ -352,18 +352,14 @@ describe("a commander's turn", () => {
     await openMap();
 
     await user.click(await screen.findByRole("button", { name: "Old Guard: actions" }));
-    await user.click(
-      await screen.findByRole("menuitem", { name: "Pick out on the map", hidden: true }),
-    );
+    await user.click(await screen.findByRole("menuitem", { name: "Pick out on the map" }));
 
     const heading = screen.getByRole("button", { name: /^Old Guard \d/ });
     expect(heading).toHaveTextContent("Picked out on the map");
     await expectNoAxeViolations(document.body);
 
     await user.click(screen.getByRole("button", { name: "Old Guard: actions" }));
-    await user.click(
-      await screen.findByRole("menuitem", { name: "Show every unit", hidden: true }),
-    );
+    await user.click(await screen.findByRole("menuitem", { name: "Show every unit" }));
     expect(heading).not.toHaveTextContent("Picked out on the map");
   });
 
@@ -400,9 +396,7 @@ describe("a commander's turn", () => {
     await openMap();
 
     await user.click(await screen.findByRole("button", { name: "Guard: actions" }));
-    await user.click(
-      await screen.findByRole("menuitem", { name: "Hold the 2 without orders", hidden: true }),
-    );
+    await user.click(await screen.findByRole("menuitem", { name: "Hold the 2 without orders" }));
 
     expect(await screen.findByText("The other 2 units in Guard will hold.")).toBeInTheDocument();
     // The Guard already holds: only the rest are sent.
@@ -424,7 +418,7 @@ describe("a commander's turn", () => {
     await user.click(await screen.findByRole("button", { name: "Guard: actions" }));
 
     expect(
-      await screen.findByRole("menuitem", { name: "Pick out on the map", hidden: true }),
+      await screen.findByRole("menuitem", { name: "Pick out on the map" }),
     ).toBeInTheDocument();
     expect(screen.queryByRole("menuitem", { name: /^Hold/, hidden: true })).not.toBeInTheDocument();
   });
@@ -1051,7 +1045,7 @@ describe("a commander's turn", () => {
     await user.click(within(dialog).getByRole("combobox", { name: "To" }));
 
     expect(
-      screen.getByRole("option", { name: "Grouchy's Wing (no Commander in Chief)", hidden: true }),
+      screen.getByRole("option", { name: "Grouchy's Wing (no Commander in Chief)" }),
     ).toHaveAttribute("data-combobox-disabled", "true");
     expect(within(dialog).getByRole("button", { name: "Send by courier" })).toBeDisabled();
   });
@@ -1067,9 +1061,10 @@ describe("a commander's turn", () => {
     await user.click(within(dialog).getByRole("combobox", { name: "To" }));
 
     // Decision 0036: one Player's armies know what each other knows.
-    expect(
-      screen.getByRole("option", { name: "Grouchy's Wing (yours too)", hidden: true }),
-    ).toHaveAttribute("data-combobox-disabled", "true");
+    expect(screen.getByRole("option", { name: "Grouchy's Wing (yours too)" })).toHaveAttribute(
+      "data-combobox-disabled",
+      "true",
+    );
     expect(within(dialog).getByRole("button", { name: "Send by courier" })).toBeDisabled();
   });
 
@@ -1398,15 +1393,15 @@ describe("finding a town", () => {
     expect(
       await screen.findByRole("option", {
         name: "Plancenoit, Walloon Brabant, Belgium",
-        hidden: true,
       }),
     ).toBeInTheDocument();
-    expect(
-      screen.getAllByRole("option", { hidden: true }).map((option) => option.textContent),
-    ).toEqual(["Plancenoit, Hex (0, −1)", "Plancenoit, Walloon Brabant, Belgium"]);
+    expect(screen.getAllByRole("option").map((option) => option.textContent)).toEqual([
+      "Plancenoit, Hex (0, −1)",
+      "Plancenoit, Walloon Brabant, Belgium",
+    ]);
     expect(searches).toEqual(["planc"]);
     await expectNoAxeViolations(document.body);
-    await user.click(screen.getByRole("option", { name: "Plancenoit, Hex (0, −1)", hidden: true }));
+    await user.click(screen.getByRole("option", { name: "Plancenoit, Hex (0, −1)" }));
 
     const dialog = await screen.findByRole("dialog", { name: /^Hex \(0, −1\)/ });
     expect(dialog).toHaveFocus();

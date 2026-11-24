@@ -112,9 +112,7 @@ describe("map settings", () => {
     const { router } = await renderApp(`/campaigns/${campaignId}/map/settings`);
 
     await user.type(await screen.findByRole("combobox", { name: "Find a place" }), "Leipzig");
-    await user.click(
-      await screen.findByRole("option", { name: "Leipzig, Saxony, Germany", hidden: true }),
-    );
+    await user.click(await screen.findByRole("option", { name: "Leipzig, Saxony, Germany" }));
     expect(flights.fitBounds).toContainEqual([12.23, 51.23, 12.54, 51.45]);
 
     await user.click(screen.getByRole("button", { name: "Use this view" }));

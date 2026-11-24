@@ -425,9 +425,7 @@ describe("units", () => {
       within(await screen.findByRole("dialog")).getByRole("combobox", { name: "Type" }),
     );
 
-    expect(
-      await screen.findByRole("option", { name: "Light Cavalry", hidden: true }),
-    ).toBeInTheDocument();
+    expect(await screen.findByRole("option", { name: "Light Cavalry" })).toBeInTheDocument();
     expect(screen.queryByRole("option", { name: "Scouts", hidden: true })).not.toBeInTheDocument();
   });
 
@@ -455,7 +453,7 @@ describe("units", () => {
     await user.click((await unitsSection()).getByRole("button", { name: "Edit 1st Division" }));
     const dialog = within(await screen.findByRole("dialog"));
     await user.click(dialog.getByRole("combobox", { name: "Type" }));
-    await user.click(await screen.findByRole("option", { name: "Commander", hidden: true }));
+    await user.click(await screen.findByRole("option", { name: "Commander" }));
     expect(dialog.queryByRole("textbox", { name: "Fighting Factor (FF)" })).not.toBeInTheDocument();
     expect(dialog.queryByRole("textbox", { name: "Points" })).not.toBeInTheDocument();
     expect(dialog.getByText("A Commander leads: it has no FF or points.")).toBeInTheDocument();

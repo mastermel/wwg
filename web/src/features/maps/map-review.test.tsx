@@ -466,9 +466,7 @@ describe("the Umpire's list of an army's units", () => {
     await user.click(fold);
     expect(within(panel).getByRole("button", { name: "Lancers" })).toBeInTheDocument();
     await user.click(within(panel).getByRole("button", { name: "Guard: actions" }));
-    await user.click(
-      await screen.findByRole("menuitem", { name: "Hold the 2 without orders", hidden: true }),
-    );
+    await user.click(await screen.findByRole("menuitem", { name: "Hold the 2 without orders" }));
 
     expect(await screen.findByText("The other 2 units in Guard will hold.")).toBeInTheDocument();
     expect(requests).toEqual([
@@ -490,7 +488,7 @@ describe("the Umpire's list of an army's units", () => {
     await user.click(within(panel).getByRole("button", { name: "Guard: actions" }));
 
     expect(
-      await screen.findByRole("menuitem", { name: "Pick out on the map", hidden: true }),
+      await screen.findByRole("menuitem", { name: "Pick out on the map" }),
     ).toBeInTheDocument();
     expect(screen.queryByRole("menuitem", { name: /^Hold/, hidden: true })).not.toBeInTheDocument();
     expect(within(panel).queryByRole("button", { name: "Lancers" })).not.toBeInTheDocument();

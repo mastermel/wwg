@@ -74,22 +74,21 @@ describe("app layout and routing", () => {
     await screen.findByRole("heading", { level: 1, name: "Campaigns" });
     const open = async () => {
       await user.click(screen.getByRole("button", { name: new RegExp(testUser.firstName) }));
-      return screen.findByRole("menu", { hidden: true });
+      return screen.findByRole("menu");
     };
 
     const menu = await open();
-    expect(
-      within(menu).getByRole("menuitem", { name: "Match the system", hidden: true }),
-    ).toHaveAttribute("aria-current", "true");
-    await user.click(within(menu).getByRole("menuitem", { name: "Dark", hidden: true }));
+    expect(within(menu).getByRole("menuitem", { name: "Match the system" })).toHaveAttribute(
+      "aria-current",
+      "true",
+    );
+    await user.click(within(menu).getByRole("menuitem", { name: "Dark" }));
 
     await waitFor(() => {
       expect(document.documentElement).toHaveAttribute("data-mantine-color-scheme", "dark");
     });
     expect(localStorage.getItem("mantine-color-scheme-value")).toBe("dark");
-    await user.click(
-      within(await open()).getByRole("menuitem", { name: "Match the system", hidden: true }),
-    );
+    await user.click(within(await open()).getByRole("menuitem", { name: "Match the system" }));
     expect(localStorage.getItem("mantine-color-scheme-value")).toBe("auto");
   });
 
@@ -101,10 +100,8 @@ describe("app layout and routing", () => {
     vi.stubGlobal("location", { reload });
 
     await user.click(screen.getByRole("button", { name: new RegExp(testUser.firstName) }));
-    const menu = await screen.findByRole("menu", { hidden: true });
-    await user.click(
-      within(menu).getByRole("menuitem", { name: "Update and reload", hidden: true }),
-    );
+    const menu = await screen.findByRole("menu");
+    await user.click(within(menu).getByRole("menuitem", { name: "Update and reload" }));
 
     await waitFor(() => {
       expect(reload).toHaveBeenCalled();

@@ -245,7 +245,7 @@ describe("the terrain page", () => {
       "10",
     );
     await user.click(await hex.findByRole("combobox", { name: "Held by" }));
-    await user.click(await hex.findByRole("option", { name: "Armée du Nord", hidden: true }));
+    await user.click(await hex.findByRole("option", { name: "Armée du Nord" }));
 
     expect(await screen.findByText("Hex (0, 0) is held by Armée du Nord.")).toBeInTheDocument();
     expect(holdings).toEqual([{ armyId }]);
@@ -302,9 +302,9 @@ describe("the terrain page", () => {
     expect(hex.getByText("Flat, with nothing on it.")).toBeInTheDocument();
     expect(hex.getByRole("switch", { name: "Walled" })).toBeDisabled();
     await user.click(hex.getByRole("combobox", { name: "Ground" }));
-    await user.click(await hex.findByRole("option", { name: "Low hills", hidden: true }));
+    await user.click(await hex.findByRole("option", { name: "Low hills" }));
     await user.click(hex.getByRole("combobox", { name: "Town or city" }));
-    await user.click(await hex.findByRole("option", { name: "Town", hidden: true }));
+    await user.click(await hex.findByRole("option", { name: "Town" }));
     await user.click(hex.getByRole("switch", { name: "Walled" }));
     await user.type(hex.getByRole("textbox", { name: "Name" }), " Mont-Saint-Jean ");
     await user.click(hex.getByRole("button", { name: "Save hex" }));
@@ -338,17 +338,15 @@ describe("the terrain page", () => {
     const edge = within(screen.getByRole("region", { name: "Edge" }));
     expect(edge.getByRole("combobox", { name: "Side" })).toHaveValue("North");
     await user.click(edge.getByRole("combobox", { name: "Side" }));
-    await user.click(await edge.findByRole("option", { name: "South", hidden: true }));
+    await user.click(await edge.findByRole("option", { name: "South" }));
     // A new form for the south edge.
     const south = within(screen.getByRole("region", { name: "Edge" }));
     await user.click(south.getByRole("switch", { name: "River along it" }));
     await user.click(south.getByRole("switch", { name: "Bridge" }));
     await user.click(south.getByRole("combobox", { name: "Road across it" }));
-    await user.click(await south.findByRole("option", { name: "Good road", hidden: true }));
+    await user.click(await south.findByRole("option", { name: "Good road" }));
     await user.click(south.getByRole("combobox", { name: "Waterway across it" }));
-    await user.click(
-      await south.findByRole("option", { name: "Flows into this hex", hidden: true }),
-    );
+    await user.click(await south.findByRole("option", { name: "Flows into this hex" }));
     await user.click(south.getByRole("button", { name: "Save edge" }));
 
     expect(await screen.findByText("Saved the south edge.")).toBeInTheDocument();
@@ -500,7 +498,7 @@ describe("the terrain page", () => {
     await user.click(await screen.findByRole("button", { name: "Click the middle" }));
     const section = within(screen.getByRole("region", { name: "Actual terrain" }));
     await user.click(section.getByRole("combobox", { name: "Asked by" }));
-    await user.click(await section.findByRole("option", { name: "First Corps", hidden: true }));
+    await user.click(await section.findByRole("option", { name: "First Corps" }));
     await user.click(section.getByRole("switch", { name: "Roll favourability" }));
     await user.click(section.getByRole("button", { name: "Roll the dice" }));
 
@@ -530,9 +528,7 @@ describe("the terrain page", () => {
     await user.click(shownTo);
     // "Asked by" lists the armies too: the option in this field's own list.
     const list = document.getElementById(shownTo.getAttribute("aria-controls") ?? "");
-    await user.click(
-      within(list ?? document.body).getByRole("option", { name: "First Corps", hidden: true }),
-    );
+    await user.click(within(list ?? document.body).getByRole("option", { name: "First Corps" }));
     await user.click(section.getByRole("button", { name: "Save actual terrain" }));
 
     expect(await screen.findByText("Saved the actual terrain.")).toBeInTheDocument();
@@ -611,7 +607,7 @@ describe("the terrain page", () => {
     await renderApp(page);
 
     await user.click(await screen.findByRole("button", { name: "Map layers" }));
-    const game = await screen.findByRole("group", { name: "Game map", hidden: true });
+    const game = await screen.findByRole("group", { name: "Game map" });
     expect(within(game).queryByText(/Zoom in to see it/)).not.toBeInTheDocument();
     expect(
       within(game).queryByRole("switch", { name: "Contact & concentration", hidden: true }),
@@ -620,7 +616,7 @@ describe("the terrain page", () => {
     expect(
       screen.queryByRole("switch", { name: "Units & markers", hidden: true }),
     ).not.toBeInTheDocument();
-    await user.click(within(game).getByRole("switch", { name: "Grid", hidden: true }));
+    await user.click(within(game).getByRole("switch", { name: "Grid" }));
 
     expect(screen.getByText("Grid off")).toBeInTheDocument();
     expect(localStorage.getItem(`wwg:terrain-layers:${campaignId}`)).toContain("grid");

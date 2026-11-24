@@ -74,7 +74,7 @@ async function suggestions(field: HTMLElement) {
     return found;
   });
   return within(list)
-    .getAllByRole("option", { hidden: true })
+    .getAllByRole("option")
     .map((option) => option.textContent);
 }
 
@@ -116,7 +116,7 @@ describe("the library", () => {
     const dialog = within(await screen.findByRole("dialog", { name: "New faction" }));
     await user.type(dialog.getByRole("textbox", { name: "Name" }), "  French ");
     await user.click(dialog.getByRole("combobox", { name: "Nation" }));
-    await user.click(await screen.findByRole("option", { name: "France", hidden: true }));
+    await user.click(await screen.findByRole("option", { name: "France" }));
     await user.click(dialog.getByRole("button", { name: "Add faction" }));
 
     expect(await screen.findByText("Added French.")).toBeInTheDocument();
@@ -135,7 +135,7 @@ describe("the library", () => {
     const dialog = within(await screen.findByRole("dialog", { name: "Add unit" }));
     await user.type(dialog.getByRole("textbox", { name: "Name" }), "Old Guard");
     await user.click(dialog.getByRole("combobox", { name: "Type" }));
-    await user.click(await screen.findByRole("option", { name: "Line Infantry", hidden: true }));
+    await user.click(await screen.findByRole("option", { name: "Line Infantry" }));
     await user.type(dialog.getByRole("textbox", { name: "Fighting Factor (FF)" }), "8");
     await user.clear(dialog.getByRole("textbox", { name: "Points" }));
     await user.type(dialog.getByRole("textbox", { name: "Points" }), "45");
@@ -245,7 +245,7 @@ describe("the library", () => {
     let dialog = within(await screen.findByRole("dialog", { name: "Add unit" }));
     await user.type(dialog.getByRole("textbox", { name: "Name" }), "Old Guard");
     await user.click(dialog.getByRole("combobox", { name: "Type" }));
-    await user.click(await screen.findByRole("option", { name: "Line Infantry", hidden: true }));
+    await user.click(await screen.findByRole("option", { name: "Line Infantry" }));
     await user.type(dialog.getByRole("textbox", { name: "Fighting Factor (FF)" }), "8");
     await user.type(dialog.getByRole("combobox", { name: "Corps" }), "i corps");
     await user.tab();
@@ -254,7 +254,6 @@ describe("the library", () => {
     await user.click(
       await screen.findByRole("option", {
         name: "Substitute (another unit's figures)",
-        hidden: true,
       }),
     );
     await user.type(dialog.getByRole("textbox", { name: "Notes" }), "sub: 45th Regt.");
@@ -312,7 +311,7 @@ describe("the library", () => {
     const dialog = within(await screen.findByRole("dialog", { name: "Add unit" }));
     await user.type(dialog.getByRole("textbox", { name: "Name" }), "Ney");
     await user.click(dialog.getByRole("combobox", { name: "Type" }));
-    await user.click(await screen.findByRole("option", { name: "Commander", hidden: true }));
+    await user.click(await screen.findByRole("option", { name: "Commander" }));
     expect(dialog.queryByRole("textbox", { name: "Fighting Factor (FF)" })).not.toBeInTheDocument();
     expect(dialog.queryByRole("textbox", { name: "Points" })).not.toBeInTheDocument();
     await user.click(dialog.getByRole("button", { name: "Add unit" }));

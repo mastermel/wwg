@@ -362,12 +362,12 @@ describe("the map's layers", () => {
     await renderApp(`/campaigns/${campaignId}/map`);
 
     await user.click(await screen.findByRole("button", { name: "Map layers" }));
-    const real = await screen.findByRole("group", { name: "Real map", hidden: true });
+    const real = await screen.findByRole("group", { name: "Real map" });
     // Contours are off in the campaign's settings: not offered.
     expect(
       within(real).queryByRole("switch", { name: "Contours", hidden: true }),
     ).not.toBeInTheDocument();
-    await user.click(within(real).getByRole("switch", { name: "Forests", hidden: true }));
+    await user.click(within(real).getByRole("switch", { name: "Forests" }));
 
     expect(screen.getByText(/^Drawn:/)).toHaveTextContent(
       "Drawn: roads, places, water, hills; grid on",
@@ -387,17 +387,17 @@ describe("the map's layers", () => {
     await renderApp(`/campaigns/${campaignId}/map`);
 
     await user.click(await screen.findByRole("button", { name: "Map layers" }));
-    const real = await screen.findByRole("group", { name: "Real map", hidden: true });
-    const forests = within(real).getByRole("switch", { name: "Forests", hidden: true });
+    const real = await screen.findByRole("group", { name: "Real map" });
+    const forests = within(real).getByRole("switch", { name: "Forests" });
     await user.click(forests);
-    await user.click(within(real).getByRole("switch", { name: "Real map", hidden: true }));
+    await user.click(within(real).getByRole("switch", { name: "Real map" }));
 
     expect(screen.getByText(/^Drawn:/)).toHaveTextContent(/^Drawn: ; grid on$/);
     expect(forests).toBeDisabled();
     expect(forests).not.toBeChecked();
-    expect(within(real).getByRole("switch", { name: "Roads", hidden: true })).toBeChecked();
+    expect(within(real).getByRole("switch", { name: "Roads" })).toBeChecked();
 
-    await user.click(within(real).getByRole("switch", { name: "Real map", hidden: true }));
+    await user.click(within(real).getByRole("switch", { name: "Real map" }));
     expect(screen.getByText(/^Drawn:/)).toHaveTextContent(
       "Drawn: roads, places, water, hills; grid on",
     );
@@ -410,12 +410,12 @@ describe("the map's layers", () => {
     await renderApp(`/campaigns/${campaignId}/map`);
 
     await user.click(await screen.findByRole("button", { name: "Map layers" }));
-    const game = await screen.findByRole("group", { name: "Game map", hidden: true });
+    const game = await screen.findByRole("group", { name: "Game map" });
     expect(screen.getByText(/^Drawn:/)).toHaveTextContent("grid on");
-    await user.click(within(game).getByRole("switch", { name: "Game map", hidden: true }));
+    await user.click(within(game).getByRole("switch", { name: "Game map" }));
 
     expect(screen.getByText(/^Drawn:/)).toHaveTextContent("grid off");
-    expect(within(game).getByRole("switch", { name: "Grid", hidden: true })).toBeChecked();
+    expect(within(game).getByRole("switch", { name: "Grid" })).toBeChecked();
     expect(JSON.parse(localStorage.getItem(`wwg:map-layers:${campaignId}`) ?? "{}")).toEqual({
       real: [],
       game: ["rivers"],
@@ -433,16 +433,16 @@ describe("the map's layers", () => {
       await renderApp(`/campaigns/${campaignId}/map`);
 
       await user.click(await screen.findByRole("button", { name: "Map layers" }));
-      const pieces = await screen.findByRole("switch", { name: "Units & markers", hidden: true });
+      const pieces = await screen.findByRole("switch", { name: "Units & markers" });
       expect(pieces).toBeChecked();
       await user.click(pieces);
 
       expect(pieces).not.toBeChecked();
       // The moves go with the pieces, so there are no others to hide.
       expect(
-        screen.getByRole("switch", { name: "Other moves while a hex is chosen", hidden: true }),
+        screen.getByRole("switch", { name: "Other moves while a hex is chosen" }),
       ).toBeDisabled();
-      expect(screen.getByRole("switch", { name: "Move trails", hidden: true })).toBeDisabled();
+      expect(screen.getByRole("switch", { name: "Move trails" })).toBeDisabled();
       // The maps are drawn as they were.
       expect(screen.getByText(/^Drawn:/)).toHaveTextContent(
         "Drawn: roads, places, water, forests, hills; grid on",
@@ -465,7 +465,6 @@ describe("the map's layers", () => {
     await user.click(await screen.findByRole("button", { name: "Map layers" }));
     const others = await screen.findByRole("switch", {
       name: "Other moves while a hex is chosen",
-      hidden: true,
     });
     expect(others).toBeChecked();
     await user.click(others);
@@ -486,7 +485,7 @@ describe("the map's layers", () => {
     await renderApp(`/campaigns/${campaignId}/map`);
 
     await user.click(await screen.findByRole("button", { name: "Map layers" }));
-    const trails = await screen.findByRole("switch", { name: "Move trails", hidden: true });
+    const trails = await screen.findByRole("switch", { name: "Move trails" });
     expect(trails).toBeChecked();
     await user.click(trails);
 
@@ -507,7 +506,7 @@ describe("the map's layers", () => {
     await renderApp(`/campaigns/${campaignId}/map`);
 
     await user.click(await screen.findByRole("button", { name: "Map layers" }));
-    const game = await screen.findByRole("group", { name: "Game map", hidden: true });
+    const game = await screen.findByRole("group", { name: "Game map" });
     expect(within(game).getByText(/Zoom in to see it/)).toBeInTheDocument();
     // A Player has no warnings to show.
     expect(
@@ -533,9 +532,7 @@ describe("the map's layers", () => {
 
     await user.click(await screen.findByRole("button", { name: "Map layers" }));
 
-    expect(
-      await screen.findByRole("group", { name: "Real map", hidden: true }),
-    ).toBeInTheDocument();
+    expect(await screen.findByRole("group", { name: "Real map" })).toBeInTheDocument();
     expect(screen.queryByRole("group", { name: "Game map", hidden: true })).not.toBeInTheDocument();
   });
 });

@@ -154,12 +154,9 @@ describe("armies on the campaign page", () => {
     expect(
       within(dialog).getByRole("option", {
         name: "Mel Green (commands First Corps)",
-        hidden: true,
       }),
     ).toBeEnabled();
-    await user.click(
-      await within(dialog).findByRole("option", { name: "Arthur Wellesley", hidden: true }),
-    );
+    await user.click(await within(dialog).findByRole("option", { name: "Arthur Wellesley" }));
     await user.click(within(dialog).getByRole("button", { name: "Add army" }));
 
     expect(await screen.findByText("Added Second Corps.")).toBeInTheDocument();
@@ -213,20 +210,15 @@ describe("armies on the campaign page", () => {
     await user.click(await screen.findByRole("button", { name: "New army" }));
     const dialog = await screen.findByRole("dialog");
     await user.click(within(dialog).getByRole("combobox", { name: "Side" }));
-    await user.click(
-      await within(dialog).findByRole("option", { name: "French Empire", hidden: true }),
-    );
+    await user.click(await within(dialog).findByRole("option", { name: "French Empire" }));
     await user.click(within(dialog).getByRole("combobox", { name: "Commander" }));
 
     expect(
       await within(dialog).findByRole("option", {
         name: "Mel Green (commands First Corps, of the other side)",
-        hidden: true,
       }),
     ).toHaveAttribute("data-combobox-disabled", "true");
-    expect(
-      within(dialog).getByRole("option", { name: "Arthur Wellesley", hidden: true }),
-    ).toBeEnabled();
+    expect(within(dialog).getByRole("option", { name: "Arthur Wellesley" })).toBeEnabled();
   });
 });
 
@@ -284,13 +276,13 @@ describe("army page", () => {
     await user.click(await screen.findByRole("button", { name: "Edit army" }));
     const dialog = within(await screen.findByRole("dialog"));
     await user.click(dialog.getByRole("combobox", { name: "Side" }));
-    await user.click(await dialog.findByRole("option", { name: "French Empire", hidden: true }));
+    await user.click(await dialog.findByRole("option", { name: "French Empire" }));
     await user.click(dialog.getByRole("combobox", { name: "Colour" }));
-    await user.click(await dialog.findByRole("option", { name: "Gold", hidden: true }));
+    await user.click(await dialog.findByRole("option", { name: "Gold" }));
     await user.click(dialog.getByRole("combobox", { name: "Nation" }));
-    await user.click(await dialog.findByRole("option", { name: "Prussia", hidden: true }));
+    await user.click(await dialog.findByRole("option", { name: "Prussia" }));
     await user.click(dialog.getByRole("combobox", { name: "Factions" }));
-    await user.click(await dialog.findByRole("option", { name: "Prussian", hidden: true }));
+    await user.click(await dialog.findByRole("option", { name: "Prussian" }));
     await user.click(dialog.getByRole("button", { name: "Save" }));
 
     expect(await screen.findByText("Saved First Corps.")).toBeInTheDocument();
@@ -318,7 +310,7 @@ describe("army page", () => {
     await renderApp(`/campaigns/${campaignId}/armies/${armyId}`);
 
     await user.click(await screen.findByRole("combobox", { name: "Change commander" }));
-    await user.click(await screen.findByRole("option", { name: "Arthur Wellesley", hidden: true }));
+    await user.click(await screen.findByRole("option", { name: "Arthur Wellesley" }));
 
     expect(
       await screen.findByText("Arthur Wellesley now commands First Corps."),
