@@ -3363,10 +3363,10 @@ build on positions.
 78. ✅ **Despatch emails** (decision 0049): every email in one layout (`EmailBuilder`), the app's
     icon inline at its head, the news in a ledger and the Umpire's notes as letters, and a footer
     saying why it was sent, with a link to the email settings for campaign emails.
-79. **Attrition warnings** (decision 0050), in parts:
-    - **79a. The API:** `GET /api/campaigns/{id}/attrition` for every member, filtered as supply
+79. ✅ **Attrition warnings** (decision 0050), in parts:
+    - ✅ **79a. The API:** `GET /api/campaigns/{id}/attrition` for every member, filtered as supply
       is: the Umpire's and Admins', every army's; a commander's, their own armies'; others', none.
-    - **79b. In the app:** the units the open turn's orders as given cost attrition carry a
+    - ✅ **79b. In the app:** the units the open turn's orders as given cost attrition carry a
       warning mark on the map (their marker's label says so); the unit drawer warns of where the
       unit stands as the turn began (forced march to rest off, turns out of supply) and what its
       order costs (why, the multiple of the scale, the points lost, and what follows: Holds to

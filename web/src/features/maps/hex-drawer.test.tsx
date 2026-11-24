@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { http, HttpResponse } from "msw";
 import { describe, expect, it } from "vitest";
-import type { ArmySummary } from "@/api/generated/model";
+import type { ArmySummary, AttritionDueResponse } from "@/api/generated/model";
 import { AppProviders } from "@/app/AppProviders";
 import { createQueryClient } from "@/app/query-client";
 import type { HexConcentration } from "@/features/maps/contact";
@@ -63,6 +63,8 @@ interface HarnessProps {
   marches?: boolean;
   screening?: { canChange: boolean };
   concentration?: HexConcentration;
+  /** The attrition its orders cost, for whoever follows its moves. */
+  due?: AttritionDueResponse;
 }
 
 function Harness({
@@ -71,6 +73,7 @@ function Harness({
   marches = false,
   screening,
   concentration,
+  due,
 }: HarnessProps) {
   const [selected, setSelected] = useState<PlacedUnit | null>(null);
   return (
@@ -85,6 +88,7 @@ function Harness({
       actions={(chosen) => <button type="button">Order {chosen.unit.name}</button>}
       showsMarches={() => marches}
       screeningOf={() => screening}
+      attritionOf={() => (marches ? { due } : undefined)}
     />
   );
 }
@@ -288,6 +292,69 @@ describe("the hex drawer", () => {
     expect(
       await screen.findByText("Force marching: 2 turns to rest off (a Hold each)."),
     ).toBeInTheDocument();
+  });
+
+  it("warns what a unit's orders cost in attrition, and what follows", async () => {
+    server.use(
+      http.get("*/api/armies/a/marches", () =>
+        HttpResponse.json([
+          {
+            unitId: "g",
+            movesInRow: 0,
+            forceMarchesInRow: 0,
+            forcedMarchTurns: 1,
+            moveCosts: 1,
+            forceMarchCosts: 1,
+            orderCosts: 1,
+          },
+        ]),
+      ),
+    );
+    render(
+      <AppProviders queryClient={createQueryClient()} env="test">
+        <Harness
+          units={stack.slice(0, 1)}
+          marches
+          due={{
+            unitId: "g",
+            armyId: "a",
+            name: "Imperial Guard",
+            fightingFactor: 6,
+            points: 30,
+            forcedMarchTurns: 2,
+            forcedMarchMultiplier: 1,
+            unsuppliedTurns: 0,
+            multiplier: 1,
+            loss: 1,
+          }}
+        />
+      </AppProviders>,
+    );
+
+    const warning = (await screen.findByText("Attrition this turn")).closest<HTMLElement>(
+      "[role=alert]",
+    );
+    if (!warning) throw new Error("No attrition warning.");
+    expect(
+      await within(warning).findByText(
+        "As this turn began: force marching, with 1 turn of it to rest off.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      within(warning).getByText(/As the next turn starts, it loses 1 point \(30 → 29\)/),
+    ).toBeInTheDocument();
+    expect(
+      within(within(warning).getByRole("list", { name: "What follows" })).getByText(
+        /It must Hold 2 turns to rest off its forced march/,
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("warns nothing of attrition for a rested unit", async () => {
+    renderDrawer(stack.slice(0, 1), true);
+
+    expect(await screen.findByRole("region", { name: "Imperial Guard" })).toBeInTheDocument();
+    expect(screen.queryByText(/attrition/i)).not.toBeInTheDocument();
   });
 
   it("keeps a unit's forced marches from whoever doesn't follow its moves", async () => {

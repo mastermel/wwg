@@ -698,7 +698,7 @@ describe("a commander's turn", () => {
     expect(requests).toEqual([]);
   });
 
-  it("force marches a unit a hex further, and says what moving costs", async () => {
+  it("force marches a unit a hex further, and warns what moving costs", async () => {
     const requests = serveCommander(draft());
     server.use(
       http.get(`*/api/armies/${armyId}/marches`, () =>
@@ -725,7 +725,10 @@ describe("a commander's turn", () => {
       within(await screen.findByRole("dialog")).getByRole("button", { name: "Move" }),
     );
     expect(
-      await screen.findByText(/Moving costs double attrition: its 3rd turn of forced march\./),
+      // FF 6, 30 points: 1 × 2 × 30 ÷ 50.
+      await screen.findByText(
+        "Moving costs double attrition (about 1.2 points): its 3rd turn of forced march.",
+      ),
     ).toBeInTheDocument();
     await user.click(screen.getByRole("switch", { name: "Force march (a hex further)" }));
     await user.click(screen.getByRole("button", { name: "Click the map" }));

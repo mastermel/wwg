@@ -77,3 +77,20 @@
   background: #1f4e8c;
   color: #ffffff;
 }
+
+/* Its orders cost it attrition (decision 0050): a warning triangle on amber (#1a1a1a on #f2b01e,
+   9.1:1), outlined in white like the supply mark, at the top left. */
+.attrition {
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 8px;
+  border: 2px solid #ffffff;
+  background: #f2b01e;
+  color: #1a1a1a;
+}

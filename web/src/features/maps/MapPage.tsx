@@ -1,6 +1,7 @@
 import { ActionIcon, Alert, Box, Button, Grid, Group, Stack, Switch, Text } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import {
+  IconAlertTriangle,
   IconAnchor,
   IconArrowBackUp,
   IconArrowMoveRight,
@@ -33,6 +34,7 @@ import {
 } from "@/api/generated/endpoints/maps/maps";
 import { useGetMovementTable } from "@/api/generated/endpoints/turns/turns";
 import {
+  useListAttritionDue,
   useListMarches,
   useListPositions,
   useListTurns,
@@ -463,6 +465,14 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
   // Victory points (step 50): the totals, and the holders the viewer may know.
   const scoreboard = useGetScoreboard(campaignId, live);
   const victorySettings = useGetVictorySettings(campaignId, live);
+  // The attrition the open turn's orders cost (decision 0050): the viewer's armies' units.
+  const attrition = useListAttritionDue(campaignId, {
+    query: { meta: { persist: false }, enabled: running },
+  });
+  const underAttrition = useMemo(
+    () => new Set((attrition.data ?? []).map((d) => d.unitId)),
+    [attrition.data],
+  );
   const outOfSupply = useMemo(
     () =>
       new Set(
@@ -553,6 +563,7 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
       ? moveCost(
           marches.data?.find((m) => m.unitId === moving.unit.id),
           forceMarch,
+          moving.unit,
         )
       : null;
   const reachable = useMemo(
@@ -1207,38 +1218,53 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
       {moving && !landing && (
         <Alert role="status" color="navy" icon={<IconArrowMoveRight aria-hidden />}>
           <Group justify="space-between" gap="xs">
-            <Text size="sm">
-              {target && targetPath ? (
-                <>
-                  {targetProgress === undefined ? (
-                    <>
-                      Move <strong>{movingName}</strong> {hexes(targetPath.length)} to here?
-                    </>
-                  ) : (
-                    <>
-                      Move <strong>{moving.unit.name}</strong>{" "}
-                      {targetPath.length > 1 ? `${hexes(targetPath.length - 1)}, and ` : ""}
-                      {shareOfTheWay(targetProgress)} of the way into here? It takes more than a
-                      turn: it gets there next turn, going on.
-                    </>
-                  )}
-                  {pastTurn &&
-                    (together
-                      ? closedStep
-                        ? ` One of them can't go that way (${closedStep}), but you may take them there.`
-                        : " That's further than one of them can go in a turn."
-                      : closedStep
-                        ? ` It can't go that way (${closedStep}), but you may take it there.`
-                        : " That's further than it can go in a turn.")}
-                </>
-              ) : (
-                <>
-                  Tap a shaded hex for where <strong>{movingName}</strong>{" "}
-                  {together ? "move to, together" : "moves to"}.
-                </>
+            <Stack gap={4}>
+              <Text size="sm">
+                {target && targetPath ? (
+                  <>
+                    {targetProgress === undefined ? (
+                      <>
+                        Move <strong>{movingName}</strong> {hexes(targetPath.length)} to here?
+                      </>
+                    ) : (
+                      <>
+                        Move <strong>{moving.unit.name}</strong>{" "}
+                        {targetPath.length > 1 ? `${hexes(targetPath.length - 1)}, and ` : ""}
+                        {shareOfTheWay(targetProgress)} of the way into here? It takes more than a
+                        turn: it gets there next turn, going on.
+                      </>
+                    )}
+                    {pastTurn &&
+                      (together
+                        ? closedStep
+                          ? ` One of them can't go that way (${closedStep}), but you may take them there.`
+                          : " That's further than one of them can go in a turn."
+                        : closedStep
+                          ? ` It can't go that way (${closedStep}), but you may take it there.`
+                          : " That's further than it can go in a turn.")}
+                  </>
+                ) : (
+                  <>
+                    Tap a shaded hex for where <strong>{movingName}</strong>{" "}
+                    {together ? "move to, together" : "moves to"}.
+                  </>
+                )}
+              </Text>
+              {movingCost && (
+                // What the move costs in attrition (decision 0050): a warning of its own.
+                <Group gap={6} wrap="nowrap" align="flex-start">
+                  <IconAlertTriangle
+                    size={18}
+                    color="var(--mantine-color-red-filled)"
+                    style={{ flexShrink: 0 }}
+                    aria-hidden
+                  />
+                  <Text size="sm" fw={600}>
+                    {movingCost}
+                  </Text>
+                </Group>
               )}
-              {movingCost && <> {movingCost}</>}
-            </Text>
+            </Stack>
             {(together
               ? stackCanForceMarch(together, costs.rates, openTurn?.part)
               : canForceMarch(costs.rates, movingType ?? moving.unit.type, openTurn?.part)) && (
@@ -1409,6 +1435,7 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
           <UnitMarkers
             units={drawn.units}
             outOfSupply={past === null ? outOfSupply : undefined}
+            underAttrition={past === null ? underAttrition : undefined}
             highlight={standingOut}
             arriving={arriving}
             onSelect={(stack) => {
@@ -1714,6 +1741,14 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
           const found = supply.data?.units.find((s) => s.unitId === unit.unit.id);
           return found && past === null ? describeSupply(found, depots.data ?? []) : undefined;
         }}
+        attritionOf={(unit) =>
+          past === null && running && (manager || myArmies.some((a) => a.id === unit.army.id))
+            ? {
+                supply: supply.data?.units.find((s) => s.unitId === unit.unit.id),
+                due: attrition.data?.find((d) => d.unitId === unit.unit.id),
+              }
+            : undefined
+        }
         listActions={stackActions}
         actions={
           past !== null

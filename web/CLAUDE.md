@@ -159,7 +159,10 @@ The pre-commit hook runs `eslint --fix` and Prettier on staged files.
   reach, when it's allowed, the count and costs in words; the count itself is the API's
   `ListMarches`); the Umpire confirms attrition in `StartTurnModal`; a unit's points history is
   `UnitPointsHistory`. `useReview` refreshes every army's marches and every unit's history after a
-  change, `useOrders` the army's marches.
+  change, `useOrders` the army's marches. Attrition in words is `attrition.ts` (the scale, a rough
+  loss, `whyItOwes`, `attritionWarning`); commanders and the Umpire are warned (decision 0050)
+  from the API's `ListAttritionDue` (their own armies'): `UnitMarkers`' `underAttrition` mark,
+  the drawer's `AttritionWarning`, and the move prompt's cost.
 - Supply (step 48, decision 0019): depots are `DepotsPanel`, `DepotMarkers` and `use-depots.ts`;
   each unit's supply is the API's (`useGetSupply`), worded by `supply.ts` (`describeSupply`) and
   warned of by `SupplyWarnings`; living off the land is the drawer's switch, kept on every new

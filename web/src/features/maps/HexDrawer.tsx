@@ -14,6 +14,8 @@ import { unitTypeLabels } from "@/features/units/unit-types";
 import { shareOfTheWay } from "@/features/maps/movement";
 import { useListMarches } from "@/api/generated/endpoints/turns/turns";
 import { describeMarch } from "@/features/maps/marches";
+import type { AttritionDueResponse, UnitSupplyResponse } from "@/api/generated/model";
+import { AttritionWarning } from "@/features/maps/AttritionWarning";
 import { UnitPointsHistory } from "@/features/maps/UnitPointsHistory";
 import { UnitScreening } from "@/features/maps/UnitScreening";
 import type { HexConcentration } from "@/features/maps/contact";
@@ -46,6 +48,14 @@ interface HexDrawerProps {
   /** The unit's supply in words (step 48), for those who see it. */
   supplyOf?: (unit: PlacedUnit) => string | undefined;
   /**
+   * What the unit's attrition warning is from (decision 0050), for its commander and the Umpire
+   * in the open turn: its supply, and the attrition its orders cost (missing for none); undefined
+   * for anyone else.
+   */
+  attritionOf?: (
+    unit: PlacedUnit,
+  ) => { supply?: UnitSupplyResponse; due?: AttritionDueResponse } | undefined;
+  /**
    * The unit's screening (decision 0026), for its commander and the Umpire: whether they may
    * change it now; undefined for anyone else.
    */
@@ -76,6 +86,7 @@ export function HexDrawer({
   listActions,
   showsMarches,
   supplyOf,
+  attritionOf,
   screeningOf,
   focusRequest = 0,
 }: HexDrawerProps) {
@@ -143,6 +154,7 @@ export function HexDrawer({
                 actions={actions}
                 showsMarches={showsMarches}
                 supplyOf={supplyOf}
+                attritionOf={attritionOf}
                 screeningOf={screeningOf}
               />
             </Part>
@@ -263,12 +275,20 @@ function Part({ title, children }: { title: string; children: ReactNode }) {
 
 type UnitDetailsProps = Pick<
   HexDrawerProps,
-  "actions" | "showsMarches" | "supplyOf" | "screeningOf"
+  "actions" | "showsMarches" | "supplyOf" | "attritionOf" | "screeningOf"
 > & { shown: PlacedUnit };
 
 /** A unit in full: what it is, its state, and what the viewer can do with it. */
-function UnitDetails({ shown, actions, showsMarches, supplyOf, screeningOf }: UnitDetailsProps) {
+function UnitDetails({
+  shown,
+  actions,
+  showsMarches,
+  supplyOf,
+  attritionOf,
+  screeningOf,
+}: UnitDetailsProps) {
   const supply = supplyOf?.(shown);
+  const attrition = attritionOf?.(shown);
   const screening = screeningOf?.(shown);
   return (
     <>
@@ -283,6 +303,14 @@ function UnitDetails({ shown, actions, showsMarches, supplyOf, screeningOf }: Un
           {shown.unit.isCommanderInChief ? "Commander in Chief" : unitTypeLabels[shown.unit.type]}
         </Text>
       </Group>
+      {attrition && (
+        <AttritionWarning
+          armyId={shown.army.id}
+          unitId={shown.unit.id}
+          supply={attrition.supply}
+          due={attrition.due}
+        />
+      )}
       <Table variant="vertical" layout="fixed" withTableBorder>
         <Table.Tbody>
           <Table.Tr>

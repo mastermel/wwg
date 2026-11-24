@@ -1,4 +1,4 @@
-import { IconSailboat } from "@tabler/icons-react";
+import { IconAlertTriangleFilled, IconSailboat } from "@tabler/icons-react";
 import { Marker } from "react-map-gl/maplibre";
 import { armyColorVar } from "@/features/armies/identity/army-colors";
 import {
@@ -21,6 +21,11 @@ interface UnitMarkersProps {
   highlight?: ((placed: PlacedUnit) => boolean) | null;
   /** Units out of supply (step 48d), marked as such, for those who see their supply. */
   outOfSupply?: ReadonlySet<string>;
+  /**
+   * Units the open turn's orders as given cost attrition (decision 0050), marked with a warning,
+   * for their commander and the Umpire.
+   */
+  underAttrition?: ReadonlySet<string>;
   /** A mouse pointer coming onto a stack's marker, or leaving it (null; step 75c). */
   onHover?: (stack: UnitStack | null) => void;
   /** Units drawn where they're going, not where they are (no trails, step 75e). */
@@ -37,6 +42,7 @@ export function UnitMarkers({
   onSelect,
   highlight,
   outOfSupply,
+  underAttrition,
   onHover,
   arriving,
 }: UnitMarkersProps) {
@@ -46,6 +52,7 @@ export function UnitMarkers({
     const [top, ...under] = stack.units as [PlacedUnit, ...PlacedUnit[]];
     const next = under.at(0);
     const cutOff = stack.units.filter((u) => outOfSupply?.has(u.unit.id));
+    const wearing = stack.units.filter((u) => underAttrition?.has(u.unit.id));
     // On boats (step 51): its boats aren't drawn, but go with it.
     const afloat = stack.units.filter((u) => (u.boats?.length ?? 0) > 0);
     const onTheirWay = stack.units.filter((u) => arriving?.has(u.unit.id));
@@ -58,6 +65,11 @@ export function UnitMarkers({
         : under.length === 0
           ? ", out of supply"
           : `; out of supply: ${cutOff.map((u) => u.unit.name).join(", ")}`) +
+      (wearing.length === 0
+        ? ""
+        : under.length === 0
+          ? ", losing points to attrition"
+          : `; losing points to attrition: ${wearing.map((u) => u.unit.name).join(", ")}`) +
       (afloat.length === 0
         ? ""
         : under.length === 0
@@ -115,6 +127,11 @@ export function UnitMarkers({
           {cutOff.length > 0 && (
             <span className={classes.supply} aria-hidden>
               !
+            </span>
+          )}
+          {wearing.length > 0 && (
+            <span className={classes.attrition} aria-hidden>
+              <IconAlertTriangleFilled size={10} />
             </span>
           )}
           {afloat.length > 0 && (

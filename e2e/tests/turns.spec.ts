@@ -435,6 +435,25 @@ test("the Umpire confirms a forced march's attrition, and it's in the unit's his
   const turns = await api.get<{ id: string; open: boolean }[]>(`/api/armies/${armyId}/turns`);
   await api.post(`/api/army-turns/${turns.find((t) => t.open)?.id ?? ""}/approve`, null);
 
+  // Bob is warned before the turn starts: on the Guard's marker, and in its drawer.
+  await commander.page.goto(`${campaignUrl}/map`);
+  await commander.page
+    .getByRole("button", {
+      name: "Imperial Guard, Line Infantry, Armée du Nord, losing points to attrition",
+    })
+    .click();
+  const warning = commander.page
+    .getByRole("dialog")
+    .getByRole("alert")
+    .filter({ hasText: "Attrition this turn" });
+  await expect(warning).toContainText("its 2nd turn of forced march, normal attrition");
+  await expect(warning).toContainText("it loses under a point now");
+  await expect(warning).toContainText("It must Hold 2 turns to rest off its forced march");
+  expect(await scan(commander.page, "map, attrition warning")).toEqual([]);
+  await commander.page.emulateMedia({ colorScheme: "dark" });
+  expect(await scan(commander.page, "map, attrition warning, dark")).toEqual([]);
+  await commander.page.emulateMedia({ colorScheme: "light" });
+
   const page = umpire.page;
   await page.goto(`${campaignUrl}/map`);
   await page.getByRole("button", { name: "Start turn 5" }).click();
