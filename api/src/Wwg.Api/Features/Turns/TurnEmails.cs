@@ -1,6 +1,3 @@
-using System.Globalization;
-using System.Text;
-using System.Text.Encodings.Web;
 using Wwg.Api.Data.Entities;
 using Wwg.Api.Infrastructure.Email;
 
@@ -26,9 +23,11 @@ internal sealed record TurnRecipient(
 internal static class TurnEmails
 {
     /// <param name="to">Who it's for.</param>
-    /// <param name="subject">The subject line.</param>
+    /// <param name="kind">Which kind it is, for the footer: each kind can be turned off.</param>
+    /// <param name="campaign">The campaign's name.</param>
+    /// <param name="headline">What happened, briefly: the subject after the campaign, and the title.</param>
     /// <param name="what">What happened, as a sentence.</param>
-    /// <param name="action">The link's text: what to do next.</param>
+    /// <param name="action">The button's text: what to do next.</param>
     /// <param name="map">The campaign's map.</param>
     /// <param name="note">The Umpire's note on the turn, if any.</param>
     /// <param name="unitNotes">The Umpire's notes on units, by unit name.</param>
@@ -36,7 +35,9 @@ internal static class TurnEmails
     /// <param name="waiting">What's waiting for the Umpire as they start the next turn.</param>
     public static EmailMessage Create(
         TurnRecipient to,
-        string subject,
+        EmailKind kind,
+        string campaign,
+        string headline,
         string what,
         string action,
         Uri map,
@@ -46,95 +47,58 @@ internal static class TurnEmails
         IReadOnlyList<string>? waiting = null
     )
     {
-        var html = new StringBuilder();
-        var text = new StringBuilder();
-        html.Append(
-            CultureInfo.InvariantCulture,
-            $"<p>Hi {Encode(to.FirstName)},</p>\n<p>{Encode(what)}</p>\n"
-        );
-        text.Append(CultureInfo.InvariantCulture, $"Hi {to.FirstName},\n\n{what}\n\n");
+        var email = new EmailBuilder(Eyebrow(campaign), Capitalised(headline))
+            .Greeting(to.FirstName)
+            .Paragraph(what);
         if (note is not null)
         {
-            html.Append(CultureInfo.InvariantCulture, $"<p>Their note: {Encode(note)}</p>\n");
-            text.Append(CultureInfo.InvariantCulture, $"Their note: {note}\n\n");
+            email.Letter("The Umpire's note", note);
         }
 
-        if (unitNotes is { Count: > 0 })
-        {
-            html.Append("<ul>\n");
-            foreach (var (unit, unitNote) in unitNotes)
-            {
-                html.Append(
-                    CultureInfo.InvariantCulture,
-                    $"<li><strong>{Encode(unit)}:</strong> {Encode(unitNote)}</li>\n"
-                );
-                text.Append(CultureInfo.InvariantCulture, $"- {unit}: {unitNote}\n");
-            }
-
-            html.Append("</ul>\n");
-            text.Append('\n');
-        }
-
-        if (umpireOrders is { Count: > 0 })
-        {
-            AppendList(html, text, "Orders the Umpire set:", umpireOrders);
-        }
-
-        if (waiting is not null)
-        {
-            AppendWaiting(html, text, waiting);
-        }
-
-        html.Append(
-            CultureInfo.InvariantCulture,
-            $"<p><a href=\"{Encode(map.ToString())}\">{Encode(action)}</a></p>\n"
+        email.Ledger(
+            new LedgerRow(
+                "Notes on units",
+                [.. (unitNotes ?? []).Select(n => new LedgerEntry(n.Text, Lead: n.ArmyUnit))]
+            ),
+            LedgerRow.Of("Orders the Umpire set", umpireOrders ?? []),
+            LedgerRow.Of("Waiting for you", waiting ?? [])
         );
-        text.Append(CultureInfo.InvariantCulture, $"{action}: {map}\n");
-
-        return new EmailMessage(
-            ToAddress: to.Email,
-            ToName: $"{to.FirstName} {to.LastName}",
-            Subject: subject,
-            HtmlBody: html.ToString(),
-            TextBody: text.ToString()
-        );
-    }
-
-    /// <summary>What's waiting for the Umpire, or that nothing is.</summary>
-    private static void AppendWaiting(
-        StringBuilder html,
-        StringBuilder text,
-        IReadOnlyList<string> waiting
-    )
-    {
-        if (waiting.Count == 0)
+        if (waiting is { Count: 0 })
         {
-            html.Append("<p>Nothing else is waiting for you as you start the next turn.</p>\n");
-            text.Append("Nothing else is waiting for you as you start the next turn.\n\n");
-            return;
+            email.Paragraph("Nothing else is waiting for you as you start the next turn.");
         }
 
-        AppendList(html, text, "Waiting for you as you start the next turn:", waiting);
+        return email
+            .Button(action, map)
+            .Build(
+                to.Email,
+                $"{to.FirstName} {to.LastName}",
+                $"{campaign}: {headline}",
+                Why(kind),
+                Settings(map)
+            );
     }
 
-    private static void AppendList(
-        StringBuilder html,
-        StringBuilder text,
-        string heading,
-        IReadOnlyList<string> items
-    )
-    {
-        html.Append(CultureInfo.InvariantCulture, $"<p>{Encode(heading)}</p>\n<ul>\n");
-        text.Append(CultureInfo.InvariantCulture, $"{heading}\n");
-        foreach (var item in items)
+    /// <summary>The line over a campaign email's title.</summary>
+    public static string Eyebrow(string campaign) => $"Wasatch Wargamers · {campaign}";
+
+    /// <summary>Why the recipient got an email of this kind, for its footer.</summary>
+    public static string Why(EmailKind kind) =>
+        kind switch
         {
-            html.Append(CultureInfo.InvariantCulture, $"<li>{Encode(item)}</li>\n");
-            text.Append(CultureInfo.InvariantCulture, $"- {item}\n");
-        }
+            EmailKind.TurnStarted => "You get this email when a new turn starts.",
+            EmailKind.TurnReviewed =>
+                "You get this email when the Umpire acts on your army's turn.",
+            EmailKind.ArmyGiven => "You get this email when you're given an army.",
+            EmailKind.ArmySubmitted => "You get this email when an army submits its turn.",
+            EmailKind.AllSubmitted => "You get this email when every army has submitted its turn.",
+            EmailKind.PlayerJoined => "You get this email when a player joins your campaign.",
+            _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, null),
+        };
 
-        html.Append("</ul>\n");
-        text.Append('\n');
-    }
+    /// <summary>The account page, where campaign emails are turned off, beside another app link.</summary>
+    public static Uri Settings(Uri appLink) => new(appLink, "/account");
 
-    private static string Encode(string value) => HtmlEncoder.Default.Encode(value);
+    private static string Capitalised(string text) =>
+        text.Length == 0 ? text : char.ToUpperInvariant(text[0]) + text[1..];
 }

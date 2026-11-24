@@ -228,7 +228,7 @@ public sealed class UmpireOrderTests : ApiTest
         var email = await Emails.WaitForEmailToAsync("commander@example.com", "submitted for");
         Assert.Equal("The Peninsular War: turn 1 submitted for First Corps", email.Subject);
         Assert.Contains(
-            "Orders the Umpire set:\n- 1st Division: hold",
+            "Orders the Umpire set\n- 1st Division: hold",
             email.TextBody,
             StringComparison.Ordinal
         );

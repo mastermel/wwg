@@ -290,7 +290,7 @@ public sealed class TurnActionTests : ApiTest
         );
         var email = await Emails.WaitForEmailToAsync("commander@example.com", "approved for");
         Assert.Contains(
-            "Their note: The ford will be contested.",
+            "The Umpire's note\n> The ford will be contested.",
             email.TextBody,
             StringComparison.Ordinal
         );
@@ -371,7 +371,11 @@ public sealed class TurnActionTests : ApiTest
             email.TextBody,
             StringComparison.Ordinal
         );
-        Assert.Contains("Their note: Too cautious.", email.TextBody, StringComparison.Ordinal);
+        Assert.Contains(
+            "The Umpire's note\n> Too cautious.",
+            email.TextBody,
+            StringComparison.Ordinal
+        );
     }
 
     [Fact]

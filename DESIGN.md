@@ -601,8 +601,12 @@ Identity has two layers:
   `Smtp` settings point at it.
 - **Tests:** `IEmailService` is replaced with a fake that records messages, so
   tests can pull the reset code out of the "sent" email and finish the flow.
-- Email bodies are simple HTML + text templates in code. No template engine
-  yet.
+- **Every email is a despatch** (decision 0049): `EmailBuilder` lays it out (the
+  app's icon, inline as a PNG; a sender line, a serif title and subtitle; the body's
+  blocks: paragraphs, a heading, a *letter* quoting someone's note, a *ledger* of
+  labelled rows; a button; a footer saying why it was sent, with a link to the email
+  settings for campaign emails). Each block writes the HTML (tables and inline
+  styles) and the plain text together. No template engine.
 
 ### 3.7 OpenAPI, Swagger UI & the TypeScript SDK
 
@@ -3356,3 +3360,6 @@ build on positions.
       reports.
     - ✅ **77b. In the app:** the Couriers section of the campaign's edit page (`CourierSection`),
       with the rules' courier (1) a click away.
+78. ✅ **Despatch emails** (decision 0049): every email in one layout (`EmailBuilder`), the app's
+    icon inline at its head, the news in a ledger and the Umpire's notes as letters, and a footer
+    saying why it was sent, with a link to the email settings for campaign emails.

@@ -96,7 +96,7 @@ internal static class TurnActionEndpoints
                 db,
                 emails,
                 turn,
-                $"{turn.Campaign}: turn {turn.Number} submitted for {turn.Army}",
+                $"turn {turn.Number} submitted for {turn.Army}",
                 $"{by} submitted {turn.Army}'s orders for turn {turn.Number} of {turn.Campaign} on your behalf.",
                 "See them on the map",
                 map,
@@ -164,7 +164,7 @@ internal static class TurnActionEndpoints
             db,
             emails,
             turn,
-            $"{turn.Campaign}: turn {turn.Number} approved for {turn.Army}",
+            $"turn {turn.Number} approved for {turn.Army}",
             $"{by} approved {turn.Army}'s orders for turn {turn.Number} of {turn.Campaign}.",
             "See the map",
             MapLink(appOptions, turn.CampaignId),
@@ -558,7 +558,7 @@ internal static class TurnActionEndpoints
             db,
             emails,
             turn,
-            $"{turn.Campaign}: turn {turn.Number} {(sentBack ? "sent back" : "reopened")} for {turn.Army}",
+            $"turn {turn.Number} {(sentBack ? "sent back" : "reopened")} for {turn.Army}",
             $"{by} {(sentBack ? "sent back" : "reopened")} {turn.Army}'s orders for turn {turn.Number} of {turn.Campaign}, to change and submit again.",
             "Change them on the map",
             MapLink(appOptions, turn.CampaignId),
@@ -607,7 +607,7 @@ internal static class TurnActionEndpoints
         WwgDbContext db,
         IEmailQueue emails,
         TurnInfo turn,
-        string subject,
+        string headline,
         string what,
         string action,
         Uri map,
@@ -655,7 +655,9 @@ internal static class TurnActionEndpoints
         await emails.QueueAsync(
             TurnEmails.Create(
                 commander,
-                subject,
+                EmailKind.TurnReviewed,
+                turn.Campaign,
+                headline,
                 what,
                 action,
                 map,
@@ -686,7 +688,9 @@ internal static class TurnActionEndpoints
             await emails.QueueAsync(
                 TurnEmails.Create(
                     umpire,
-                    $"{turn.Campaign}: {turn.Army} submitted turn {turn.Number}",
+                    EmailKind.ArmySubmitted,
+                    turn.Campaign,
+                    $"{turn.Army} submitted turn {turn.Number}",
                     $"{by} submitted {turn.Army}'s orders for turn {turn.Number} of {turn.Campaign}.",
                     "Review them on the map",
                     map

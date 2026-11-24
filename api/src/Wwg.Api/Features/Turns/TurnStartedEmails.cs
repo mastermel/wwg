@@ -1,6 +1,4 @@
 using System.Globalization;
-using System.Text;
-using System.Text.Encodings.Web;
 using Microsoft.EntityFrameworkCore;
 using Wwg.Api.Data;
 using Wwg.Api.Data.Entities;
@@ -117,35 +115,34 @@ internal static class TurnStartedEmails
                     CultureInfo.InvariantCulture,
                     $"Turn {number} of {campaign} has started{at}. Give {names} {whose} orders."
                 );
-        var html = new StringBuilder();
-        var text = new StringBuilder();
-        html.Append(
-            CultureInfo.InvariantCulture,
-            $"<p>Hi {Encode(to.FirstName)},</p>\n<p>{Encode(opening)}</p>\n"
-        );
-        text.Append(CultureInfo.InvariantCulture, $"Hi {to.FirstName},\n\n{opening}\n\n");
+        var email = new EmailBuilder(
+            TurnEmails.Eyebrow(campaign),
+            number == 1
+                ? "The campaign has begun"
+                : string.Create(CultureInfo.InvariantCulture, $"Turn {number} has started"),
+            when
+        )
+            .Greeting(to.FirstName)
+            .Paragraph(opening);
         if (number > 1)
         {
             foreach (var army in armies)
             {
-                AppendNews(html, text, armies.Count == 1 ? null : army.Army, army.News);
+                AppendNews(email, armies.Count == 1 ? null : army.Army, army.News);
             }
         }
 
-        html.Append(
-            CultureInfo.InvariantCulture,
-            $"<p><a href=\"{Encode(map.ToString())}\">Give orders on the map</a></p>\n"
-        );
-        text.Append(CultureInfo.InvariantCulture, $"Give orders on the map: {map}\n");
-        return new EmailMessage(
-            ToAddress: to.Email,
-            ToName: $"{to.FirstName} {to.LastName}",
-            Subject: when is null
-                ? $"{campaign}: turn {number} has started"
-                : $"{campaign}: turn {number} has started ({when})",
-            HtmlBody: html.ToString(),
-            TextBody: text.ToString()
-        );
+        return email
+            .Button("Give orders on the map", map)
+            .Build(
+                to.Email,
+                $"{to.FirstName} {to.LastName}",
+                when is null
+                    ? $"{campaign}: turn {number} has started"
+                    : $"{campaign}: turn {number} has started ({when})",
+                TurnEmails.Why(EmailKind.TurnStarted),
+                TurnEmails.Settings(map)
+            );
     }
 
     /// <summary>"First Corps", "First Corps and Second Corps", "A, B and C".</summary>
@@ -153,71 +150,42 @@ internal static class TurnStartedEmails
         names.Count == 1 ? names[0] : $"{string.Join(", ", names[..^1])} and {names[^1]}";
 
     /// <summary>An army's news, under its name when the email is for several (<paramref name="army"/>).</summary>
-    private static void AppendNews(
-        StringBuilder html,
-        StringBuilder text,
-        string? army,
-        TurnNews news
-    )
+    private static void AppendNews(EmailBuilder email, string? army, TurnNews news)
     {
-        var heading = army is null ? "New since the last turn" : $"{army}: new since the last turn";
-        html.Append(CultureInfo.InvariantCulture, $"<h3>{Encode(heading)}</h3>\n");
-        text.Append(CultureInfo.InvariantCulture, $"{heading}\n\n");
+        email.Heading(
+            army is null ? "New since the last turn" : $"{army}: new since the last turn"
+        );
         if (news.IsEmpty)
         {
-            html.Append("<p>Nothing new since the last turn.</p>\n");
-            text.Append("Nothing new since the last turn.\n\n");
+            email.Paragraph("Nothing new since the last turn.");
             return;
         }
 
         if (news.UmpireNote is { } note)
         {
-            html.Append(
-                CultureInfo.InvariantCulture,
-                $"<h4>The Umpire on your last orders</h4>\n<blockquote>{Encode(note).Replace("\n", "<br>\n", StringComparison.Ordinal)}</blockquote>\n"
-            );
-            text.Append(
-                CultureInfo.InvariantCulture,
-                $"The Umpire on your last orders\n> {note.Replace("\n", "\n> ", StringComparison.Ordinal)}\n\n"
-            );
+            email.Letter("The Umpire on your last orders", note);
         }
 
-        AppendList(html, text, "Enemy sightings", news.Sightings);
-        AppendList(html, text, "Supply", news.Supply);
-        AppendList(html, text, "Attrition", news.Attrition);
-        AppendList(html, text, "Boats", news.Boats);
-        if (news.Reports.Count == 0)
-        {
-            return;
-        }
-
-        html.Append("<h4>Reports from allies</h4>\n");
-        text.Append("Reports from allies\n");
-        foreach (var report in news.Reports)
-        {
-            var with = With(report);
-            html.Append(
-                CultureInfo.InvariantCulture,
-                $"<p><strong>From {Encode(report.From)}</strong>{Encode(with)}</p>\n"
-            );
-            text.Append(CultureInfo.InvariantCulture, $"From {report.From}{with}\n");
-            if (report.Message is { Length: > 0 } message)
-            {
-                html.Append(
-                    CultureInfo.InvariantCulture,
-                    $"<blockquote>{Encode(message).Replace("\n", "<br>\n", StringComparison.Ordinal)}</blockquote>\n"
-                );
-                text.Append(
-                    CultureInfo.InvariantCulture,
-                    $"> {message.Replace("\n", "\n> ", StringComparison.Ordinal)}\n"
-                );
-            }
-            text.Append('\n');
-        }
+        email.Ledger(
+            LedgerRow.Of("Enemy sightings", news.Sightings),
+            LedgerRow.Of("Supply", news.Supply),
+            LedgerRow.Of("Attrition", news.Attrition),
+            LedgerRow.Of("Boats", news.Boats),
+            new LedgerRow(
+                "Reports from allies",
+                [
+                    .. news.Reports.Select(r => new LedgerEntry(
+                        $"From {r.From}",
+                        Aside: With(r),
+                        Quote: r.Message is { Length: > 0 } message ? message : null
+                    )),
+                ]
+            )
+        );
     }
 
-    /// <summary>What a report brings besides its message: " (3 sightings, their units' positions)".</summary>
-    private static string With(ReportNews report)
+    /// <summary>What a report brings besides its message: "3 sightings, their units' positions".</summary>
+    private static string? With(ReportNews report)
     {
         var parts = new List<string>();
         if (report.Sightings > 0)
@@ -233,32 +201,6 @@ internal static class TurnStartedEmails
             parts.Add("their units' positions");
         }
 
-        return parts.Count == 0 ? "" : $" ({string.Join(", ", parts)})";
+        return parts.Count == 0 ? null : string.Join(", ", parts);
     }
-
-    private static void AppendList(
-        StringBuilder html,
-        StringBuilder text,
-        string heading,
-        IReadOnlyList<string> items
-    )
-    {
-        if (items.Count == 0)
-        {
-            return;
-        }
-
-        html.Append(CultureInfo.InvariantCulture, $"<h4>{Encode(heading)}</h4>\n<ul>\n");
-        text.Append(CultureInfo.InvariantCulture, $"{heading}\n");
-        foreach (var item in items)
-        {
-            html.Append(CultureInfo.InvariantCulture, $"<li>{Encode(item)}</li>\n");
-            text.Append(CultureInfo.InvariantCulture, $"- {item}\n");
-        }
-
-        html.Append("</ul>\n");
-        text.Append('\n');
-    }
-
-    private static string Encode(string value) => HtmlEncoder.Default.Encode(value);
 }

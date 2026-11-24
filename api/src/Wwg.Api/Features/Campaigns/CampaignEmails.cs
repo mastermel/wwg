@@ -53,7 +53,9 @@ internal static class CampaignEmails
         await emails.QueueAsync(
             TurnEmails.Create(
                 army.To,
-                $"{army.Campaign}: you command {army.Name}",
+                EmailKind.ArmyGiven,
+                army.Campaign,
+                $"you command {army.Name}",
                 $"You've been given command of {army.Name} in {army.Campaign}.",
                 "See your army on the map",
                 TurnActionEndpoints.MapLink(appOptions, army.CampaignId)
@@ -98,7 +100,9 @@ internal static class CampaignEmails
             await emails.QueueAsync(
                 TurnEmails.Create(
                     umpire,
-                    $"{campaign}: {joined} joined",
+                    EmailKind.PlayerJoined,
+                    campaign,
+                    $"{joined} joined",
                     $"{joined} joined {campaign} as a Player. Give them an army from the campaign's page.",
                     "See the campaign",
                     page
@@ -155,9 +159,11 @@ internal static class CampaignEmails
             await emails.QueueAsync(
                 TurnEmails.Create(
                     umpire,
+                    EmailKind.AllSubmitted,
+                    open.Campaign,
                     string.Create(
                         CultureInfo.InvariantCulture,
-                        $"{open.Campaign}: every army has submitted turn {open.Number}"
+                        $"every army has submitted turn {open.Number}"
                     ),
                     what,
                     "Review them on the map",
