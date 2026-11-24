@@ -214,7 +214,7 @@ test("the Umpire sends a turn back, approves it resubmitted with a note, and sta
   // Bob reads the note while the turn is approved.
   await expect
     .poll(() => latestEmailText(commander.email), { timeout: 15_000 })
-    .toContain("Their note: Well marched.");
+    .toMatch(/The Umpire's note\s+> Well marched\./);
   await bob.reload();
   await expect(bobsPanel.getByRole("status", { name: "Approved" })).toContainText(
     "approved this turn: Well marched.",
@@ -585,7 +585,7 @@ test("the Umpire moves a unit past its limit, holds another, and submits for the
   // Bob is told what the Umpire set, and sees it marked.
   await expect
     .poll(() => latestEmailText(commander.email), { timeout: 15_000 })
-    .toContain("Orders the Umpire set:");
+    .toMatch(/Orders the Umpire set\s+- /);
   expect(await latestEmailText(commander.email)).toContain("- Imperial Guard: move");
   await commander.page.goto(`${campaignUrl}/map`);
   const bobsPanel = commander.page.getByRole("region", { name: "Turn 1" });
