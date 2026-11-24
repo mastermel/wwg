@@ -1,5 +1,8 @@
-/* The hex's label in the app's colours, light or dark, rather than MapLibre's white. */
+/* The hex's label in the app's colours, light or dark, rather than MapLibre's white.
+   It lets every mouse event through to the map beneath, so a wheel zooms the map rather than
+   scrolling the page, and a click selects the hex under the label. */
 .popup :global(.maplibregl-popup-content) {
+  pointer-events: none;
   padding: 8px 10px;
   border-radius: var(--mantine-radius-sm);
   background: var(--mantine-color-body);
