@@ -3348,11 +3348,11 @@ build on positions.
       (from the army's turns already loaded; no new endpoint). The history lists it already.
     - ✅ **76d. End to end:** the turn spec approves one army's turn with a note, and its
       commander reads it on the panel and, after the next turn starts, on the new one.
-77. **Couriers ride faster** (decision 0048), in parts:
+77. ✅ **Couriers ride faster** (decision 0048), in parts:
     - ✅ **77a. The API:** `Campaign.CourierSpeed` (1.5, existing campaigns too), and `GET / PUT
       /api/campaigns/{id}/courier-settings` (`CourierSettingsEndpoints`). `CourierRides` divides
       each step's light-cavalry cost by it, read as it loads, so a change reaches couriers on
       their way: their next ride, the turns left in the Couriers list, and "close by" for new
       reports.
-    - **77b. In the app:** the Couriers section of the campaign's edit page (`CourierSection`),
+    - ✅ **77b. In the app:** the Couriers section of the campaign's edit page (`CourierSection`),
       with the rules' courier (1) a click away.

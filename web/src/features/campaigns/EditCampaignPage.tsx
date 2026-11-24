@@ -18,6 +18,7 @@ import { ConcentrationSection } from "@/features/campaigns/ConcentrationSection"
 import { SupplySection } from "@/features/campaigns/SupplySection";
 import { VictorySection } from "@/features/campaigns/VictorySection";
 import { BoatSection } from "@/features/campaigns/BoatSection";
+import { CourierSection } from "@/features/campaigns/CourierSection";
 import { canManage } from "@/features/campaigns/campaign-access";
 import { CampaignForm } from "@/features/campaigns/CampaignForm";
 import { refreshCampaign } from "@/features/campaigns/campaign-cache";
@@ -76,6 +77,7 @@ export function EditCampaignPage({ id }: { id: string }) {
               <SupplySection campaignId={id} />
               <VictorySection campaignId={id} />
               <BoatSection campaignId={id} />
+              <CourierSection campaignId={id} />
             </Stack>
           )
         }
