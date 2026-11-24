@@ -1,12 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { UnitMarchResponse } from "@/api/generated/model";
-import {
-  attritionInWords,
-  canForceMarch,
-  describeMarch,
-  forceMarchBonus,
-  moveCost,
-} from "@/features/maps/marches";
+import { canForceMarch, describeMarch, forceMarchBonus, moveCost } from "@/features/maps/marches";
 import { ratesOf } from "@/features/maps/movement";
 
 const rules = ratesOf(undefined);
@@ -41,17 +35,6 @@ describe("canForceMarch", () => {
   });
 });
 
-describe("attritionInWords", () => {
-  it("reads 1, 2 and more", () => {
-    expect([0, 1, 2, 4].map(attritionInWords)).toEqual([
-      null,
-      "normal attrition",
-      "double attrition",
-      "4× attrition",
-    ]);
-  });
-});
-
 describe("describeMarch", () => {
   it("says how far into a run, or what's left to rest off", () => {
     expect(describeMarch(march({}))).toBe("Rested.");
@@ -73,5 +56,13 @@ describe("moveCost", () => {
     );
     expect(moveCost(march({ forceMarchCosts: 0 }), true)).toBeNull();
     expect(moveCost(undefined, false)).toBeNull();
+  });
+
+  it("says roughly how many points, given the unit's FF and points", () => {
+    const tired = march({ forcedMarchTurns: 2, moveCosts: 2, forceMarchCosts: 2 });
+
+    expect(moveCost(tired, false, { fightingFactor: 6, points: 30 })).toBe(
+      "Moving costs double attrition (about 1.2 points): its 3rd turn of forced march.",
+    );
   });
 });

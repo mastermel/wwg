@@ -28,7 +28,7 @@ const placed = (
   army = nord,
 ) =>
   ({
-    unit: { id, name: id, type, nation: "France" },
+    unit: { id, name: id, type, nation: "France", fightingFactor: 2, points: 50 },
     army,
     hex: { q: 0, r: 0 },
     ...changes,
@@ -154,12 +154,12 @@ describe("stackMoveCost", () => {
     orderCosts: 0,
   });
 
-  it("names the units moving costs attrition, each with its own", () => {
+  it("names the units moving costs attrition, each with its own and roughly how many points", () => {
     const units = [placed("guard"), placed("lancers"), placed("hussars")];
     const marches = [march("guard", 1), march("lancers", 0), march("hussars", 2)];
 
     expect(stackMoveCost(units, marches, false)).toBe(
-      "Moving costs attrition: guard (normal attrition) and hussars (double attrition).",
+      "Moving costs attrition: guard (normal attrition, about 3 points) and hussars (double attrition, about 6 points).",
     );
     expect(stackMoveCost(units.slice(1, 2), marches, false)).toBeNull();
   });

@@ -1,6 +1,7 @@
 import type { TurnPart, UnitMarchResponse, UnitType } from "@/api/generated/model";
 import { classOf, type Rates } from "@/features/maps/movement";
 import { fights } from "@/features/units/unit-types";
+import { attritionInWords, forcedMarchTurn, roughLoss } from "@/features/maps/attrition";
 
 /**
  * Forced marches (step 47, decision 0018), in the app: how much further a force march goes, when
@@ -22,20 +23,6 @@ export function canForceMarch(rates: Rates, type: UnitType, part: TurnPart | nul
   return fights(type) && part !== "Night" && forceMarchBonus(rates, type) > 0;
 }
 
-/** Attrition as a multiple of the rules' scale, in words; null for none. */
-export function attritionInWords(multiplier: number) {
-  if (multiplier <= 0) return null;
-  if (multiplier === 1) return "normal attrition";
-  if (multiplier === 2) return "double attrition";
-  return `${String(multiplier)}× attrition`;
-}
-
-const ordinal = (n: number) =>
-  `${String(n)}${n % 10 === 1 && n % 100 !== 11 ? "st" : n % 10 === 2 && n % 100 !== 12 ? "nd" : n % 10 === 3 && n % 100 !== 13 ? "rd" : "th"}`;
-
-/** "Its 2nd turn of forced march" for the turn that leaves it at this many. */
-export const forcedMarchTurn = (turns: number) => `its ${ordinal(turns)} turn of forced march`;
-
 /** A unit's march count as the open turn began, in words. */
 export function describeMarch(march: UnitMarchResponse) {
   if (march.forcedMarchTurns > 0) {
@@ -47,9 +34,19 @@ export function describeMarch(march: UnitMarchResponse) {
   return "Rested.";
 }
 
-/** What moving this turn costs it, in words; null for nothing. */
-export function moveCost(march: UnitMarchResponse | undefined, forceMarch: boolean) {
+/**
+ * What moving this turn costs it, in words, with roughly how many points when its FF and points
+ * are given; null for nothing.
+ */
+export function moveCost(
+  march: UnitMarchResponse | undefined,
+  forceMarch: boolean,
+  unit?: { fightingFactor: number; points: number },
+) {
   if (!march) return null;
-  const cost = attritionInWords(forceMarch ? march.forceMarchCosts : march.moveCosts);
-  return cost ? `Moving costs ${cost}: ${forcedMarchTurn(march.forcedMarchTurns + 1)}.` : null;
+  const multiplier = forceMarch ? march.forceMarchCosts : march.moveCosts;
+  const cost = attritionInWords(multiplier);
+  if (!cost) return null;
+  const loss = unit && roughLoss(unit, multiplier);
+  return `Moving costs ${cost}${loss ? ` (${loss})` : ""}: ${forcedMarchTurn(march.forcedMarchTurns + 1)}.`;
 }

@@ -5,7 +5,8 @@ import type {
   UnitMarchResponse,
   UnitType,
 } from "@/api/generated/model";
-import { attritionInWords, canForceMarch, forceMarchBonus } from "@/features/maps/marches";
+import { attritionInWords, roughLoss } from "@/features/maps/attrition";
+import { canForceMarch, forceMarchBonus } from "@/features/maps/marches";
 import { budgetFor, type Marches, type Rates, type StackMover } from "@/features/maps/movement";
 import type { PlacedUnit } from "@/features/maps/stacks";
 
@@ -116,8 +117,8 @@ export const stackCanForceMarch = (
 ) => units.length > 0 && units.every((p) => canForceMarch(rates, movesAs(p), part));
 
 /**
- * What moving costs the stack's units, in words: those it costs attrition, each with its own
- * (decision 0018); null when it costs none of them anything. On boats, moving is rest.
+ * What moving costs the stack's units, in words: those it costs attrition, each with its own and
+ * roughly how many points (decisions 0018, 0050); null when it costs none of them anything. On boats, moving is rest.
  */
 export function stackMoveCost(
   units: readonly PlacedUnit[],
@@ -127,8 +128,10 @@ export function stackMoveCost(
   const costs = units.flatMap((placed) => {
     if (movesAs(placed) === "Boat") return [];
     const march = marches?.find((m) => m.unitId === placed.unit.id);
-    const cost = march && attritionInWords(forceMarch ? march.forceMarchCosts : march.moveCosts);
-    return cost ? [`${placed.unit.name} (${cost})`] : [];
+    const multiplier = march ? (forceMarch ? march.forceMarchCosts : march.moveCosts) : 0;
+    const cost = attritionInWords(multiplier);
+    const loss = roughLoss(placed.unit, multiplier);
+    return cost ? [`${placed.unit.name} (${cost}${loss ? `, ${loss}` : ""})`] : [];
   });
   if (costs.length === 0) return null;
   const listed =
