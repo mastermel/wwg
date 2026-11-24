@@ -2,26 +2,30 @@ using Wwg.Api.Data;
 using Wwg.Api.Data.Entities;
 using Wwg.Api.Features.Maps;
 using Wwg.Api.Features.Turns;
+using Wwg.Api.Infrastructure;
 
 namespace Wwg.Api.Features.Intelligence;
 
 /// <summary>
 /// A courier's ride (the rules, §L; decision 0020): as light cavalry, by the campaign's movement
-/// table over the terrain and roads, a turn's worth at a time, nights too.
+/// table over the terrain and roads, a turn's worth at a time, nights too; at the campaign's
+/// courier speed, a multiple of light cavalry's (decision 0048).
 /// </summary>
 internal sealed class CourierRides
 {
     private readonly HexGrid _grid;
     private readonly MovementTable _table;
     private readonly PathTerrain _terrain;
+    private readonly double _speed;
     private readonly MovementClass _class = Movement.ClassOf(UnitType.LightCavalry);
 
-    private CourierRides(HexGrid grid, MovementTable table, PathTerrain terrain) =>
-        (_grid, _table, _terrain) = (grid, table, terrain);
+    private CourierRides(HexGrid grid, MovementTable table, PathTerrain terrain, double speed) =>
+        (_grid, _table, _terrain, _speed) = (grid, table, terrain, speed);
 
     /// <summary>
     /// What a ride needs: the campaign's table, and the terrain of the whole grid, which the
-    /// cheapest way may cross anywhere (a ford round a river's end, say).
+    /// cheapest way may cross anywhere (a ford round a river's end, say), and the courier speed as
+    /// it is now, so a change reaches couriers already on their way.
     /// </summary>
     public static async Task<CourierRides> LoadAsync(
         WwgDbContext db,
@@ -32,7 +36,11 @@ internal sealed class CourierRides
         new(
             grid,
             await MovementTable.LoadAsync(db, campaignId, cancellationToken),
-            await PathTerrain.LoadAllAsync(db, campaignId, cancellationToken)
+            await PathTerrain.LoadAllAsync(db, campaignId, cancellationToken),
+            await db
+                .Campaigns.Where(c => c.Id == campaignId)
+                .Select(c => c.CourierSpeed)
+                .SingleOrGoneAsync(cancellationToken)
         );
 
     /// <summary>The cheapest way from a hex to every hex it reaches, in turns: each step's cost, and the hex before.</summary>
@@ -57,7 +65,8 @@ internal sealed class CourierRides
                 }
 
                 var step = Movement.Step(_table, _terrain, _class, hex, next);
-                var total = cost + step.Cost;
+                // Faster than light cavalry: each step takes less of a turn.
+                var total = cost + (step.Cost / _speed);
                 if (
                     step.ClosedBecause is null
                     && (!best.TryGetValue(next, out var known) || total < known.Cost)

@@ -16,7 +16,7 @@ namespace Wwg.Api.IntegrationTests.Features;
 /// Reports between allies, by courier (step 49c, decisions 0020 and 0033). The scenario's unit is
 /// at (0, 0); an ally army of the same side, commanded by the scenario's Player, has a unit where
 /// each test says, from the start. Unless a test says otherwise, each army's Commander in Chief is
-/// in its unit's hex.
+/// in its unit's hex, and couriers ride at the rules' speed, as light cavalry.
 /// </summary>
 public sealed class IntelTests : ApiTest
 {
@@ -25,6 +25,7 @@ public sealed class IntelTests : ApiTest
     /// <summary>
     /// Started, with the ally (and, if given, an enemy) placed; hexes of the size given. Each
     /// side's Commander in Chief is where given (by default, in its unit's hex), or there's none.
+    /// Couriers ride at the speed given (by default, the rules': as light cavalry).
     /// </summary>
     private async Task<(CampaignScenario Scenario, Guid Ally)> StartedAsync(
         Hex allyAt,
@@ -33,10 +34,13 @@ public sealed class IntelTests : ApiTest
         Hex? chiefAt = null,
         Hex? allyChiefAt = null,
         bool withChief = true,
-        bool allyWithChief = true
+        bool allyWithChief = true,
+        double courierSpeed = CourierRules.RulesSpeed
     )
     {
         var scenario = await CreateCampaignScenarioAsync();
+        using var speed = await SetSpeedAsync(scenario, courierSpeed);
+        speed.EnsureSuccessStatusCode();
         await TurnSteps.SetCalendarAsync(scenario);
         await TurnSteps.SetAreaAsync(scenario, hexSize);
         using var placed = await TurnSteps.PlaceAsync(scenario, scenario.UnitId);
@@ -315,6 +319,110 @@ public sealed class IntelTests : ApiTest
         Assert.Equal(5, new Hex(riding.Q, riding.R).Distance(new Hex(9, -4)));
         Assert.Empty(await ReportsAsync(scenario, Role.Player));
     }
+
+    [Fact]
+    public async Task SendReport_CouriersHalfAsFastAgain_RideSixHexesATurn()
+    {
+        // 1 km hexes: the ally 13 hexes away, more than two turns' ride at 6 a turn.
+        var (scenario, ally) = await StartedAsync(
+            new Hex(13, -6),
+            hexSize: 1000,
+            courierSpeed: 1.5
+        );
+        using var _ = scenario;
+
+        using var sent = await SendAsync(scenario, Everything(ally));
+        await NextTurnAsync(scenario);
+        var riding = Assert.Single(await CouriersAsync(scenario));
+
+        Assert.Equal(7, new Hex(riding.Q, riding.R).Distance(new Hex(13, -6)));
+        Assert.Empty(await ReportsAsync(scenario, Role.Player));
+    }
+
+    [Fact]
+    public async Task UpdateCourierSettings_ACourierOnItsWay_RidesAtTheNewSpeed()
+    {
+        // 1 km hexes: the ally 9 hexes away; at twice light cavalry's speed, 8 a turn.
+        var (scenario, ally) = await StartedAsync(new Hex(9, -4), hexSize: 1000);
+        using var _ = scenario;
+        using var sent = await SendAsync(scenario, Everything(ally));
+        sent.EnsureSuccessStatusCode();
+
+        using var faster = await SetSpeedAsync(scenario, 2);
+        faster.EnsureSuccessStatusCode();
+        await NextTurnAsync(scenario);
+
+        var arrived = Assert.Single(await CouriersAsync(scenario));
+        Assert.Equal(CourierStatus.Arrived, arrived.Status);
+        Assert.Single(await ReportsAsync(scenario, Role.Player));
+    }
+
+    [Fact]
+    public async Task ListCouriers_FasterCouriers_HaveFewerTurnsToRide()
+    {
+        // 1 km hexes: the ally 13 hexes away, a little over 3 turns' ride as light cavalry.
+        var (scenario, ally) = await StartedAsync(new Hex(13, -6), hexSize: 1000);
+        using var _ = scenario;
+        using var sent = await SendAsync(scenario, Everything(ally));
+        var before = Assert.Single(await CouriersAsync(scenario)).TurnsToRide!.Value;
+
+        using var faster = await SetSpeedAsync(scenario, 2);
+        faster.EnsureSuccessStatusCode();
+
+        var after = Assert.Single(await CouriersAsync(scenario)).TurnsToRide!.Value;
+        Assert.Equal(before / 2, after, 6);
+    }
+
+    [Fact]
+    public async Task GetCourierSettings_ANewCampaign_RidesHalfAsFastAgainAsLightCavalry()
+    {
+        using var scenario = await CreateCampaignScenarioAsync();
+
+        var settings = await scenario
+            .As(Role.Commander)
+            .GetAsAsync<CourierSettingsResponse>(
+                $"/api/campaigns/{scenario.CampaignId}/courier-settings"
+            );
+
+        Assert.Equal(1.5, settings!.Speed);
+    }
+
+    [Fact]
+    public async Task UpdateCourierSettings_NoSpeed_IsAValidationError()
+    {
+        using var scenario = await CreateCampaignScenarioAsync();
+
+        using var set = await SetSpeedAsync(scenario, 0);
+
+        await set.AssertValidationProblemAsync("speed");
+    }
+
+    [Theory]
+    [InlineData(Role.Admin, HttpStatusCode.OK)]
+    [InlineData(Role.Umpire, HttpStatusCode.OK)]
+    [InlineData(Role.Commander, HttpStatusCode.Forbidden)]
+    [InlineData(Role.NonMember, HttpStatusCode.NotFound)]
+    public async Task UpdateCourierSettings_ByRole_TheUmpire(Role role, HttpStatusCode expected)
+    {
+        using var scenario = await CreateCampaignScenarioAsync();
+
+        using var set = await SetSpeedAsync(scenario, 2, role);
+
+        Assert.Equal(expected, set.StatusCode);
+    }
+
+    private static Task<HttpResponseMessage> SetSpeedAsync(
+        CampaignScenario scenario,
+        double speed,
+        Role role = Role.Umpire
+    ) =>
+        scenario
+            .As(role)
+            .PutAsJsonAsync(
+                new Uri($"/api/campaigns/{scenario.CampaignId}/courier-settings", UriKind.Relative),
+                new UpdateCourierSettingsRequest(speed),
+                Token
+            );
 
     [Fact]
     public async Task SendReport_ChiefsApartFromTheirArmies_RidesFromOneChiefToTheOther()

@@ -61,6 +61,26 @@ internal sealed class Campaign : Entity
 
     /// <summary>The points a boat carries (step 51, decision 0022; Chart #11's 14).</summary>
     public int BoatCapacity { get; set; } = BoatRules.DefaultCapacity;
+
+    /// <summary>
+    /// How much faster than light cavalry a courier rides (decision 0048): each turn's ride
+    /// reaches this many times as far. Couriers already on their way ride at it from the next
+    /// turn that closes.
+    /// </summary>
+    public double CourierSpeed { get; set; } = CourierRules.DefaultSpeed;
+}
+
+/// <summary>Couriers' speed (decision 0048), as a multiple of light cavalry's.</summary>
+internal static class CourierRules
+{
+    /// <summary>The rules' courier rides as light cavalry (§L).</summary>
+    public const double RulesSpeed = 1;
+
+    /// <summary>The app's courier rides half as far again, until the Umpire changes it.</summary>
+    public const double DefaultSpeed = 1.5;
+
+    public const double MinSpeed = 0.25,
+        MaxSpeed = 5;
 }
 
 /// <summary>Which settlements are worth victory points (decision 0021).</summary>

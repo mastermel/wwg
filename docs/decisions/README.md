@@ -88,3 +88,4 @@ A reversal gets a new entry.
 | [0045](0045-e2e-docker-and-deploy-on-main-only.md) | The e2e, docker and deploy jobs run on `main` only, never on PRs | 2026-11-23 |
 | [0046](0046-find-a-town-on-the-map.md) | Everyone can find a town on the map | 2026-11-23 |
 | [0047](0047-the-umpires-note-on-approving.md) | The Umpire can leave a note when approving a turn | 2026-11-23 |
+| [0048](0048-courier-speed.md) | Couriers ride faster than light cavalry, at a speed the Umpire sets | 2026-11-23 |

@@ -494,6 +494,9 @@ namespace Wwg.Api.Data.Migrations
                     b.PrimitiveCollection<string>("CavalryLimitTypes")
                         .HasColumnType("TEXT");
 
+                    b.Property<double>("CourierSpeed")
+                        .HasColumnType("REAL");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
 

@@ -1836,6 +1836,7 @@ Campaign (new fields)
   OffTheLandNations  Nation[]? (may live off the land; null = France)
   VictoryPoints      VictoryPointsMode: Rules | Chosen (which settlements count; 50d)
   BoatCapacity       int 1–100 (points a boat carries; 14; 51a)
+  CourierSpeed       double 0.25–5 (a courier's speed, × light cavalry's; 1.5; 77a)
 
 AppUser (new field)
   MutedEmails  EmailKind[] (the campaign emails turned off: TurnStarted |
@@ -2274,6 +2275,7 @@ one, as a campaign is made with both)
 | GET | `/api/campaigns/{id}/scoreboard` | Each side's total with its armies' parts, the totals after every turn, and the settlements and changes the viewer may see (step 50b) |
 | GET / PUT | `/api/campaigns/{id}/victory-settings` | `{ mode }`: `Rules` or `Chosen` (step 50d) |
 | GET / PUT | `/api/campaigns/{id}/boat-settings` | `{ capacity }`: the points a boat carries, 1–100 (step 51a) |
+| GET / PUT | `/api/campaigns/{id}/courier-settings` | `{ speed }`: how fast couriers ride, a multiple of light cavalry's, 0.25–5; couriers on their way ride at it from the next turn that closes (step 77a) |
 | GET / PUT | `/api/army-units/{id}/screening` | A unit's screening `{ canScreen, screening, turns }` / turn it on or off `{ screening }` (a type that can't screen: 409) (step 56) |
 | POST | `/api/armies/{id}/scouts` | Add a scout to the army `{ name }`: an army unit with no library unit, FF and points (step 58) |
 | PUT | `/api/armies/{id}/commander-in-chief` | Make one of the army's Commander units its Commander in Chief `{ unitId }`, the last one no longer (null: none; 204; another type: 409; not the army's: 400) (step 67) |
@@ -3346,3 +3348,11 @@ build on positions.
       (from the army's turns already loaded; no new endpoint). The history lists it already.
     - ✅ **76d. End to end:** the turn spec approves one army's turn with a note, and its
       commander reads it on the panel and, after the next turn starts, on the new one.
+77. **Couriers ride faster** (decision 0048), in parts:
+    - ✅ **77a. The API:** `Campaign.CourierSpeed` (1.5, existing campaigns too), and `GET / PUT
+      /api/campaigns/{id}/courier-settings` (`CourierSettingsEndpoints`). `CourierRides` divides
+      each step's light-cavalry cost by it, read as it loads, so a change reaches couriers on
+      their way: their next ride, the turns left in the Couriers list, and "close by" for new
+      reports.
+    - **77b. In the app:** the Couriers section of the campaign's edit page (`CourierSection`),
+      with the rules' courier (1) a click away.

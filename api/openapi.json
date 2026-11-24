@@ -5278,6 +5278,88 @@
         ]
       }
     },
+    "/api/campaigns/{id}/courier-settings": {
+      "get": {
+        "tags": [
+          "Intelligence"
+        ],
+        "summary": "How fast couriers ride in the campaign (every member), as a multiple of light cavalry's.",
+        "operationId": "GetCourierSettings",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CourierSettingsResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "Intelligence"
+        ],
+        "summary": "Changes how fast couriers ride (Umpire or Admin): those on their way ride at it from the\nnext turn that closes.",
+        "operationId": "UpdateCourierSettings",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCourierSettingsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CourierSettingsResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      }
+    },
     "/api/army-turns/{id}/submit": {
       "post": {
         "tags": [
@@ -7490,6 +7572,20 @@
           }
         },
         "description": "A courier, on its way or done, for the Umpire (decisions 0020 and 0033)."
+      },
+      "CourierSettingsResponse": {
+        "required": [
+          "speed"
+        ],
+        "type": "object",
+        "properties": {
+          "speed": {
+            "type": "number",
+            "description": "How much faster than light cavalry a courier rides: 1 is the rules' courier.",
+            "format": "double"
+          }
+        },
+        "description": "A campaign's courier settings (decision 0048)."
       },
       "CourierStatus": {
         "enum": [
@@ -11319,6 +11415,22 @@
           }
         },
         "description": "Chooses an army's Commander in Chief (decision 0032)."
+      },
+      "UpdateCourierSettingsRequest": {
+        "required": [
+          "speed"
+        ],
+        "type": "object",
+        "properties": {
+          "speed": {
+            "maximum": 5,
+            "minimum": 0.25,
+            "type": "number",
+            "description": "A multiple of light cavalry's speed, 0.25–5 (the rules: 1).",
+            "format": "double"
+          }
+        },
+        "description": "The Umpire sets how fast couriers ride."
       },
       "UpdateEmailSettingsRequest": {
         "required": [
