@@ -229,10 +229,10 @@ public sealed class AttritionTests : ApiTest
     [Theory]
     [InlineData(Role.Admin, HttpStatusCode.OK)]
     [InlineData(Role.Umpire, HttpStatusCode.OK)]
-    [InlineData(Role.Commander, HttpStatusCode.Forbidden)]
-    [InlineData(Role.Player, HttpStatusCode.Forbidden)]
+    [InlineData(Role.Commander, HttpStatusCode.OK)]
+    [InlineData(Role.Player, HttpStatusCode.OK)]
     [InlineData(Role.NonMember, HttpStatusCode.NotFound)]
-    public async Task ListAttritionDue_ByRole_TheUmpire(Role role, HttpStatusCode expected)
+    public async Task ListAttritionDue_ByRole_EveryMember(Role role, HttpStatusCode expected)
     {
         using var scenario = await StartedAsync();
 
@@ -244,6 +244,24 @@ public sealed class AttritionTests : ApiTest
             );
 
         Assert.Equal(expected, response.StatusCode);
+    }
+
+    [Theory]
+    [InlineData(Role.Umpire, 1)]
+    [InlineData(Role.Commander, 1)]
+    [InlineData(Role.Player, 0)]
+    public async Task ListAttritionDue_ByRole_TheirOwnArmiesUnits(Role role, int expected)
+    {
+        using var scenario = await StartedAsync();
+        await MovedAsync(scenario, turnsBefore: 3);
+
+        var due = await scenario
+            .As(role)
+            .GetAsAsync<List<AttritionDueResponse>>(
+                $"/api/campaigns/{scenario.CampaignId}/attrition"
+            );
+
+        Assert.Equal(expected, due!.Count);
     }
 
     [Fact]

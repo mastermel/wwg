@@ -2084,7 +2084,7 @@ make users Managers (`PUT /api/admin/users/{id}/manager`).
 | Steps 44–51: change them (movement table: save, or put back to the rules') | ✅ | ✅ | 403 | 403 | 404 |
 | Step 47: view a unit's points history | ✅ | ✅ | ✅ | ✅ | 404 |
 | Step 47: view an army's marches | ✅ | ✅ | own army | 403 | 404 |
-| Step 47: view the attrition due | ✅ | ✅ | 403 | 403 | 404 |
+| Step 47: view the attrition due (filtered in the handler; decision 0050) | ✅ all | ✅ all | own army's | none (empty) | 404 |
 | Step 48: list depots; view supply (filtered in the handler) | ✅ all | ✅ all | own army's | none (empty) | 404 |
 | Step 48: place, move or remove a depot | ✅ | ✅ | 403 | 403 | 404 |
 | Step 49: list sightings (filtered in the handler; the hex left out where its observers weren't told it) | ✅ all | ✅ all | own army's (its own and those allies' reports brought) | none (empty) | 404 |
@@ -2261,7 +2261,7 @@ one, as a campaign is made with both)
 | GET / PUT | `/api/campaigns/{id}/calendar` | `{ startDate, firstTurnPart, morningNations, afternoonNations }` (step 45a) |
 | GET / PUT | `/api/campaigns/{id}/concentration` | `{ infantryTypes, cavalryTypes, infantryLimit, cavalryLimit }` (step 46b) |
 | GET | `/api/armies/{id}/marches` | Each unit's march count and what moving this turn would cost (step 47a) |
-| GET | `/api/campaigns/{id}/attrition` | The attrition the open turn's orders cost, unit by unit, for the Umpire to confirm (step 47b) |
+| GET | `/api/campaigns/{id}/attrition` | The attrition the open turn's orders cost, unit by unit, for the Umpire to confirm (step 47b); a commander's own armies' units, for the warnings (step 79) |
 | GET | `/api/army-units/{id}/points` | A unit's points history (`PointsChange`s) |
 | GET | `/api/campaigns/{id}/depots` | The depots the viewer may see (step 48a) |
 | POST | `/api/armies/{id}/depots` | Place a depot `{ kind, name, q, r }` (201; outside the grid: 400; no map yet: 409) |
@@ -3363,3 +3363,12 @@ build on positions.
 78. ✅ **Despatch emails** (decision 0049): every email in one layout (`EmailBuilder`), the app's
     icon inline at its head, the news in a ledger and the Umpire's notes as letters, and a footer
     saying why it was sent, with a link to the email settings for campaign emails.
+79. **Attrition warnings** (decision 0050), in parts:
+    - **79a. The API:** `GET /api/campaigns/{id}/attrition` for every member, filtered as supply
+      is: the Umpire's and Admins', every army's; a commander's, their own armies'; others', none.
+    - **79b. In the app:** the units the open turn's orders as given cost attrition carry a
+      warning mark on the map (their marker's label says so); the unit drawer warns of where the
+      unit stands as the turn began (forced march to rest off, turns out of supply) and what its
+      order costs (why, the multiple of the scale, the points lost, and what follows: Holds to
+      rest it off, only defending while cut off); moving a unit shows what the move costs as a
+      warning, with roughly how many points. For its commander and the Umpire.

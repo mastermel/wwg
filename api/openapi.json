@@ -675,7 +675,7 @@
         "tags": [
           "Turns"
         ],
-        "summary": "The attrition the open turn's orders cost, for each unit that owes any (Umpire or Admin):\nwhat starting the next turn asks them to confirm.",
+        "summary": "The attrition the open turn's orders cost, for each unit that owes any: the Umpire's and\nAdmins', every army's (what starting the next turn asks them to confirm); a commander's,\ntheir own armies' (decision 0050: they follow its moves); anyone else's, none.",
         "operationId": "ListAttritionDue",
         "parameters": [
           {

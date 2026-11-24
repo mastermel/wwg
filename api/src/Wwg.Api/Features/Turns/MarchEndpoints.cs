@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.EntityFrameworkCore;
 using Wwg.Api.Data;
 using Wwg.Api.Features.Boats;
 using Wwg.Api.Infrastructure.Auth;
@@ -17,19 +18,36 @@ internal static class MarchEndpoints
         app.MapGet("/api/campaigns/{id:guid}/attrition", ListAttritionDueAsync)
             .WithName("ListAttritionDue")
             .WithTags("Turns")
-            .RequireCampaignAccess(CampaignAccess.Umpire);
+            .RequireCampaignAccess(CampaignAccess.Member);
         return app;
     }
 
     /// <summary>
-    /// The attrition the open turn's orders cost, for each unit that owes any (Umpire or Admin):
-    /// what starting the next turn asks them to confirm.
+    /// The attrition the open turn's orders cost, for each unit that owes any: the Umpire's and
+    /// Admins', every army's (what starting the next turn asks them to confirm); a commander's,
+    /// their own armies' (decision 0050: they follow its moves); anyone else's, none.
     /// </summary>
     internal static async Task<Ok<List<AttritionDueResponse>>> ListAttritionDueAsync(
         Guid id,
         WwgDbContext db,
+        HttpContext httpContext,
         CancellationToken cancellationToken
-    ) => TypedResults.Ok(await Attrition.DueAsync(db, id, cancellationToken));
+    )
+    {
+        var context = httpContext.CampaignContext();
+        var due = await Attrition.DueAsync(db, id, cancellationToken);
+        if (context.CanManage)
+        {
+            return TypedResults.Ok(due);
+        }
+
+        var mine = await db
+            .Armies.AsNoTracking()
+            .Where(a => a.CampaignId == id && a.CommanderId == context.MemberId)
+            .Select(a => a.Id)
+            .ToListAsync(cancellationToken);
+        return TypedResults.Ok(due.Where(d => mine.Contains(d.ArmyId)).ToList());
+    }
 
     /// <summary>
     /// Each of the army's units' forced marches as the open turn began, and the attrition moving
