@@ -28,6 +28,14 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- The app's icon at the head of every email (EmailBuilder): mail clients don't show SVG. -->
+    <EmbeddedResource
+      Include="Infrastructure/Email/Assets/app-icon.png"
+      LogicalName="Wwg.Api.Email.app-icon.png"
+    />
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- Tests seed and check data through the DbContext and entities directly. -->
     <InternalsVisibleTo Include="Wwg.Api.IntegrationTests" />
   </ItemGroup>

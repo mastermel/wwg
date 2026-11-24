@@ -1,5 +1,4 @@
 using System.Text;
-using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Options;
@@ -50,37 +49,28 @@ internal static class EmailConfirmation
 
     private static EmailMessage Create(AppUser user, Uri confirmLink, bool welcome)
     {
-        var name = HtmlEncoder.Default.Encode(user.FirstName);
-        var link = HtmlEncoder.Default.Encode(confirmLink.ToString());
-        var (subject, opening) = welcome
+        var (subject, title, opening) = welcome
             ? (
                 "Welcome to Wasatch Wargamers: confirm your email",
-                "Welcome to Wasatch Wargamers. Your account is ready; please confirm this is your email address, so the club's emails reach you."
+                "Welcome to Wasatch Wargamers",
+                "Your account is ready. Please confirm this is your email address, so the club's emails reach you."
             )
             : (
                 "Confirm your new Wasatch Wargamers email",
+                "Confirm your new email",
                 "Your Wasatch Wargamers account now signs in with this email address. Please confirm it's yours."
             );
 
-        return new EmailMessage(
-            ToAddress: user.Email ?? "",
-            ToName: $"{user.FirstName} {user.LastName}",
-            Subject: subject,
-            HtmlBody: $"""
-            <p>Hi {name},</p>
-            <p>{HtmlEncoder.Default.Encode(opening)}</p>
-            <p><a href="{link}">Confirm my email</a></p>
-            <p>The link works for 7 days. If you didn't sign up, you can ignore this email.</p>
-            """,
-            TextBody: $"""
-            Hi {user.FirstName},
-
-            {opening}
-
-            Confirm my email: {confirmLink}
-
-            The link works for 7 days. If you didn't sign up, you can ignore this email.
-            """
-        );
+        return new EmailBuilder("Wasatch Wargamers", title)
+            .Greeting(user.FirstName)
+            .Paragraph(opening)
+            .Button("Confirm my email", confirmLink)
+            .Aside("The link works for 7 days. If you didn't sign up, you can ignore this email.")
+            .Build(
+                user.Email ?? "",
+                $"{user.FirstName} {user.LastName}",
+                subject,
+                "This email is about your Wasatch Wargamers account."
+            );
     }
 }

@@ -24,11 +24,21 @@ internal sealed class MailKitEmailService(IOptions<SmtpOptions> options) : IEmai
         mime.From.Add(new MailboxAddress(smtp.FromName, from));
         mime.To.Add(new MailboxAddress(message.ToName, message.ToAddress));
         mime.Subject = message.Subject;
-        mime.Body = new BodyBuilder
+        var body = new BodyBuilder { HtmlBody = message.HtmlBody, TextBody = message.TextBody };
+        // Attached inline, so it shows without the reader allowing remote images.
+        if (
+            message.HtmlBody.Contains($"cid:{EmailBuilder.IconContentId}", StringComparison.Ordinal)
+        )
         {
-            HtmlBody = message.HtmlBody,
-            TextBody = message.TextBody,
-        }.ToMessageBody();
+            var icon = body.LinkedResources.Add(
+                "app-icon.png",
+                EmailBuilder.Icon,
+                new ContentType("image", "png")
+            );
+            icon.ContentId = EmailBuilder.IconContentId;
+        }
+
+        mime.Body = body.ToMessageBody();
 
         using var client = new SmtpClient();
         await client.ConnectAsync(

@@ -89,3 +89,4 @@ A reversal gets a new entry.
 | [0046](0046-find-a-town-on-the-map.md) | Everyone can find a town on the map | 2026-11-23 |
 | [0047](0047-the-umpires-note-on-approving.md) | The Umpire can leave a note when approving a turn | 2026-11-23 |
 | [0048](0048-courier-speed.md) | Couriers ride faster than light cavalry, at a speed the Umpire sets | 2026-11-23 |
+| [0049](0049-despatch-emails.md) | Every email is a despatch: one layout with the app's icon, a ledger and a letter | 2026-11-23 |

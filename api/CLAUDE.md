@@ -137,13 +137,13 @@ true, because the build launches the app to write the document.
   against the library (factions by name, units by `ImportKey`); the preview returns the plan, the
   import saves it in one `SaveChanges`. Tests import `docs/complete_library.csv` whole (copied
   into the test output as `testdata/complete_library.csv`).
-- Emails: build an `EmailMessage` (HTML and text, with user values HTML-encoded) and queue it with
-  `IEmailQueue`; never send inline. Tests read them from `Emails` (`FakeEmailService`).
-  A campaign email has an `EmailKind`, which its recipient can turn off (decision 0023): load
-  the recipient with their `MutedEmails` (`TurnRecipient`) and send only if they `Wants` it. The
-  queue sends in order, so a test shows an email wasn't sent by waiting for a later one. Every new
-  account gets a welcome: `Emails.WaitForEmailToAsync` leaves it out (`WaitForWelcomeToAsync`
-  finds it).
+- Emails: build the `EmailMessage` with `EmailBuilder` (decision 0049), which writes the HTML and
+  the text together and encodes user values, and queue it with `IEmailQueue`; never send inline.
+  Tests read them from `Emails` (`FakeEmailService`). A campaign email has an `EmailKind`, which
+  its recipient can turn off (decision 0023): load the recipient with their `MutedEmails`
+  (`TurnRecipient`) and send only if they `Wants` it. The queue sends in order, so a test shows an
+  email wasn't sent by waiting for a later one. Every new account gets a welcome:
+  `Emails.WaitForEmailToAsync` leaves it out (`WaitForWelcomeToAsync` finds it).
 - Time comes from the injected `TimeProvider`; IDs from `Guid.CreateVersion7()`.
 - No `!` (null-forgiving) without a comment saying why it's safe.
 - Logging uses message templates with named placeholders, never interpolation.
