@@ -9,10 +9,15 @@ import { attritionInWords, forcedMarchTurn, roughLoss } from "@/features/maps/at
  * is the API's (`GET /api/armies/{id}/marches`).
  */
 
-/** How much further a force march goes, as a share of the turn: a flat hex's worth for its class. */
-export function forceMarchBonus(rates: Rates, type: UnitType) {
-  const flat = rates(classOf(type), "Flat");
-  return flat > 0 ? 1 / flat : 0;
+/**
+ * The rates a force march goes by (the rules, §E.2: "1 hex per turn faster"): each land rate a hex
+ * more, where the class can move at all. As the API's `MovementTable.ForceMarching`.
+ */
+export function forceMarching(rates: Rates): Rates {
+  return (movementClass, ground) => {
+    const rate = rates(movementClass, ground);
+    return movementClass !== "Boat" && rate > 0 ? rate + 1 : rate;
+  };
 }
 
 /**
@@ -20,7 +25,7 @@ export function forceMarchBonus(rates: Rates, type: UnitType) {
  * that moves over flat ground.
  */
 export function canForceMarch(rates: Rates, type: UnitType, part: TurnPart | null | undefined) {
-  return fights(type) && part !== "Night" && forceMarchBonus(rates, type) > 0;
+  return fights(type) && part !== "Night" && rates(classOf(type), "Flat") > 0;
 }
 
 /** A unit's march count as the open turn began, in words. */

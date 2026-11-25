@@ -115,7 +115,7 @@ import {
   stackMovers,
 } from "@/features/maps/stack-moves";
 import { indexTerrain } from "@/features/maps/terrain";
-import { canForceMarch, forceMarchBonus, moveCost } from "@/features/maps/marches";
+import { canForceMarch, forceMarching, moveCost } from "@/features/maps/marches";
 import { OrderActions, type BoatOptions } from "@/features/maps/OrderActions";
 import { OrderOverlay, type PendingMove } from "@/features/maps/OrderOverlay";
 import { PastTurnPanel } from "@/features/maps/PastTurnPanel";
@@ -348,7 +348,7 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
   // back into view (below the header: the Stack's scroll margin).
   const [moving, setMoving] = useState<PlacedUnit | null>(null);
   const [target, setTarget] = useState<Hex | null>(null);
-  // The move being chosen is a force march (step 47): a flat hex's worth further, by day.
+  // The move being chosen is a force march (step 47): a hex a turn faster, by day.
   const [forceMarch, setForceMarch] = useState(false);
   // Landing a unit from its boats (step 51): the moving unit chooses where it lands.
   const [landing, setLanding] = useState(false);
@@ -526,33 +526,41 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
   // 0011) anywhere in the grid.
   // A unit on boats moves as boats do (step 51).
   const movingType = moving && (moving.boats?.length ?? 0) > 0 ? "Boat" : moving?.unit.type;
-  const withinTurn = useMemo(
-    () =>
-      moving && together && !landing
-        ? stackReach(
-            grid,
-            moving.hex,
-            stackMovers(together, costs.rates, openTurn?.part, calendar.data, forceMarch),
-            costs,
-          )
-        : moving && movingType && !landing
-          ? reach(grid, moving.hex, movingType, {
-              ...costs,
-              carried: moving.headingInto,
-              // Further or less by the time of day, for some nations' infantry (step 45), and
-              // further by force march (step 47).
-              budget:
-                budgetFor(
-                  costs.rates,
-                  movingType,
-                  moving.unit.nation,
-                  openTurn?.part,
-                  calendar.data,
-                ) + (forceMarch ? forceMarchBonus(costs.rates, movingType) : 0),
-            })
-          : null,
-    [grid, moving, together, movingType, landing, costs, openTurn?.part, calendar.data, forceMarch],
-  );
+  const withinTurn = useMemo(() => {
+    // A hex a turn faster by force march (step 47).
+    const marching = forceMarch ? { ...costs, rates: forceMarching(costs.rates) } : costs;
+    return moving && together && !landing
+      ? stackReach(
+          grid,
+          moving.hex,
+          stackMovers(together, costs.rates, openTurn?.part, calendar.data),
+          marching,
+        )
+      : moving && movingType && !landing
+        ? reach(grid, moving.hex, movingType, {
+            ...marching,
+            carried: moving.headingInto,
+            // Further or less by the time of day, for some nations' infantry (step 45).
+            budget: budgetFor(
+              costs.rates,
+              movingType,
+              moving.unit.nation,
+              openTurn?.part,
+              calendar.data,
+            ),
+          })
+        : null;
+  }, [
+    grid,
+    moving,
+    together,
+    movingType,
+    landing,
+    costs,
+    openTurn?.part,
+    calendar.data,
+    forceMarch,
+  ]);
   // The moving unit's forced marches, for what the move costs: its commander's and the Umpire's.
   const marches = useListMarches(moving?.army.id ?? "", {
     query: { meta: { persist: false }, enabled: moving !== null },
@@ -571,15 +579,10 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
     () =>
       moving && movingType && manager && !landing
         ? together
-          ? stackReach(
-              grid,
-              moving.hex,
-              stackMovers(together, costs.rates, null, undefined, false),
-              {
-                ...costs,
-                budget: Infinity,
-              },
-            )
+          ? stackReach(grid, moving.hex, stackMovers(together, costs.rates, null, undefined), {
+              ...costs,
+              budget: Infinity,
+            })
           : reach(grid, moving.hex, movingType, { ...costs, budget: Infinity })
         : withinTurn,
     [grid, moving, together, movingType, manager, landing, withinTurn, costs],

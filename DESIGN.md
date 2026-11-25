@@ -2865,8 +2865,8 @@ build on positions.
       three turns of a battle in that hex is then allowed, as the rules say.
     - Later, for consideration: units whose paths cross during a turn (meeting mid-move).
 47. **Forced marches and attrition** (decision 0018), in parts:
-    - ✅ **47a. Marches (API):** `UnitOrder.ForceMarch` (`forceMarch` on `GiveOrder`: a flat hex's
-      worth of the unit's class further, in a Morning or an Afternoon turn only; 400 by night or
+    - ✅ **47a. Marches (API):** `UnitOrder.ForceMarch` (`forceMarch` on `GiveOrder`: each of the
+      class's land rates a hex a turn faster, decision 0052, in a Morning or an Afternoon turn only; 400 by night or
       for a class with no flat rate); each unit's march count worked out from its orders turn by
       turn (`Marches`, `MarchState`: moves in a row, the first forced march at the third move or
       the second force-march order, each Hold working one turn off), and what moving this turn
@@ -2878,7 +2878,7 @@ build on positions.
       it. Each unit's points history (`PointsChange`: attrition, and the Umpire's edits once the
       campaign has started), for every member (`GET /api/army-units/{id}/points`).
     - ✅ **47c. In the app:** "Force march (a hex further)" when moving, by day (the reach goes a
-      flat hex further; the order reads "by force march"), with what the move costs; each unit's
+      hex a turn faster; the order reads "by force march"), with what the move costs; each unit's
       march count in its drawer (its commander and the Umpire) and its points history (everyone);
       starting the next turn lists the attrition due, each loss editable, and sends what the
       Umpire confirms (`StartTurnModal`).
@@ -3164,7 +3164,7 @@ build on positions.
       A refusal rolls back the lot and names the unit.
     - ✅ **66b. The stack's reach:** `stackReach` (`movement.ts`): Dijkstra over each step's
       highest cost among the units, each as a share of its own budget (`stackMovers`:
-      time-of-day march, force march, by boat when on boats) less what it's done of a hex it's
+      time-of-day march, by boat when on boats; by force march, every unit's rates a hex faster) less what it's done of a hex it's
       part of the way into; no hexes part of the way in; anywhere for the Umpire, closed steps
       last.
     - ✅ **66c. Move all (UI):** the hex drawer's unit list offers **Move all 3** (or **Move the

@@ -114,8 +114,8 @@ public sealed record PlaceUnitRequest(
 /// step, if any.
 /// </param>
 /// <param name="ForceMarch">
-/// A Move by force march (decision 0018): a flat hex's worth further, in a Morning or Afternoon
-/// turn only.
+/// A Move by force march (decision 0018): a hex a turn faster on every ground, in a Morning or
+/// Afternoon turn only.
 /// </param>
 /// <param name="LivesOffTheLand">
 /// The unit lives off the land this turn (decision 0019), if its nation may: never out of supply,

@@ -1061,7 +1061,10 @@ internal static class OrderEndpoints
         return move.ByUmpire || move.Kind is not OrderKind.Move
             ? new MovePlan(move.Path.Count == 0 ? move.State.At : move.Path[^1], null, null)
             : Movement.Plan(
-                movement.Table,
+                // A force march goes a hex a turn faster on every ground (decision 0018).
+                move.ForceMarch
+                    ? movement.Table.ForceMarching(movement.Class)
+                    : movement.Table,
                 movement.Terrain,
                 movement.Class,
                 move.State.At,
@@ -1205,10 +1208,7 @@ internal static class OrderEndpoints
     {
         var calendar = await CalendarEndpoints.LoadAsync(db, move.CampaignId, cancellationToken);
         var part = TurnParts.Of(calendar.FirstTurnPart, calendar.StartDate, move.Turn)?.Part;
-        var movementClass = move.Class;
-        var budget = Movement.BudgetFor(table, movementClass, move.Nation, part, calendar);
-        // A force march goes a flat hex's worth further (decision 0018).
-        return move.ForceMarch ? budget + (1 / table.Rate(movementClass, Ground.Flat)) : budget;
+        return Movement.BudgetFor(table, move.Class, move.Nation, part, calendar);
     }
 
     /// <summary>

@@ -307,7 +307,7 @@ export function reach(
 export interface StackMover {
   /** Its type, or "Boat" while it's on boats. */
   type: UnitType;
-  /** Its turn's movement: time of day and force march included. */
+  /** Its turn's movement, by the time of day. */
   budget: number;
   /** Where its last move left it part of the way into. */
   carried?: HeadingInto;

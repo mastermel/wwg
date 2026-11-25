@@ -18,7 +18,8 @@ checks; here the app works them out.
 ## Decision
 
 - **A force-march order** is a move with "force march" set: a flat hex's worth further (as the
-  Morning march), in a Morning or an Afternoon turn only. A night move needs no order: it counts
+  Morning march; since decision 0052, a hex a turn faster on every ground), in a Morning or an
+  Afternoon turn only. A night move needs no order: it counts
   through the moves in a row.
 - **One count per unit**, worked out from its orders turn by turn (nothing new is stored for it, so
   it stays right when turns are reopened). In a run of moving turns (any Move, even part of the way

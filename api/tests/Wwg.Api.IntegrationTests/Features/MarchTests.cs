@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Http.Json;
 using Wwg.Api.Data.Entities;
 using Wwg.Api.Features.Maps;
 using Wwg.Api.Features.Turns;
@@ -134,7 +135,7 @@ public sealed class MarchTests : ApiTest
     }
 
     [Fact]
-    public async Task GiveOrder_AForceMarch_GoesAFlatHexFurther()
+    public async Task GiveOrder_AForceMarch_GoesAHexFurther()
     {
         using var scenario = await StartedAsync();
         var turn = await TurnSteps.OpenArmyTurnAsync(scenario);
@@ -146,6 +147,38 @@ public sealed class MarchTests : ApiTest
         await marching.AssertValidationProblemAsync("path");
         Assert.Equal(HttpStatusCode.OK, forced.StatusCode);
         Assert.True(order.ForceMarch);
+    }
+
+    [Fact]
+    public async Task GiveOrder_AForceMarchInLowHills_GoesAHexFurther()
+    {
+        using var scenario = await StartedAsync();
+        // Low hills: infantry move one hex a turn, or two by force march (not one and a half).
+        foreach (var hex in East[..2])
+        {
+            using var hills = await scenario
+                .As(Role.Umpire)
+                .PutAsJsonAsync(
+                    new Uri(
+                        $"/api/campaigns/{scenario.CampaignId}/grid/cells/{hex.Q}/{hex.R}",
+                        UriKind.Relative
+                    ),
+                    new UpdateHexCellRequest(Terrain.LowHill, false, HexSettlement.None),
+                    CancellationToken
+                );
+            hills.EnsureSuccessStatusCode();
+        }
+        var turn = await TurnSteps.OpenArmyTurnAsync(scenario);
+
+        using var marching = await TurnSteps.OrderAsync(
+            scenario,
+            turn.Id,
+            TurnSteps.Move(East[..2])
+        );
+        using var forced = await TurnSteps.OrderAsync(scenario, turn.Id, ForceMarch(East[..2]));
+
+        await marching.AssertValidationProblemAsync("path");
+        Assert.Equal(HttpStatusCode.OK, forced.StatusCode);
     }
 
     [Fact]

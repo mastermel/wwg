@@ -7968,7 +7968,7 @@
           },
           "forceMarch": {
             "type": "boolean",
-            "description": "A Move by force march (decision 0018): a flat hex's worth further, in a Morning or Afternoon\nturn only.",
+            "description": "A Move by force march (decision 0018): a hex a turn faster on every ground, in a Morning or\nAfternoon turn only.",
             "default": false
           },
           "livesOffTheLand": {

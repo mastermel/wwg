@@ -6,7 +6,7 @@ import type {
   UnitType,
 } from "@/api/generated/model";
 import { attritionInWords, roughLoss } from "@/features/maps/attrition";
-import { canForceMarch, forceMarchBonus } from "@/features/maps/marches";
+import { canForceMarch } from "@/features/maps/marches";
 import { budgetFor, type Marches, type Rates, type StackMover } from "@/features/maps/movement";
 import type { PlacedUnit } from "@/features/maps/stacks";
 
@@ -95,15 +95,12 @@ export function stackMovers(
   rates: Rates,
   part: TurnPart | null | undefined,
   marches: Marches | undefined,
-  forceMarch: boolean,
 ): StackMover[] {
   return units.map((placed) => {
     const type = movesAs(placed);
     return {
       type,
-      budget:
-        budgetFor(rates, type, placed.unit.nation, part, marches) +
-        (forceMarch ? forceMarchBonus(rates, type) : 0),
+      budget: budgetFor(rates, type, placed.unit.nation, part, marches),
       carried: placed.headingInto,
     };
   });

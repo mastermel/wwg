@@ -92,3 +92,4 @@ A reversal gets a new entry.
 | [0049](0049-despatch-emails.md) | Every email is a despatch: one layout with the app's icon, a ledger and a letter | 2026-11-23 |
 | [0050](0050-attrition-warnings.md) | Commanders see the attrition their orders cost | 2026-11-23 |
 | [0051](0051-armies-still-to-submit.md) | Everyone sees which armies haven't submitted the turn | 2026-11-24 |
+| [0052](0052-force-march-a-hex-faster.md) | A force march is a hex a turn faster, on every ground | 2026-11-25 |

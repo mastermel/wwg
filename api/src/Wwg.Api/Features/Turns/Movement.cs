@@ -303,6 +303,23 @@ internal sealed class MovementTable
     public double Rate(MovementClass movementClass, Ground ground) =>
         _rates.TryGetValue((movementClass, ground), out var rate) ? rate : 0;
 
+    /// <summary>
+    /// The table a class force marches by (the rules, §E.2: "1 hex per turn faster"): each of its
+    /// land rates a hex more, where it can move at all.
+    /// </summary>
+    public MovementTable ForceMarching(MovementClass movementClass) =>
+        new(
+            _rates.ToDictionary(
+                pair => pair.Key,
+                pair =>
+                    pair.Key.Item1 == movementClass
+                    && Land.Contains(pair.Key.Item2)
+                    && pair.Value > 0
+                        ? pair.Value + 1
+                        : pair.Value
+            )
+        );
+
     /// <summary>The campaign's table: the Umpire's rates where set, the rules' elsewhere.</summary>
     public static async Task<MovementTable> LoadAsync(
         WwgDbContext db,

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { UnitMarchResponse } from "@/api/generated/model";
-import { canForceMarch, describeMarch, forceMarchBonus, moveCost } from "@/features/maps/marches";
+import { canForceMarch, describeMarch, forceMarching, moveCost } from "@/features/maps/marches";
 import { ratesOf } from "@/features/maps/movement";
 
 const rules = ratesOf(undefined);
@@ -15,11 +15,20 @@ const march = (changes: Partial<UnitMarchResponse>): UnitMarchResponse => ({
   ...changes,
 });
 
-describe("forceMarchBonus", () => {
-  it("is a flat hex's worth for the unit's class", () => {
-    // Line infantry move two flat hexes a turn; light cavalry four.
-    expect(forceMarchBonus(rules, "LineInfantry")).toBe(0.5);
-    expect(forceMarchBonus(rules, "LightCavalry")).toBe(0.25);
+describe("forceMarching", () => {
+  it("moves a hex a turn faster on every ground the class can cross", () => {
+    const marching = forceMarching(rules);
+    expect(marching("Infantry", "Flat")).toBe(3);
+    expect(marching("Infantry", "GoodRoad")).toBe(4);
+    expect(marching("Infantry", "LowHill")).toBe(2);
+    expect(marching("Infantry", "HighHill")).toBe(1.5);
+    expect(marching("LightCavalry", "Mountain")).toBe(2);
+  });
+
+  it("opens no ground the class can't cross, and leaves boats alone", () => {
+    const marching = forceMarching(rules);
+    expect(marching("Infantry", "Mountain")).toBe(0);
+    expect(marching("Boat", "Downstream")).toBe(4);
   });
 });
 
