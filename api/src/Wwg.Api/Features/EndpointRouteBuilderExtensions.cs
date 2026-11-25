@@ -10,6 +10,7 @@ using Wwg.Api.Features.Intelligence;
 using Wwg.Api.Features.Join;
 using Wwg.Api.Features.Library;
 using Wwg.Api.Features.Maps;
+using Wwg.Api.Features.Markers;
 using Wwg.Api.Features.Screening;
 using Wwg.Api.Features.Sides;
 using Wwg.Api.Features.Sightings;
@@ -44,6 +45,7 @@ internal static class EndpointRouteBuilderExtensions
             .MapOrderEndpoints()
             .MapMarchEndpoints()
             .MapDepotEndpoints()
+            .MapMarkerEndpoints()
             .MapSupplySettingsEndpoints()
             .MapSightingEndpoints()
             .MapScreeningEndpoints()

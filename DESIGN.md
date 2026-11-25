@@ -1314,8 +1314,8 @@ visibility); the data is in §5.1. Built in Phase 8 (§7).
   the same rivers less busily (the terrain editor starts with everything, as the Umpire edits
   both); "Back to the defaults" puts them back. The game map is drawn only once the view's longest side spans 40 hexes
   or fewer. On the Map page, a **Units & markers** switch hides the game's pieces (units,
-  sightings, reports' units, depots, couriers, towns' holders, ghost moves and the Umpire's
-  warnings; hover then names only the ground), for Players and the Umpire alike, to see the
+  sightings, reports' units, depots, couriers, towns' holders, ghost moves, the viewer's own
+  markers and the Umpire's warnings; hover then names only the ground), for Players and the Umpire alike, to see the
   ground; the reach while choosing where to move stays. The terrain editor
   has the same panel, remembered apart from the Map page's, without the zoom rule (the Umpire
   edits the game map at any zoom).
@@ -1331,6 +1331,12 @@ visibility); the data is in §5.1. Built in Phase 8 (§7).
   map's open part, zoomed in to the game map if needed, and outlined. With a mouse, a label follows the
   pointer from hex to hex: the units in the hex, if any; else what was sighted there (the turn
   shown and the 3 before, as drawn); else its ground.
+- **Markers** (step 80, decision 0054): each viewer's own notes on hexes, seen by no one else. A
+  hex's drawer ends with **My markers**: the viewer's markers there (edit, remove) and **Add a
+  marker**, whose title starts as the hex's name in the game, else the largest real-world town or
+  village in it, else empty; a description of up to 200 characters is optional. They're drawn as
+  a pin with the title (the layers' **My markers** switch, under Units & markers, hides them), and
+  listed in the **My markers** panel beside the map, each a link to its hex.
 - **The Map page's layout:** on a computer (62em and wider), the map takes the width with the turn
   panel and the legend beside it (340px, as tall as the map, scrolling together; the legend's
   groups open one at a time), and the other panels flow in columns beneath (two; three from 88em,
@@ -1870,6 +1876,10 @@ Depot (an army's; 48a)             PointsChange (a unit's points history; 47b)
               one's, from its main   Note        string? (≤200)
               depots; 48c)           ByUserId    → AppUser? (null once deleted)
 
+MapMarker (one user's note on a hex; step 80, decision 0054)
+  CampaignId  → Campaign      UserId  → AppUser (both cascade)
+  Q / R       int             Title   string (≤100)   Description  string? (≤200)
+
 Sighting (what an army saw of an enemy hex, for a turn; 49b)
   ObservingArmyId → Army      Turn  int      Q / R  int     ShowsHex  bool
   Whereabouts  string (≤200; roughly where, from the army's nearest unit)
@@ -2099,6 +2109,7 @@ make users Managers (`PUT /api/admin/users/{id}/manager`).
 | Step 67: choose an army's Commander in Chief | ✅ | ✅ | 403 | 403 | 404 |
 | Step 68: list every courier (history too); cancel one with a note | ✅ | ✅ | 403 | 403 | 404 |
 | Step 70: send an army the Umpire's report (no courier; the recipient sees it among reports received) | ✅ | ✅ | 403 | 403 | 404 |
+| Step 80: list, add, change and remove their own markers (another's: 404) | ✅ own | ✅ own | ✅ own | ✅ own | 404 |
 
 - **The visibility rule** is one server-side check, "can this user see army
   A's positions in turn N?", that every read of positions or orders goes
@@ -2283,6 +2294,8 @@ one, as a campaign is made with both)
 | GET / PUT | `/api/campaigns/{id}/courier-settings` | `{ speed }`: how fast couriers ride, a multiple of light cavalry's, 0.25–5; couriers on their way ride at it from the next turn that closes (step 77a) |
 | GET / PUT | `/api/army-units/{id}/screening` | A unit's screening `{ canScreen, screening, turns }` / turn it on or off `{ screening }` (a type that can't screen: 409) (step 56) |
 | POST | `/api/armies/{id}/scouts` | Add a scout to the army `{ name }`: an army unit with no library unit, FF and points (step 58) |
+| GET / POST | `/api/campaigns/{id}/markers` | The viewer's own markers / add one `{ title, description?, q, r }` (201; outside the grid: 400; no map yet, or 100 already: 409) (step 80) |
+| PUT / DELETE | `/api/markers/{id}` | Change one of the viewer's markers (the same fields) / remove it (204); another's: 404 (step 80) |
 | PUT | `/api/armies/{id}/commander-in-chief` | Make one of the army's Commander units its Commander in Chief `{ unitId }`, the last one no longer (null: none; 204; another type: 409; not the army's: 400) (step 67) |
 
 Status changes that aren't allowed now (submitting a Submitted turn, reverting
@@ -3373,3 +3386,12 @@ build on positions.
       order costs (why, the multiple of the scale, the points lost, and what follows: Holds to
       rest it off, only defending while cut off); moving a unit shows what the move costs as a
       warning, with roughly how many points. For its commander and the Umpire.
+80. **Markers** (decision 0054), in parts:
+    - ✅ **80a. The API:** `MapMarker` (a user's, in a campaign: a hex, a title and a description),
+      `GET` / `POST /api/campaigns/{id}/markers` and `PUT` / `DELETE /api/markers/{id}`
+      (`CampaignRouteId.Marker`), each only the viewer's own.
+    - **80b. In the app:** the hex drawer's **My markers** (add, with the hex's name as the title,
+      edit, remove), the pins on the map (`MarkerPins`), the **My markers** panel and the layers'
+      switch.
+    - **80c. End to end:** a Player adds a marker from a hex's drawer, edits and removes it, and
+      another member never sees it.

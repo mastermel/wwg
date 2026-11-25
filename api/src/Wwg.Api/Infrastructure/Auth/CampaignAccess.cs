@@ -45,6 +45,11 @@ internal enum CampaignRouteId
 
     /// <summary>A report between allies (<c>/api/reports/{id}</c>): the sender's campaign.</summary>
     Report,
+
+    /// <summary>
+    /// A user's marker (<c>/api/markers/{id}</c>): its campaign. Whose it is, the handler checks.
+    /// </summary>
+    Marker,
 }
 
 /// <summary>
@@ -189,13 +194,9 @@ internal static class CampaignAccessExtensions
                 return (id, null);
             }
 
-            if (routeId == CampaignRouteId.Side)
+            if (routeId is CampaignRouteId.Side or CampaignRouteId.Marker)
             {
-                var campaignId = await db
-                    .Sides.AsNoTracking()
-                    .Where(f => f.Id == id)
-                    .Select(f => (Guid?)f.CampaignId)
-                    .FirstOrDefaultAsync(cancellationToken);
+                var campaignId = await CampaignOfAsync(db, id, cancellationToken);
                 return campaignId is { } found ? (found, null) : null;
             }
 
@@ -244,6 +245,24 @@ internal static class CampaignAccessExtensions
                         .FirstOrDefaultAsync(cancellationToken);
             return army is null ? null : (army.CampaignId, army.CommanderId);
         }
+
+        /// <summary>The campaign of a side or marker, which have no army or commander.</summary>
+        private Task<Guid?> CampaignOfAsync(
+            WwgDbContext db,
+            Guid id,
+            CancellationToken cancellationToken
+        ) =>
+            routeId == CampaignRouteId.Side
+                ? db
+                    .Sides.AsNoTracking()
+                    .Where(f => f.Id == id)
+                    .Select(f => (Guid?)f.CampaignId)
+                    .FirstOrDefaultAsync(cancellationToken)
+                : db
+                    .MapMarkers.AsNoTracking()
+                    .Where(m => m.Id == id)
+                    .Select(m => (Guid?)m.CampaignId)
+                    .FirstOrDefaultAsync(cancellationToken);
 
         private ProblemHttpResult Forbidden() =>
             TypedResults.Problem(

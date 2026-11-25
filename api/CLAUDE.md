@@ -71,7 +71,8 @@ true, because the build launches the app to write the document.
   `EndpointConventionTests` fails for any endpoint without one.
 - Campaign endpoints: the `RequireCampaignAccess` filter finds the campaign from the route's `{id}`
   (a campaign's; an army's with `CampaignRouteId.Army`; an army unit's with `ArmyUnit`; a side's
-  with `Side`; an army turn's with `ArmyTurn`; a depot's with `Depot`; a report's with `Report`).
+  with `Side`; an army turn's with `ArmyTurn`; a depot's with `Depot`; a report's with `Report`; a marker's with `Marker`, whose owner the
+  handler checks).
   It gives 404 to non-members (Admins pass)
   and 403 to members without the role, then sets `HttpContext.CampaignContext()` (campaign ID,
   Admin flag, role, member ID) for the handler. Handlers still take `Guid id`, or OpenAPI

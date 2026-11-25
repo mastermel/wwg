@@ -854,6 +854,111 @@
         ]
       }
     },
+    "/api/campaigns/{id}/markers": {
+      "get": {
+        "tags": [
+          "Markers"
+        ],
+        "summary": "The viewer's own markers in the campaign, by title. No one else's, ever.",
+        "operationId": "ListMarkers",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MarkerResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Markers"
+        ],
+        "summary": "Adds a marker of the viewer's own, in a hex of the campaign's grid.",
+        "operationId": "CreateMarker",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveMarkerRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarkerResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      }
+    },
     "/api/campaigns/{id}/sightings/due": {
       "get": {
         "tags": [
@@ -4930,6 +5035,111 @@
         ]
       }
     },
+    "/api/markers/{id}": {
+      "put": {
+        "tags": [
+          "Markers"
+        ],
+        "summary": "Changes or moves one of the viewer's markers; another's is not found.",
+        "operationId": "UpdateMarker",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveMarkerRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarkerResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Markers"
+        ],
+        "summary": "Removes one of the viewer's markers; another's is not found.",
+        "operationId": "DeleteMarker",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      }
+    },
     "/api/campaigns/{id}/supply-settings": {
       "get": {
         "tags": [
@@ -8843,6 +9053,57 @@
         },
         "description": "Which of the map's layers are shown."
       },
+      "MarkerResponse": {
+        "required": [
+          "id",
+          "title",
+          "description",
+          "q",
+          "r",
+          "latitude",
+          "longitude"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The marker's ID.",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string",
+            "description": "Its title."
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "What the viewer noted, if anything."
+          },
+          "q": {
+            "type": "integer",
+            "description": "The hex it's on (axial q).",
+            "format": "int32"
+          },
+          "r": {
+            "type": "integer",
+            "description": "The hex it's on (axial r).",
+            "format": "int32"
+          },
+          "latitude": {
+            "type": "number",
+            "description": "The hex's centre, in degrees.",
+            "format": "double"
+          },
+          "longitude": {
+            "type": "number",
+            "description": "The hex's centre, in degrees.",
+            "format": "double"
+          }
+        },
+        "description": "One of the viewer's own markers on the map (decision 0054)."
+      },
       "MasqueradeInfo": {
         "required": [
           "adminName",
@@ -9643,6 +9904,43 @@
           }
         },
         "description": "Adds a faction to the library, or changes one."
+      },
+      "SaveMarkerRequest": {
+        "required": [
+          "title",
+          "description",
+          "q",
+          "r"
+        ],
+        "type": "object",
+        "properties": {
+          "title": {
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string",
+            "description": "Its title."
+          },
+          "description": {
+            "maxLength": 200,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "A note, if any (blank is none)."
+          },
+          "q": {
+            "type": "integer",
+            "description": "The hex (axial q), inside the campaign's grid.",
+            "format": "int32"
+          },
+          "r": {
+            "type": "integer",
+            "description": "The hex (axial r).",
+            "format": "int32"
+          }
+        },
+        "description": "The viewer adds or changes one of their markers."
       },
       "SaveMovementTableRequest": {
         "required": [
@@ -11793,6 +12091,9 @@
     },
     {
       "name": "Supply"
+    },
+    {
+      "name": "Markers"
     },
     {
       "name": "Sightings"

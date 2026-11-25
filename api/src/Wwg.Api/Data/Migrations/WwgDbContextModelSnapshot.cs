@@ -1146,6 +1146,49 @@ namespace Wwg.Api.Data.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Wwg.Api.Data.Entities.MapMarker", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("CampaignId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Q")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("R")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT")
+                        .UseCollation("NOCASE");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("CampaignId", "UserId");
+
+                    b.ToTable("MapMarkers");
+                });
+
             modelBuilder.Entity("Wwg.Api.Data.Entities.MovementRate", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1859,6 +1902,25 @@ namespace Wwg.Api.Data.Migrations
                     b.Navigation("StoppedByUser");
 
                     b.Navigation("ToArmy");
+                });
+
+            modelBuilder.Entity("Wwg.Api.Data.Entities.MapMarker", b =>
+                {
+                    b.HasOne("Wwg.Api.Data.Entities.Campaign", "Campaign")
+                        .WithMany()
+                        .HasForeignKey("CampaignId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Wwg.Api.Data.Entities.AppUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Campaign");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Wwg.Api.Data.Entities.MovementRate", b =>

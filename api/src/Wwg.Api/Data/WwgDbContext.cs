@@ -58,6 +58,9 @@ internal sealed class WwgDbContext(DbContextOptions<WwgDbContext> options)
 
     public DbSet<Depot> Depots => Set<Depot>();
 
+    /// <summary>Each user's own notes on the map (decision 0054).</summary>
+    public DbSet<MapMarker> MapMarkers => Set<MapMarker>();
+
     public DbSet<Sighting> Sightings => Set<Sighting>();
 
     public DbSet<IntelReport> IntelReports => Set<IntelReport>();
