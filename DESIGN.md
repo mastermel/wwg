@@ -3390,7 +3390,7 @@ build on positions.
     - ✅ **80a. The API:** `MapMarker` (a user's, in a campaign: a hex, a title and a description),
       `GET` / `POST /api/campaigns/{id}/markers` and `PUT` / `DELETE /api/markers/{id}`
       (`CampaignRouteId.Marker`), each only the viewer's own.
-    - **80b. In the app:** the hex drawer's **My markers** (add, with the hex's name as the title,
+    - ✅ **80b. In the app:** the hex drawer's **My markers** (add, with the hex's name as the title,
       edit, remove), the pins on the map (`MarkerPins`), the **My markers** panel and the layers'
       switch.
     - **80c. End to end:** a Player adds a marker from a hex's drawer, edits and removes it, and

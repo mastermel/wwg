@@ -65,6 +65,8 @@ interface HexDrawerProps {
    * was once the drawer closes. A click on the map leaves focus where it is.
    */
   focusRequest?: number;
+  /** The viewer's own markers in the hex, and adding one (step 80), last. */
+  markers?: ReactNode;
 }
 
 /**
@@ -89,6 +91,7 @@ export function HexDrawer({
   attritionOf,
   screeningOf,
   focusRequest = 0,
+  markers,
 }: HexDrawerProps) {
   const phone = useMediaQuery("(max-width: 48em)");
   const shown = selected ?? (units.length === 1 ? units[0] : undefined);
@@ -228,6 +231,7 @@ export function HexDrawer({
               ))}
             </List>
           </Part>
+          {markers && <Part title="My markers">{markers}</Part>}
         </FocusTaker>
       )}
     </Drawer>

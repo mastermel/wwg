@@ -77,8 +77,8 @@ export function MapLayersControl({
           <Stack gap={4}>
             {groupSwitch("pieces", "Units & markers", !hidden.groups.includes("pieces"))}
             <Text size="xs" c="dimmed">
-              Units, sightings, depots, couriers, towns&apos; holders and orders. Off, only the maps
-              show.
+              Units, sightings, depots, couriers, towns&apos; holders, orders and your markers. Off,
+              only the maps show.
             </Text>
           </Stack>
           <Stack gap={4}>
@@ -112,6 +112,16 @@ export function MapLayersControl({
               was and its way there.
             </Text>
           </Stack>
+          <Switch
+            size="sm"
+            ml="md"
+            label="My markers"
+            disabled={hidden.groups.includes("pieces")}
+            checked={!hidden.groups.includes("markers")}
+            onChange={() => {
+              toggleGroup("markers");
+            }}
+          />
           <Divider />
         </>
       )}

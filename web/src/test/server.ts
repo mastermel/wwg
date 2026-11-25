@@ -26,6 +26,7 @@ const defaults = [
   http.get("*/api/campaigns/:id/positions", () => HttpResponse.json([])),
   http.get("*/api/campaigns/:id/grid", () => HttpResponse.json({ cells: [], edges: [] })),
   http.get("*/api/campaigns/:id/grid/details", () => HttpResponse.json([])),
+  http.get("*/api/campaigns/:id/markers", () => HttpResponse.json([])),
   // No rates of its own: the rule book's.
   http.get("*/api/campaigns/:id/movement", () => HttpResponse.json({ rates: [], rules: true })),
   http.get("*/api/campaigns/:id/turns", () =>

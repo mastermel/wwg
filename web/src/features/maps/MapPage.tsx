@@ -59,7 +59,15 @@ import type {
   MapBounds,
   MeResponse,
 } from "@/api/generated/model";
+import { useListMarkers } from "@/api/generated/endpoints/markers/markers";
+import type { MarkerResponse } from "@/api/generated/model";
 import { ConfirmModal } from "@/components/ConfirmModal";
+import { HexMarkers } from "@/features/maps/HexMarkers";
+import { MarkerFormModal } from "@/features/maps/MarkerFormModal";
+import { MarkerPins } from "@/features/maps/MarkerPins";
+import { MarkersPanel } from "@/features/maps/MarkersPanel";
+import { markerTitleFor, placesOnTheMap, realPlaceIn } from "@/features/maps/markers";
+import { useMarkers } from "@/features/maps/use-markers";
 import { BackLink } from "@/components/BackLink";
 import { EmptyState } from "@/components/EmptyState";
 import { LinkButton } from "@/components/LinkButton";
@@ -159,6 +167,7 @@ import {
   showsGameLayer,
   showsOtherMoves,
   showsTrails,
+  showsMarkers,
   showsPieces,
   useHiddenLayers,
   type GameLayer,
@@ -488,6 +497,15 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
   } | null>(null);
   const [depotForm, setDepotForm] = useState<DepotResponse | "new" | null>(null);
   const [removingDepot, setRemovingDepot] = useState<DepotResponse | null>(null);
+  // The viewer's own markers (step 80, decision 0054): adding one to a hex, changing or removing one.
+  const markers = useListMarkers(campaignId);
+  const markerChanges = useMarkers(campaignId);
+  const [markerForm, setMarkerForm] = useState<{
+    hex: Hex;
+    title: string;
+    marker?: MarkerResponse;
+  } | null>(null);
+  const [removingMarker, setRemovingMarker] = useState<MarkerResponse | null>(null);
   const commanded = manager ? [] : openTurns;
   const orders = useOrders(campaignId);
   const review = useReview(campaignId);
@@ -946,6 +964,17 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
     centreOn(hex);
   };
   const mapRef = useRef<MapRef>(null);
+  // A new marker's title: the hex's name in the game, else the real world's town in it (step 80).
+  const addMarker = (hex: Hex) => {
+    const map = mapRef.current;
+    const title = markerTitleFor(hex, costs.terrain, () =>
+      map ? realPlaceIn(placesOnTheMap(map.getMap()), hex, grid, settings.labelLanguage) : null,
+    );
+    setMarkerForm({ hex, title });
+  };
+  const editMarker = (marker: MarkerResponse) => {
+    setMarkerForm({ hex: marker, title: marker.title, marker });
+  };
   // The hex in the middle of the part of the map the drawer leaves (its left on a computer, its
   // top on a phone), zoomed in to the game map if the view is wider, with the map scrolled into
   // view. MapLibre skips the animation for those who prefer reduced motion.
@@ -1409,6 +1438,7 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
             destinations={destinations(focused, chosen?.hex ?? previewing?.hex ?? null)}
           />
           {pieces && <DepotMarkers depots={depots.data ?? []} armies={armies.data ?? []} />}
+          {showsMarkers(layers.hidden) && <MarkerPins markers={markers.data ?? []} />}
           {pieces && showGame("towns") && (
             <HoldingFlags
               settlements={scoreboard.data?.settlements ?? []}
@@ -1630,6 +1660,12 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
         onEdit={setDepotForm}
         onRemove={setRemovingDepot}
       />
+      <MarkersPanel
+        markers={markers.data ?? []}
+        busy={markerChanges.busy}
+        onEdit={editMarker}
+        onRemove={setRemovingMarker}
+      />
       <ScoreboardPanel scoreboard={scoreboard.data} armies={armies.data ?? []} />
     </>
   );
@@ -1650,6 +1686,43 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
   );
   const overlays = (
     <>
+      {markerForm && (
+        <MarkerFormModal
+          title={markerForm.marker ? `Edit ${markerForm.marker.title}` : "Add a marker"}
+          submitLabel={markerForm.marker ? "Save" : "Add marker"}
+          hexName={hexName(markerForm.hex)}
+          initial={{
+            title: markerForm.title,
+            description: markerForm.marker?.description ?? null,
+          }}
+          onSubmit={async (values) => {
+            const data = { ...values, q: markerForm.hex.q, r: markerForm.hex.r };
+            await (markerForm.marker
+              ? markerChanges.update(markerForm.marker, data)
+              : markerChanges.create(data));
+          }}
+          onClose={() => {
+            setMarkerForm(null);
+          }}
+        />
+      )}
+      <ConfirmModal
+        opened={removingMarker !== null}
+        onClose={() => {
+          setRemovingMarker(null);
+        }}
+        title={`Remove ${removingMarker?.title ?? "the marker"}?`}
+        confirmLabel="Remove marker"
+        loading={markerChanges.busy}
+        onConfirm={() => {
+          if (!removingMarker) return;
+          void markerChanges.remove(removingMarker).then((removed) => {
+            if (removed) setRemovingMarker(null);
+          });
+        }}
+      >
+        {removingMarker ? `${hexName(removingMarker)}. ` : ""}It can&apos;t be undone.
+      </ConfirmModal>
       {depotForm && (
         <DepotFormModal
           title={depotForm === "new" ? "Add a depot" : `Edit ${depotName(depotForm)}`}
@@ -1759,6 +1832,19 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
             : undefined
         }
         listActions={stackActions}
+        markers={
+          chosen && (
+            <HexMarkers
+              markers={(markers.data ?? []).filter((m) => hexKey(m) === hexKey(chosen.hex))}
+              busy={markerChanges.busy}
+              onAdd={() => {
+                addMarker(chosen.hex);
+              }}
+              onEdit={editMarker}
+              onRemove={setRemovingMarker}
+            />
+          )
+        }
         actions={
           past !== null
             ? undefined

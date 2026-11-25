@@ -935,7 +935,7 @@ describe("a commander's turn", () => {
     expect(screen.queryByRole("dialog", { name: "Hex (0, 0)" })).not.toBeInTheDocument();
   });
 
-  it("opens a tapped hex's drawer: its units, what was seen there, then its terrain", async () => {
+  it("opens a tapped hex's drawer: its units, what was seen there, its terrain, then the viewer's markers", async () => {
     serveCommander(draft());
     server.use(
       http.get(`*/api/campaigns/${campaignId}/sightings`, () =>
@@ -974,6 +974,7 @@ describe("a commander's turn", () => {
       "Imperial Guard",
       "Sightings",
       "Terrain",
+      "My markers",
     ]);
     expect(drawer.getByRole("region", { name: "Sightings" })).toHaveTextContent(
       "Enemy troops: 1 light cavalry.",

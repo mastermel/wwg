@@ -216,6 +216,11 @@ The pre-commit hook runs `eslint --fix` and Prettier on staged files.
   `UnitSymbol`'s `commanderInChief` (the star in a ring) wherever a unit's symbol is drawn, and put
   `CommanderInChiefBadge` beside its name in lists. It leads its marker's stack (`stackUnits`).
   The Umpire chooses it by the star in the army page's units (`UnitsSection`).
+- Markers (step 80, decision 0054): each viewer's own, seen by no one else. `use-markers.ts`
+  changes them; `MarkerFormModal` edits one, `MarkerList` lists them (in the hex drawer's
+  `HexMarkers` and the `MarkersPanel`), `MarkerPins` draws them (the layers' `markers` group,
+  `showsMarkers`). A new one's title is `markerTitleFor` (`markers.ts`): the hex's settlement name,
+  else `realPlaceIn` the map's loaded tiles (`placesOnTheMap`), else empty.
 - Queries that must not be saved for offline use (live status, admin data such as the user list)
   pass `meta: { persist: false }`.
 - Accessibility (WCAG 2.1 AA) is enforced in part by `jsx-a11y`; also give every page a title and
