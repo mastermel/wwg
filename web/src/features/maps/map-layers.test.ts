@@ -6,6 +6,7 @@ import {
   loadHidden,
   shownRealLayers,
   showsOtherMoves,
+  showsMarkers,
   showsTrails,
 } from "@/features/maps/map-layers";
 
@@ -110,6 +111,19 @@ describe("showsTrails", () => {
   it("draws moves along their trails unless the viewer hid them", () => {
     expect(showsTrails({ real: [], game: [], groups: [] })).toBe(true);
     expect(showsTrails({ real: [], game: [], groups: ["trails"] })).toBe(false);
+  });
+});
+
+describe("showsMarkers", () => {
+  it("draws the viewer's markers unless they hid them, or every piece", () => {
+    expect(showsMarkers({ real: [], game: [], groups: [] })).toBe(true);
+    expect(showsMarkers({ real: [], game: [], groups: ["markers"] })).toBe(false);
+    expect(showsMarkers({ real: [], game: [], groups: ["pieces"] })).toBe(false);
+  });
+
+  it("is remembered on the device", () => {
+    localStorage.setItem("wwg:map-layers:c", JSON.stringify({ groups: ["markers"], version: 2 }));
+    expect(loadHidden("c").groups).toEqual(["markers"]);
   });
 });
 

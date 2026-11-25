@@ -40,9 +40,10 @@ export type GameLayer = (typeof gameLayers)[number]["key"];
  * What a viewer can hide whole: either map, or (on the Map page) the pieces over them: units,
  * sightings, reports' units, depots, couriers, towns' holders, ghost moves and warnings; and,
  * while a hex is chosen, the other hexes' moves (`otherMoves`, step 75d), which otherwise fade;
- * and the moves' trails (`trails`, step 75e), which leaves each moving unit where it's going.
+ * and the moves' trails (`trails`, step 75e), which leaves each moving unit where it's going;
+ * and the viewer's own markers (`markers`, step 80).
  */
-export type LayerGroup = "real" | "game" | "pieces" | "otherMoves" | "trails";
+export type LayerGroup = "real" | "game" | "pieces" | "otherMoves" | "trails" | "markers";
 
 /** What a viewer has hidden: layers one by one, and whole maps (or the pieces). */
 export interface HiddenLayers {
@@ -52,7 +53,14 @@ export interface HiddenLayers {
 }
 
 const nothingHidden: HiddenLayers = { real: [], game: [], groups: [] };
-const layerGroups: readonly string[] = ["real", "game", "pieces", "otherMoves", "trails"];
+const layerGroups: readonly string[] = [
+  "real",
+  "game",
+  "pieces",
+  "otherMoves",
+  "trails",
+  "markers",
+];
 
 /**
  * What a viewer sees hidden before they change anything: on the Map page, rivers along the
@@ -103,6 +111,10 @@ export const showsOtherMoves = (hidden: HiddenLayers) => !hidden.groups.includes
  * it's going; or (step 75e) only the unit, where it's going, but for the chosen hex's moves.
  */
 export const showsTrails = (hidden: HiddenLayers) => !hidden.groups.includes("trails");
+
+/** Whether the viewer's own markers are drawn (step 80): only with the rest of the pieces. */
+export const showsMarkers = (hidden: HiddenLayers) =>
+  showsPieces(hidden) && !hidden.groups.includes("markers");
 
 /** The real map's layers the campaign shows, less those the viewer hid (all, with the map). */
 export const shownRealLayers = (campaign: MapLayers, hidden: HiddenLayers): MapLayers => ({
