@@ -113,7 +113,7 @@ describe("orderedGroups", () => {
 });
 
 describe("stackMovers", () => {
-  it("gives each unit its own budget, by boat while on boats", () => {
+  it("gives each unit its own rates, by boat while on boats, force march and all", () => {
     const heading = { hex: { q: 0, r: -1 }, progress: 0.5 };
     const movers = stackMovers(
       [
@@ -123,11 +123,15 @@ describe("stackMovers", () => {
       rules,
       "Morning",
       { morningNations: ["France"], afternoonNations: [] },
+      true,
     );
 
-    // French infantry in the Morning: a flat hex (½) more; boats not.
-    expect(movers[0]).toEqual({ type: "LineInfantry", budget: 1.5, carried: heading });
-    expect(movers[1]).toMatchObject({ type: "Boat", budget: 1 });
+    // French infantry in the Morning: a hex a turn faster, and another by force march; boats
+    // neither.
+    expect(movers[0]).toMatchObject({ type: "LineInfantry", carried: heading });
+    expect(movers[0]?.rates("Infantry", "Flat")).toBe(4);
+    expect(movers[1]).toMatchObject({ type: "Boat" });
+    expect(movers[1]?.rates("Boat", "Downstream")).toBe(4);
   });
 });
 

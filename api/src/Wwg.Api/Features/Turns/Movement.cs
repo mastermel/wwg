@@ -148,11 +148,11 @@ internal static class Movement
     }
 
     /// <summary>
-    /// A turn's movement for a unit (step 45; the rules, §E.1): the turn's 1, and for infantry
-    /// (the Infantry class) of a nation the campaign names, a flat hex's worth more each Morning
-    /// or less each Afternoon.
+    /// The table a unit moves by this turn (step 45; the rules, §E.1; decision 0053): the
+    /// campaign's, and for infantry (the Infantry class) of a nation the campaign names, a hex a
+    /// turn faster each Morning or slower each Afternoon.
     /// </summary>
-    public static double BudgetFor(
+    public static MovementTable TableFor(
         MovementTable table,
         MovementClass movementClass,
         Nation nation,
@@ -160,19 +160,18 @@ internal static class Movement
         Campaign calendar
     )
     {
-        var flat = table.Rate(MovementClass.Infantry, Ground.Flat);
-        if (movementClass != MovementClass.Infantry || flat <= 0)
+        if (movementClass != MovementClass.Infantry)
         {
-            return Budget;
+            return table;
         }
 
         var morning = calendar.MorningNations ?? TurnParts.MorningNations;
         var afternoon = calendar.AfternoonNations ?? TurnParts.AfternoonNations;
         return part switch
         {
-            TurnPart.Morning when morning.Contains(nation) => Budget + (1 / flat),
-            TurnPart.Afternoon when afternoon.Contains(nation) => Math.Max(0, Budget - (1 / flat)),
-            _ => Budget,
+            TurnPart.Morning when morning.Contains(nation) => table.Faster(movementClass, 1),
+            TurnPart.Afternoon when afternoon.Contains(nation) => table.Faster(movementClass, -1),
+            _ => table,
         };
     }
 
@@ -191,10 +190,10 @@ internal static class Movement
         MovementClass movementClass,
         Hex start,
         IReadOnlyList<Hex> path,
-        UnitState? carried,
-        double budget = Budget
+        UnitState? carried
     )
     {
+        var budget = Budget;
         var at = start;
         for (var i = 0; i < path.Count; i++)
         {
@@ -268,6 +267,9 @@ internal readonly record struct StepCost(double Cost, string? ClosedBecause)
 /// <summary>A campaign's movement table: its own rates, or the rule book's (§E.1).</summary>
 internal sealed class MovementTable
 {
+    /// <summary>The slowest a class goes where it can move at all: the rules' "not below ½".</summary>
+    private const double SlowestRate = 0.5;
+
     private readonly Dictionary<(MovementClass, Ground), double> _rates;
 
     private MovementTable(Dictionary<(MovementClass, Ground), double> rates) => _rates = rates;
@@ -304,10 +306,11 @@ internal sealed class MovementTable
         _rates.TryGetValue((movementClass, ground), out var rate) ? rate : 0;
 
     /// <summary>
-    /// The table a class force marches by (the rules, §E.2: "1 hex per turn faster"): each of its
-    /// land rates a hex more, where it can move at all.
+    /// The table with a class's land rates <paramref name="hexes"/> a turn faster (or slower,
+    /// though never below ½), where it can move at all: a force march (the rules, §E.2: "1 hex
+    /// per turn faster"; decision 0052), and the time of day's march (§E.1; decision 0053).
     /// </summary>
-    public MovementTable ForceMarching(MovementClass movementClass) =>
+    public MovementTable Faster(MovementClass movementClass, double hexes) =>
         new(
             _rates.ToDictionary(
                 pair => pair.Key,
@@ -315,7 +318,7 @@ internal sealed class MovementTable
                     pair.Key.Item1 == movementClass
                     && Land.Contains(pair.Key.Item2)
                     && pair.Value > 0
-                        ? pair.Value + 1
+                        ? Math.Max(SlowestRate, pair.Value + hexes)
                         : pair.Value
             )
         );

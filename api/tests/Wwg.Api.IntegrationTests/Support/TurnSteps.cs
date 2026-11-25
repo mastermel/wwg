@@ -26,6 +26,29 @@ internal static class TurnSteps
     public static GiveOrderRequest ForceMarch(params Hex[] path) =>
         new(OrderKind.Move, path, ForceMarch: true);
 
+    /// <summary>Sets these hexes' ground (open, no settlement), as the Umpire.</summary>
+    public static async Task SetGroundAsync(
+        CampaignScenario scenario,
+        Terrain terrain,
+        params Hex[] hexes
+    )
+    {
+        foreach (var hex in hexes)
+        {
+            using var response = await scenario
+                .As(Role.Umpire)
+                .PutAsJsonAsync(
+                    new Uri(
+                        $"/api/campaigns/{scenario.CampaignId}/grid/cells/{hex.Q}/{hex.R}",
+                        UriKind.Relative
+                    ),
+                    new UpdateHexCellRequest(terrain, false, HexSettlement.None),
+                    CancellationToken
+                );
+            response.EnsureSuccessStatusCode();
+        }
+    }
+
     /// <summary>Sets the map's area (and its hex size: 3 miles unless given).</summary>
     public static async Task SetAreaAsync(
         CampaignScenario scenario,

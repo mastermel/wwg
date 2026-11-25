@@ -93,3 +93,4 @@ A reversal gets a new entry.
 | [0050](0050-attrition-warnings.md) | Commanders see the attrition their orders cost | 2026-11-23 |
 | [0051](0051-armies-still-to-submit.md) | Everyone sees which armies haven't submitted the turn | 2026-11-24 |
 | [0052](0052-force-march-a-hex-faster.md) | A force march is a hex a turn faster, on every ground | 2026-11-25 |
+| [0053](0053-time-of-day-march-a-hex.md) | The time of day's march is a hex a turn, on every ground | 2026-11-25 |

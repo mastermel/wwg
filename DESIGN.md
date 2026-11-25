@@ -2828,8 +2828,8 @@ build on positions.
 45. **Time of day**, in two parts:
     - ✅ **45a. The calendar (API):** `Campaign.StartDate` (optional), `FirstTurnPart` (Morning,
       Afternoon or Night; each turn after is the next, three to a day, a Night belonging to the
-      day it starts), and the nations whose infantry (the Infantry class) move a flat hex's worth
-      further each Morning (the rules': France, Bavaria, Württemberg, Baden, the Duchy of
+      day it starts), and the nations whose infantry (the Infantry class) move a hex a turn
+      faster each Morning (each rate + 1, decision 0053) (the rules': France, Bavaria, Württemberg, Baden, the Duchy of
       Warsaw, the Kingdom of Italy and Holland) or less each Afternoon (Russia and Austria), the
       rules' until the Umpire changes them (`GET` / `PUT /api/campaigns/{id}/calendar`). Turns
       carry their `part` and `date`; a unit marches as its library faction's nation, or its
@@ -3163,8 +3163,8 @@ build on positions.
       unit must start in the first one's hex, afloat or ashore as it is, and get the whole way.
       A refusal rolls back the lot and names the unit.
     - ✅ **66b. The stack's reach:** `stackReach` (`movement.ts`): Dijkstra over each step's
-      highest cost among the units, each as a share of its own budget (`stackMovers`:
-      time-of-day march, by boat when on boats; by force march, every unit's rates a hex faster) less what it's done of a hex it's
+      highest cost among the units, each by its own rates (`stackMovers`: time-of-day march,
+      force march, by boat when on boats; decision 0053) less what it's done of a hex it's
       part of the way into; no hexes part of the way in; anywhere for the Umpire, closed steps
       last.
     - ✅ **66c. Move all (UI):** the hex drawer's unit list offers **Move all 3** (or **Move the

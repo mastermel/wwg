@@ -6,8 +6,8 @@ import type {
   UnitType,
 } from "@/api/generated/model";
 import { attritionInWords, roughLoss } from "@/features/maps/attrition";
-import { canForceMarch } from "@/features/maps/marches";
-import { budgetFor, type Marches, type Rates, type StackMover } from "@/features/maps/movement";
+import { canForceMarch, forceMarching } from "@/features/maps/marches";
+import { ratesFor, type Marches, type Rates, type StackMover } from "@/features/maps/movement";
 import type { PlacedUnit } from "@/features/maps/stacks";
 
 /**
@@ -89,18 +89,20 @@ export function orderedGroups(
   });
 }
 
-/** What the stack's reach needs of each unit: how it moves, its turn's budget, how far it got. */
+/** What the stack's reach needs of each unit: how it moves, its turn's rates, how far it got. */
 export function stackMovers(
   units: readonly PlacedUnit[],
   rates: Rates,
   part: TurnPart | null | undefined,
   marches: Marches | undefined,
+  forceMarch: boolean,
 ): StackMover[] {
   return units.map((placed) => {
     const type = movesAs(placed);
+    const byDay = ratesFor(rates, type, placed.unit.nation, part, marches);
     return {
       type,
-      budget: budgetFor(rates, type, placed.unit.nation, part, marches),
+      rates: forceMarch ? forceMarching(byDay, type) : byDay,
       carried: placed.headingInto,
     };
   });

@@ -17,18 +17,17 @@ const march = (changes: Partial<UnitMarchResponse>): UnitMarchResponse => ({
 
 describe("forceMarching", () => {
   it("moves a hex a turn faster on every ground the class can cross", () => {
-    const marching = forceMarching(rules);
+    const marching = forceMarching(rules, "LineInfantry");
     expect(marching("Infantry", "Flat")).toBe(3);
     expect(marching("Infantry", "GoodRoad")).toBe(4);
     expect(marching("Infantry", "LowHill")).toBe(2);
     expect(marching("Infantry", "HighHill")).toBe(1.5);
-    expect(marching("LightCavalry", "Mountain")).toBe(2);
+    expect(forceMarching(rules, "LightCavalry")("LightCavalry", "Mountain")).toBe(2);
   });
 
   it("opens no ground the class can't cross, and leaves boats alone", () => {
-    const marching = forceMarching(rules);
-    expect(marching("Infantry", "Mountain")).toBe(0);
-    expect(marching("Boat", "Downstream")).toBe(4);
+    expect(forceMarching(rules, "LineInfantry")("Infantry", "Mountain")).toBe(0);
+    expect(forceMarching(rules, "Boat")("Boat", "Downstream")).toBe(4);
   });
 });
 

@@ -1061,16 +1061,12 @@ internal static class OrderEndpoints
         return move.ByUmpire || move.Kind is not OrderKind.Move
             ? new MovePlan(move.Path.Count == 0 ? move.State.At : move.Path[^1], null, null)
             : Movement.Plan(
-                // A force march goes a hex a turn faster on every ground (decision 0018).
-                move.ForceMarch
-                    ? movement.Table.ForceMarching(movement.Class)
-                    : movement.Table,
+                await TableForAsync(db, move, table, cancellationToken),
                 movement.Terrain,
                 movement.Class,
                 move.State.At,
                 move.Path,
-                move.State,
-                await BudgetAsync(db, move, table, cancellationToken)
+                move.State
             );
     }
 
@@ -1198,8 +1194,11 @@ internal static class OrderEndpoints
             ))
             .SingleOrDefaultAsync(cancellationToken);
 
-    /// <summary>The unit's movement this turn, by its time of day and the unit's nation (step 45).</summary>
-    private static async Task<double> BudgetAsync(
+    /// <summary>
+    /// The table the unit moves by this turn: by its time of day and nation (step 45, decision
+    /// 0053), and a hex a turn faster again by force march (decision 0052).
+    /// </summary>
+    private static async Task<MovementTable> TableForAsync(
         WwgDbContext db,
         MoveRequest move,
         MovementTable table,
@@ -1208,7 +1207,8 @@ internal static class OrderEndpoints
     {
         var calendar = await CalendarEndpoints.LoadAsync(db, move.CampaignId, cancellationToken);
         var part = TurnParts.Of(calendar.FirstTurnPart, calendar.StartDate, move.Turn)?.Part;
-        return Movement.BudgetFor(table, move.Class, move.Nation, part, calendar);
+        var byDay = Movement.TableFor(table, move.Class, move.Nation, part, calendar);
+        return move.ForceMarch ? byDay.Faster(move.Class, 1) : byDay;
     }
 
     /// <summary>

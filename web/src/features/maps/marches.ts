@@ -1,5 +1,5 @@
 import type { TurnPart, UnitMarchResponse, UnitType } from "@/api/generated/model";
-import { classOf, type Rates } from "@/features/maps/movement";
+import { classOf, faster, type Rates } from "@/features/maps/movement";
 import { fights } from "@/features/units/unit-types";
 import { attritionInWords, forcedMarchTurn, roughLoss } from "@/features/maps/attrition";
 
@@ -10,15 +10,10 @@ import { attritionInWords, forcedMarchTurn, roughLoss } from "@/features/maps/at
  */
 
 /**
- * The rates a force march goes by (the rules, §E.2: "1 hex per turn faster"): each land rate a hex
- * more, where the class can move at all. As the API's `MovementTable.ForceMarching`.
+ * The rates a unit force marches by (the rules, §E.2: "1 hex per turn faster"; decision 0052):
+ * each of its class's land rates a hex more, where it can move at all.
  */
-export function forceMarching(rates: Rates): Rates {
-  return (movementClass, ground) => {
-    const rate = rates(movementClass, ground);
-    return movementClass !== "Boat" && rate > 0 ? rate + 1 : rate;
-  };
-}
+export const forceMarching = (rates: Rates, type: UnitType) => faster(rates, classOf(type), 1);
 
 /**
  * Whether the unit can force march this turn: never a scout (decision 0028); by day, and a class

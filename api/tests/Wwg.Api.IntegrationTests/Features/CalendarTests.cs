@@ -177,12 +177,25 @@ public sealed class CalendarTests : ApiTest
     }
 
     [Fact]
-    public async Task GiveOrder_FrenchInfantryInTheMorning_GoAFlatHexFurther()
+    public async Task GiveOrder_FrenchInfantryInTheMorning_GoAHexFurther()
     {
         using var scenario = await CreateCampaignScenarioAsync();
         var unit = await StartedWithUnitOfAsync(scenario, Nation.France, "French Guard");
 
         using var response = await MoveAsync(scenario, unit, East);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GiveOrder_FrenchInfantryInTheMorning_GoAHexFurtherInLowHills()
+    {
+        using var scenario = await CreateCampaignScenarioAsync();
+        // Low hills: infantry move one hex a turn, French infantry two in the Morning (not 1½).
+        var unit = await StartedWithUnitOfAsync(scenario, Nation.France, "French Guard");
+        await TurnSteps.SetGroundAsync(scenario, Terrain.LowHill, East[..2]);
+
+        using var response = await MoveAsync(scenario, unit, East[..2]);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
@@ -202,7 +215,7 @@ public sealed class CalendarTests : ApiTest
     }
 
     [Fact]
-    public async Task GiveOrder_RussiansInTheAfternoon_GoAFlatHexLess()
+    public async Task GiveOrder_RussiansInTheAfternoon_GoAHexLess()
     {
         using var scenario = await CreateCampaignScenarioAsync();
         await TurnSteps.SetCalendarAsync(scenario, TurnPart.Afternoon, afternoon: [Nation.Russia]);

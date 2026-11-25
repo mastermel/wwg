@@ -4,9 +4,10 @@ import type { CampaignGridResponse, HexEdgeResponse, UnitType } from "@/api/gene
 import { hexGrid, hexKey } from "@/features/maps/hex-grid";
 import {
   affordable,
-  budgetFor,
   classOf,
+  faster,
   pathTo,
+  ratesFor,
   ratesOf,
   reach,
   rulesTable,
@@ -238,10 +239,10 @@ describe("stackReach", () => {
       grid,
       centre,
       [
-        { type: "LightCavalry", budget: 1 },
-        { type: "SupplyTrain", budget: 1 },
+        { type: "LightCavalry", rates: rules },
+        { type: "SupplyTrain", rates: rules },
       ],
-      { rates: rules, terrain: open },
+      { terrain: open },
     );
 
     // Supply trains go one flat hex a turn: the start and its six neighbours.
@@ -249,10 +250,9 @@ describe("stackReach", () => {
   });
 
   it("is closed where any unit's step is", () => {
-    const cavalry = { type: "LightCavalry", budget: 1 } as const;
-    const alone = stackReach(grid, centre, [cavalry], { rates: rules, terrain: mountain });
-    const together = stackReach(grid, centre, [cavalry, { type: "LineInfantry", budget: 1 }], {
-      rates: rules,
+    const cavalry = { type: "LightCavalry", rates: rules } as const;
+    const alone = stackReach(grid, centre, [cavalry], { terrain: mountain });
+    const together = stackReach(grid, centre, [cavalry, { type: "LineInfantry", rates: rules }], {
       terrain: mountain,
     });
 
@@ -260,16 +260,16 @@ describe("stackReach", () => {
     expect(together.has(hexKey(north))).toBe(false);
   });
 
-  it("measures each step against each unit's own budget", () => {
-    // Afternoon infantry with half a turn: a flat hex takes all of it.
+  it("measures each step by each unit's own rates", () => {
+    // Afternoon Russian infantry, a hex a turn slower: a flat hex takes all of the turn.
     const found = stackReach(
       grid,
       centre,
       [
-        { type: "LineInfantry", budget: 0.5 },
-        { type: "LightCavalry", budget: 1 },
+        { type: "LineInfantry", rates: faster(rules, "Infantry", -1) },
+        { type: "LightCavalry", rates: rules },
       ],
-      { rates: rules, terrain: open },
+      { terrain: open },
     );
 
     expect(found.get(hexKey(north))?.cost).toBe(1);
@@ -277,8 +277,8 @@ describe("stackReach", () => {
   });
 
   it("only goes where every unit gets all the way in", () => {
-    const infantry = { type: "LineInfantry", budget: 1 } as const;
-    const found = stackReach(grid, centre, [infantry, infantry], { rates: rules, terrain: hills });
+    const infantry = { type: "LineInfantry", rates: rules } as const;
+    const found = stackReach(grid, centre, [infantry, infantry], { terrain: hills });
 
     expect(found.has(hexKey(north))).toBe(false);
   });
@@ -286,12 +286,11 @@ describe("stackReach", () => {
   it("counts off what each unit has already done of the hex it's heading into", () => {
     const halfway = {
       type: "LineInfantry",
-      budget: 1,
+      rates: rules,
       carried: { hex: north, progress: 0.5 },
     } as const;
-    const both = stackReach(grid, centre, [halfway, halfway], { rates: rules, terrain: hills });
-    const one = stackReach(grid, centre, [halfway, { type: "LineInfantry", budget: 1 }], {
-      rates: rules,
+    const both = stackReach(grid, centre, [halfway, halfway], { terrain: hills });
+    const one = stackReach(grid, centre, [halfway, { type: "LineInfantry", rates: rules }], {
       terrain: hills,
     });
 
@@ -304,38 +303,73 @@ describe("stackReach", () => {
       grid,
       centre,
       [
-        { type: "LightCavalry", budget: 1 },
-        { type: "LineInfantry", budget: 1 },
+        { type: "LightCavalry", rates: rules },
+        { type: "LineInfantry", rates: rules },
       ],
-      { rates: rules, terrain: mountain, budget: Infinity },
+      { terrain: mountain, budget: Infinity },
     );
 
     expect(found.size).toBe(grid.hexes().length);
   });
 });
 
-describe("budgetFor", () => {
+describe("faster", () => {
+  it("moves the class a hex a turn faster on every ground it can cross", () => {
+    const marching = faster(rules, "Infantry", 1);
+    expect(marching("Infantry", "Flat")).toBe(3);
+    expect(marching("Infantry", "GoodRoad")).toBe(4);
+    expect(marching("Infantry", "LowHill")).toBe(2);
+    expect(marching("Infantry", "Mountain")).toBe(0);
+    expect(marching("Cavalry", "Flat")).toBe(3);
+  });
+
+  it("goes slower, though never below ½", () => {
+    const slower = faster(rules, "Infantry", -1);
+    expect(slower("Infantry", "Flat")).toBe(1);
+    expect(slower("Infantry", "LowHill")).toBe(0.5);
+    expect(slower("Infantry", "HighHill")).toBe(0.5);
+    expect(slower("Infantry", "Mountain")).toBe(0);
+  });
+
+  it("leaves boats alone", () => {
+    expect(faster(rules, "Boat", 1)("Boat", "Downstream")).toBe(4);
+  });
+});
+
+describe("ratesFor", () => {
   const marches = { morningNations: ["France"], afternoonNations: ["Russia"] } as const;
 
-  it("gives the named nations' infantry a flat hex's worth more each Morning, less each Afternoon", () => {
-    expect(budgetFor(rules, "LineInfantry", "France", "Morning", marches)).toBe(1.5);
-    expect(budgetFor(rules, "Engineers", "Russia", "Afternoon", marches)).toBe(0.5);
+  it("gives the named nations' infantry a hex a turn more each Morning, less each Afternoon", () => {
+    expect(
+      ratesFor(rules, "LineInfantry", "France", "Morning", marches)("Infantry", "LowHill"),
+    ).toBe(2);
+    expect(
+      ratesFor(rules, "Engineers", "Russia", "Afternoon", marches)("Infantry", "GoodRoad"),
+    ).toBe(2);
   });
 
-  it("leaves everyone else, and the other times of day, at a turn", () => {
-    expect(budgetFor(rules, "LineInfantry", "France", "Afternoon", marches)).toBe(1);
-    expect(budgetFor(rules, "LineInfantry", "France", "Night", marches)).toBe(1);
-    expect(budgetFor(rules, "LineInfantry", "Saxony", "Morning", marches)).toBe(1);
-    expect(budgetFor(rules, "HeavyCavalry", "France", "Morning", marches)).toBe(1);
-    expect(budgetFor(rules, "LineInfantry", "France", "Morning", undefined)).toBe(1);
+  it("leaves everyone else, and the other times of day, at the campaign's rates", () => {
+    const flat = (
+      type: UnitType,
+      nation: "France" | "Saxony",
+      part: "Morning" | "Afternoon" | "Night",
+      given = marches,
+    ) => ratesFor(rules, type, nation, part, given)(classOf(type), "Flat");
+    expect(flat("LineInfantry", "France", "Afternoon")).toBe(2);
+    expect(flat("LineInfantry", "France", "Night")).toBe(2);
+    expect(flat("LineInfantry", "Saxony", "Morning")).toBe(2);
+    expect(flat("HeavyCavalry", "France", "Morning")).toBe(3);
+    expect(
+      ratesFor(rules, "LineInfantry", "France", "Morning", undefined)("Infantry", "Flat"),
+    ).toBe(2);
   });
 
-  it("goes by the campaign's flat rate", () => {
-    const faster = ratesOf({
+  it("goes from the campaign's own rates", () => {
+    const own = ratesOf({
       rules: false,
       rates: [{ class: "Infantry", ground: "Flat", hexes: 4 }],
     });
-    expect(budgetFor(faster, "LineInfantry", "France", "Morning", marches)).toBe(1.25);
+    expect(ratesFor(own, "LineInfantry", "France", "Morning", marches)("Infantry", "Flat")).toBe(5);
   });
 });
 

@@ -194,24 +194,41 @@ export interface Marches {
   afternoonNations: readonly Nation[];
 }
 
+/** The slowest a class goes where it can move at all: the rules' "not below ½". */
+const slowestRate = 0.5;
+
 /**
- * A turn's movement for a unit, as the API's Movement.BudgetFor (step 45; the rules, §E.1): 1,
- * and for infantry (the Infantry class) of a nation the campaign names, a flat hex's worth more
- * each Morning or less each Afternoon.
+ * The rates with a class's land rates `hexes` a turn faster (or slower, though never below ½),
+ * where it can move at all: a force march (decision 0052) and the time of day's march (decision
+ * 0053), as the API's `MovementTable.Faster`.
  */
-export function budgetFor(
+export function faster(rates: Rates, movementClass: MovementClass, hexes: number): Rates {
+  return (forClass, ground) => {
+    const rate = rates(forClass, ground);
+    return forClass === movementClass && forClass !== "Boat" && rate > 0
+      ? Math.max(slowestRate, rate + hexes)
+      : rate;
+  };
+}
+
+/**
+ * The rates a unit moves by this turn, as the API's `Movement.TableFor` (step 45; the rules,
+ * §E.1; decision 0053): the campaign's, and for infantry (the Infantry class) of a nation the
+ * campaign names, a hex a turn faster each Morning or slower each Afternoon.
+ */
+export function ratesFor(
   rates: Rates,
   type: UnitType,
   nation: Nation,
   part: TurnPart | null | undefined,
   marches: Marches | undefined,
-): number {
-  const flat = rates("Infantry", "Flat");
-  if (classOf(type) !== "Infantry" || flat <= 0 || !marches) return 1;
-  if (part === "Morning" && marches.morningNations.includes(nation)) return 1 + 1 / flat;
+): Rates {
+  if (classOf(type) !== "Infantry" || !marches) return rates;
+  if (part === "Morning" && marches.morningNations.includes(nation))
+    return faster(rates, "Infantry", 1);
   if (part === "Afternoon" && marches.afternoonNations.includes(nation))
-    return Math.max(0, 1 - 1 / flat);
-  return 1;
+    return faster(rates, "Infantry", -1);
+  return rates;
 }
 
 /** For the Umpire, who may cross a closed step (decision 0011): dear, so it's the last resort. */
@@ -307,37 +324,37 @@ export function reach(
 export interface StackMover {
   /** Its type, or "Boat" while it's on boats. */
   type: UnitType;
-  /** Its turn's movement, by the time of day. */
-  budget: number;
+  /** The rates it moves by this turn: by the time of day, and by force march. */
+  rates: Rates;
   /** Where its last move left it part of the way into. */
   carried?: HeadingInto;
 }
 
 /**
  * Where a hex's units can go together (decision 0031): a step costs the stack the most any of
- * them pays for it, as a share of that unit's own budget (what it's already done of a hex it's
- * part of the way into counted off), so a path within the stack's turn of 1 is within each
- * unit's own. Only hexes every unit gets all the way into: none stops part of the way. With an
- * Infinity `budget` (the Umpire's), anywhere, a closed step at the last resort.
+ * them pays for it, by that unit's own rates (what it's already done of a hex it's part of the
+ * way into counted off), so a path within the stack's turn is within each unit's own. Only hexes
+ * every unit gets all the way into: none stops part of the way. With an Infinity `budget` (the
+ * Umpire's), anywhere, a closed step at the last resort.
  */
 export function stackReach(
   grid: HexGrid,
   start: Hex,
   movers: readonly StackMover[],
-  { rates, terrain, budget = 1 }: Omit<ReachOptions, "carried">,
+  { terrain, budget = 1 }: Omit<ReachOptions, "carried" | "rates">,
 ): Reach {
   const startKey = hexKey(start);
   const moving = movers.map((m) => ({ ...m, movementClass: classOf(m.type) }));
   const stepFor = (from: Hex, to: Hex) => {
     let cost = 0;
     for (const m of moving) {
-      const step = stepCost(rates, terrain, m.movementClass, from, to);
+      const step = stepCost(m.rates, terrain, m.movementClass, from, to);
       if (step.closedBecause !== null) return budget === Infinity ? closedForUmpire : Infinity;
       const already =
         m.carried && hexKey(from) === startKey && hexKey(to) === hexKey(m.carried.hex)
           ? m.carried.progress
           : 0;
-      cost = Math.max(cost, (step.cost * (1 - already)) / m.budget);
+      cost = Math.max(cost, step.cost * (1 - already));
     }
     return cost;
   };

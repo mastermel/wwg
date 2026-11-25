@@ -96,9 +96,9 @@ import {
 } from "@/features/maps/move-focus";
 import { sideBySide } from "@/features/maps/hex-halves";
 import {
-  budgetFor,
   classOf,
   pathTo,
+  ratesFor,
   ratesOf,
   reach,
   shareOfTheWay,
@@ -527,29 +527,26 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
   // A unit on boats moves as boats do (step 51).
   const movingType = moving && (moving.boats?.length ?? 0) > 0 ? "Boat" : moving?.unit.type;
   const withinTurn = useMemo(() => {
-    // A hex a turn faster by force march (step 47).
-    const marching = forceMarch ? { ...costs, rates: forceMarching(costs.rates) } : costs;
-    return moving && together && !landing
-      ? stackReach(
-          grid,
-          moving.hex,
-          stackMovers(together, costs.rates, openTurn?.part, calendar.data),
-          marching,
-        )
-      : moving && movingType && !landing
-        ? reach(grid, moving.hex, movingType, {
-            ...marching,
-            carried: moving.headingInto,
-            // Further or less by the time of day, for some nations' infantry (step 45).
-            budget: budgetFor(
-              costs.rates,
-              movingType,
-              moving.unit.nation,
-              openTurn?.part,
-              calendar.data,
-            ),
-          })
-        : null;
+    if (!moving || landing) return null;
+    if (together) {
+      const movers = stackMovers(together, costs.rates, openTurn?.part, calendar.data, forceMarch);
+      return stackReach(grid, moving.hex, movers, costs);
+    }
+    if (!movingType) return null;
+    // Faster or slower by the time of day, for some nations' infantry (step 45), and faster by
+    // force march (step 47).
+    const byDay = ratesFor(
+      costs.rates,
+      movingType,
+      moving.unit.nation,
+      openTurn?.part,
+      calendar.data,
+    );
+    return reach(grid, moving.hex, movingType, {
+      ...costs,
+      rates: forceMarch ? forceMarching(byDay, movingType) : byDay,
+      carried: moving.headingInto,
+    });
   }, [
     grid,
     moving,
@@ -579,10 +576,15 @@ function MapWorkspace({ campaignId, settings, bounds, manager, user }: MapWorksp
     () =>
       moving && movingType && manager && !landing
         ? together
-          ? stackReach(grid, moving.hex, stackMovers(together, costs.rates, null, undefined), {
-              ...costs,
-              budget: Infinity,
-            })
+          ? stackReach(
+              grid,
+              moving.hex,
+              stackMovers(together, costs.rates, null, undefined, false),
+              {
+                ...costs,
+                budget: Infinity,
+              },
+            )
           : reach(grid, moving.hex, movingType, { ...costs, budget: Infinity })
         : withinTurn,
     [grid, moving, together, movingType, manager, landing, withinTurn, costs],

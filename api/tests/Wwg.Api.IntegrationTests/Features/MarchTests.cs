@@ -1,5 +1,4 @@
 using System.Net;
-using System.Net.Http.Json;
 using Wwg.Api.Data.Entities;
 using Wwg.Api.Features.Maps;
 using Wwg.Api.Features.Turns;
@@ -154,20 +153,7 @@ public sealed class MarchTests : ApiTest
     {
         using var scenario = await StartedAsync();
         // Low hills: infantry move one hex a turn, or two by force march (not one and a half).
-        foreach (var hex in East[..2])
-        {
-            using var hills = await scenario
-                .As(Role.Umpire)
-                .PutAsJsonAsync(
-                    new Uri(
-                        $"/api/campaigns/{scenario.CampaignId}/grid/cells/{hex.Q}/{hex.R}",
-                        UriKind.Relative
-                    ),
-                    new UpdateHexCellRequest(Terrain.LowHill, false, HexSettlement.None),
-                    CancellationToken
-                );
-            hills.EnsureSuccessStatusCode();
-        }
+        await TurnSteps.SetGroundAsync(scenario, Terrain.LowHill, East[..2]);
         var turn = await TurnSteps.OpenArmyTurnAsync(scenario);
 
         using var marching = await TurnSteps.OrderAsync(

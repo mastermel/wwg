@@ -22,4 +22,5 @@ only half a hex more in low hills (not one), so two low-hill hexes by force marc
 
 - A path that mixes grounds goes by each step's faster rate. Infantry can no longer force march
   three good-road hexes and then a flat one, as they could before (¾ + ⅓ is more than a turn).
-- The French Morning march (step 45) is still a flat hex's worth of the turn, as before.
+- The French Morning march (step 45) was still a flat hex's worth of the turn; decision 0053 makes
+  it a hex a turn too.

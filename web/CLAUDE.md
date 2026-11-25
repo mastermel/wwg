@@ -137,7 +137,8 @@ The pre-commit hook runs `eslint --fix` and Prettier on staged files.
   `<input type="file">` in an `Input.Wrapper`, so tests upload to it by its label.
 - A campaign's calendar (step 45) is `features/campaigns/calendar.ts`: `turnWhen(turn)` labels a
   turn ("17 June 1815, Afternoon"); the rule book's marching nations mirror the API's
-  `TurnParts`. The march itself is `movement.ts`'s `budgetFor`, as the API's.
+  `TurnParts`. The march itself is `movement.ts`'s `ratesFor` (each rate a hex faster or slower, `faster`), as
+  the API's `Movement.TableFor`.
 - Contact and concentration (step 46, decision 0017) is `features/maps/contact.ts`: `hexWarnings`
   per hex and side, by the campaign's concentration settings (`features/campaigns/concentration.ts`
   has the usual ones); `afterOrders` for the turn shown. `HexWarningsList` in the turn panels,
