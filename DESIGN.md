@@ -3386,12 +3386,12 @@ build on positions.
       order costs (why, the multiple of the scale, the points lost, and what follows: Holds to
       rest it off, only defending while cut off); moving a unit shows what the move costs as a
       warning, with roughly how many points. For its commander and the Umpire.
-80. **Markers** (decision 0054), in parts:
+80. ✅ **Markers** (decision 0054), in parts:
     - ✅ **80a. The API:** `MapMarker` (a user's, in a campaign: a hex, a title and a description),
       `GET` / `POST /api/campaigns/{id}/markers` and `PUT` / `DELETE /api/markers/{id}`
       (`CampaignRouteId.Marker`), each only the viewer's own.
     - ✅ **80b. In the app:** the hex drawer's **My markers** (add, with the hex's name as the title,
       edit, remove), the pins on the map (`MarkerPins`), the **My markers** panel and the layers'
       switch.
-    - **80c. End to end:** a Player adds a marker from a hex's drawer, edits and removes it, and
+    - ✅ **80c. End to end:** a Player adds a marker from a hex's drawer, edits and removes it, and
       another member never sees it.
